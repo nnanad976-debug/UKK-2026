@@ -1,42 +1,100 @@
 <?php
+
 session_start();
 
 if (isset($_SESSION['login']) && $_SESSION['login'] == true) {
 
-    if ($_SESSION['role'] == 'admin') {
-        header("Location: admin/dashboard.php");
-    } else {
-        header("Location: guru/dashboard.php");
-    }
-
+    header("Location: dashboard.php");
     exit;
+
 }
+
 ?>
 
 <!DOCTYPE html>
 <html>
+
 <head>
+
     <title>Login</title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+        rel="stylesheet">
+
 </head>
+
 <body>
 
-<h2>Login Sistem Informasi Pelanggaran Siswa</h2>
+<div class="d-flex justify-content-center align-items-center min-vh-100">
 
-<form action="proses_login.php" method="POST">
+    <div class="card shadow-sm p-4" style="width: 380px;">
 
-    <label>Email</label><br>
-    <input type="email" name="email" required>
+        <div class="text-center mb-4">
 
-    <br><br>
+            <h2>Sistem Informasi</h2>
+            <h4>Pelanggaran Siswa</h4>
 
-    <label>Password</label><br>
-    <input type="password" name="password" required>
+        </div>
 
-    <br><br>
+        <form
+            action="proses_login.php"
+            method="POST"
+            class="text-start">
 
-    <button type="submit">Login</button>
+            <div class="mb-3">
 
-</form>
+                <label class="form-label">
+                    Email
+                </label>
+
+                <input
+                    type="email"
+                    name="email"
+                    class="form-control"
+                    placeholder="Masukkan email"
+                    required>
+
+            </div>
+
+
+            <div class="mb-3">
+
+                <label class="form-label">
+                    Password
+                </label>
+
+                <input
+                    type="password"
+                    name="password"
+                    class="form-control"
+                    placeholder="Masukkan password"
+                    required>
+
+            </div>
+
+
+            <button
+                type="submit"
+                class="btn btn-primary w-100">
+
+                Login
+
+            </button>
+
+        </form>
+
+
+        <p class="text-muted small mt-4">
+
+            © nadiazulfa
+
+        </p>
+
+    </div>
+
+</div>
 
 </body>
+
 </html>

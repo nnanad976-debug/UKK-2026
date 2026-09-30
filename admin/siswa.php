@@ -4,7 +4,9 @@ include "../middleware/auth.php";
 include "../config/koneksi.php";
 
 if ($_SESSION['role'] != 'admin') {
+
     echo "Anda tidak memiliki akses";
+
     exit;
 }
 
@@ -48,9 +50,13 @@ if (isset($_POST['simpan'])) {
     );
 
     if ($query_simpan) {
+
         echo "Data siswa berhasil disimpan!";
+
     } else {
+
         echo "Data siswa gagal disimpan!";
+
     }
 }
 
@@ -61,7 +67,8 @@ if (isset($_POST['simpan'])) {
 
 $query = mysqli_query(
     $koneksi,
-    "SELECT * FROM t_siswa
+    "SELECT *
+     FROM t_siswa
      ORDER BY id DESC"
 );
 
@@ -74,233 +81,360 @@ $query = mysqli_query(
 
     <title>Kelola Siswa</title>
 
+    <!-- Bootstrap -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+        rel="stylesheet">
+
+    <!-- WARNA SAMA DENGAN TAHUN AJARAN -->
+    <style>
+
+        .btn-primary {
+            --bs-btn-color: #fff;
+            --bs-btn-bg: #6f96aa;
+            --bs-btn-border-color: #6f96aa;
+
+            --bs-btn-hover-color: #fff;
+            --bs-btn-hover-bg: #5f879b;
+            --bs-btn-hover-border-color: #5f879b;
+
+            --bs-btn-active-color: #fff;
+            --bs-btn-active-bg: #5f879b;
+            --bs-btn-active-border-color: #5f879b;
+        }
+
+        .btn-danger {
+            --bs-btn-color: #fff;
+            --bs-btn-bg: #cf8888;
+            --bs-btn-border-color: #cf8888;
+
+            --bs-btn-hover-color: #fff;
+            --bs-btn-hover-bg: #bd7777;
+            --bs-btn-hover-border-color: #bd7777;
+
+            --bs-btn-active-color: #fff;
+            --bs-btn-active-bg: #bd7777;
+            --bs-btn-active-border-color: #bd7777;
+        }
+
+    </style>
+
 </head>
 
 <body>
 
-<h2>Kelola Siswa</h2>
-
-<a href="dashboard.php">Kembali ke Dashboard</a>
-
-<br><br>
-
-<hr>
-
-<h3>Tambah Data Siswa</h3>
-
-<form method="POST">
-
-    <label>NIS</label>
-    <br>
-
-    <input
-        type="text"
-        name="nis"
-        required
-    >
-
-    <br><br>
+<div class="container mt-4">
 
 
-    <label>NISN</label>
-    <br>
+    <!-- KEMBALI -->
 
-    <input
-        type="text"
-        name="nisn"
-        required
-    >
+    <a
+       href="../dashboard.php"
+        class="btn btn-secondary mb-3">
 
-    <br><br>
+        Kembali ke Dashboard
 
-
-    <label>Nama</label>
-    <br>
-
-    <input
-        type="text"
-        name="nama"
-        required
-    >
-
-    <br><br>
+    </a>
 
 
-    <label>Jenis Kelamin</label>
-    <br>
+    <!-- JUDUL -->
 
-    <select name="jenis_kelamin" required>
+    <h2>Kelola Siswa</h2>
 
-        <option value="">
-            -- Pilih Jenis Kelamin --
-        </option>
+    <p class="text-muted">
+        Kelola data siswa.
+    </p>
 
-        <option value="L">
-            Laki-laki
-        </option>
-
-        <option value="P">
-            Perempuan
-        </option>
-
-    </select>
-
-    <br><br>
+    <hr>
 
 
-    <label>Tanggal Lahir</label>
-    <br>
+    <!-- TAMBAH DATA -->
 
-    <input
-        type="date"
-        name="tanggal_lahir"
-        required
-    >
+    <h3>Tambah Data Siswa</h3>
 
-    <br><br>
+    <form method="POST">
 
 
-    <label>Alamat</label>
-    <br>
+        <div class="mb-3">
 
-    <textarea
-        name="alamat"
-        rows="4"
-        cols="40"
-        required
-    ></textarea>
+            <label class="form-label">
+                NIS
+            </label>
 
-    <br><br>
+            <input
+                type="text"
+                name="nis"
+                class="form-control"
+                required>
 
-
-    <label>Status Aktif</label>
-    <br>
-
-    <select name="status_aktif" required>
-
-        <option value="1">
-            Aktif
-        </option>
-
-        <option value="0">
-            Tidak Aktif
-        </option>
-
-    </select>
-
-    <br><br>
+        </div>
 
 
-    <button type="submit" name="simpan">
-        Tambah Siswa
-    </button>
+        <div class="mb-3">
 
-</form>
+            <label class="form-label">
+                NISN
+            </label>
 
-<hr>
+            <input
+                type="text"
+                name="nisn"
+                class="form-control"
+                required>
 
-<h3>Data Siswa</h3>
+        </div>
 
-<table border="1" cellpadding="8" cellspacing="0">
 
-    <tr>
+        <div class="mb-3">
 
-        <th>No</th>
-        <th>NIS</th>
-        <th>NISN</th>
-        <th>Nama</th>
-        <th>Jenis Kelamin</th>
-        <th>Tanggal Lahir</th>
-        <th>Alamat</th>
-        <th>Status</th>
-        <th>Aksi</th>
+            <label class="form-label">
+                Nama
+            </label>
 
-    </tr>
+            <input
+                type="text"
+                name="nama"
+                class="form-control"
+                required>
 
-    <?php
+        </div>
 
-    $no = 1;
 
-    while ($siswa = mysqli_fetch_assoc($query)) {
+        <div class="mb-3">
 
-    ?>
+            <label class="form-label">
+                Jenis Kelamin
+            </label>
 
-    <tr>
+            <select
+                name="jenis_kelamin"
+                class="form-select"
+                required>
 
-        <td>
-            <?= $no++; ?>
-        </td>
+                <option value="">
+                    -- Pilih Jenis Kelamin --
+                </option>
 
-        <td>
-            <?= $siswa['nis']; ?>
-        </td>
+                <option value="L">
+                    Laki-laki
+                </option>
 
-        <td>
-            <?= $siswa['nisn']; ?>
-        </td>
+                <option value="P">
+                    Perempuan
+                </option>
 
-        <td>
-            <?= $siswa['nama']; ?>
-        </td>
+            </select>
 
-        <td>
+        </div>
+
+
+        <div class="mb-3">
+
+            <label class="form-label">
+                Tanggal Lahir
+            </label>
+
+            <input
+                type="date"
+                name="tanggal_lahir"
+                class="form-control"
+                required>
+
+        </div>
+
+
+        <div class="mb-3">
+
+            <label class="form-label">
+                Alamat
+            </label>
+
+            <textarea
+                name="alamat"
+                class="form-control"
+                rows="3"
+                required></textarea>
+
+        </div>
+
+
+        <div class="mb-3">
+
+            <label class="form-label">
+                Status Aktif
+            </label>
+
+            <select
+                name="status_aktif"
+                class="form-select"
+                required>
+
+                <option value="1">
+                    Aktif
+                </option>
+
+                <option value="0">
+                    Tidak Aktif
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <button
+            type="submit"
+            name="simpan"
+            class="btn btn-primary">
+
+            Tambah Siswa
+
+        </button>
+
+    </form>
+
+
+    <hr class="my-4">
+
+
+    <!-- DATA SISWA -->
+
+    <h3>Data Siswa</h3>
+
+    <div class="table-responsive">
+
+        <table class="table table-bordered mt-3">
+
+            <thead>
+
+                <tr>
+
+                    <th>No</th>
+                    <th>NIS</th>
+                    <th>NISN</th>
+                    <th>Nama</th>
+                    <th>Jenis Kelamin</th>
+                    <th>Tanggal Lahir</th>
+                    <th>Alamat</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
 
             <?php
 
-            if ($siswa['jenis_kelamin'] == 'L') {
-                echo "Laki-laki";
-            } else {
-                echo "Perempuan";
-            }
+            $no = 1;
+
+            while ($siswa = mysqli_fetch_assoc($query)) {
 
             ?>
 
-        </td>
+                <tr>
 
-        <td>
-            <?= $siswa['tanggal_lahir']; ?>
-        </td>
+                    <td>
+                        <?= $no++; ?>
+                    </td>
 
-        <td>
-            <?= $siswa['alamat']; ?>
-        </td>
+                    <td>
+                        <?= $siswa['nis']; ?>
+                    </td>
 
-        <td>
+                    <td>
+                        <?= $siswa['nisn']; ?>
+                    </td>
 
-            <?php
+                    <td>
+                        <?= $siswa['nama']; ?>
+                    </td>
 
-            if ($siswa['status_aktif'] == 1) {
-                echo "Aktif";
-            } else {
-                echo "Tidak Aktif";
-            }
+                    <td>
 
-            ?>
+                        <?php
 
-        </td>
+                        if ($siswa['jenis_kelamin'] == 'L') {
 
-        <td>
+                            echo "Laki-laki";
 
-            <a href="edit_siswa.php?id=<?= $siswa['id']; ?>">
-                Edit
-            </a>
+                        } else {
 
-            |
+                            echo "Perempuan";
 
-            <a
-                href="hapus_siswa.php?id=<?= $siswa['id']; ?>"
-                onclick="return confirm('Yakin ingin menghapus siswa ini?')"
-            >
-                Hapus
-            </a>
+                        }
 
-        </td>
+                        ?>
 
-    </tr>
+                    </td>
 
-    <?php } ?>
+                    <td>
+                        <?= $siswa['tanggal_lahir']; ?>
+                    </td>
 
-</table>
+                    <td>
+                        <?= $siswa['alamat']; ?>
+                    </td>
+
+                    <td>
+
+                        <?php
+
+                        if ($siswa['status_aktif'] == 1) {
+
+                            echo "Aktif";
+
+                        } else {
+
+                            echo "Tidak Aktif";
+
+                        }
+
+                        ?>
+
+                    </td>
+
+                    <td>
+
+                        <a
+                            href="edit_siswa.php?id=<?= $siswa['id']; ?>"
+                            class="btn btn-sm btn-primary">
+
+                            Edit
+
+                        </a>
+
+                        <a
+                            href="hapus_siswa.php?id=<?= $siswa['id']; ?>"
+                            class="btn btn-sm btn-danger"
+                            onclick="return confirm('Yakin ingin menghapus siswa ini?')">
+
+                            Hapus
+
+                        </a>
+
+                    </td>
+
+                </tr>
+
+            <?php } ?>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+<!-- Bootstrap JS -->
+
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+    crossorigin="anonymous">
+</script>
 
 </body>
 

@@ -4,7 +4,9 @@ include "../middleware/auth.php";
 include "../config/koneksi.php";
 
 if ($_SESSION['role'] != 'admin') {
+
     echo "Anda tidak memiliki akses";
+
     exit;
 }
 
@@ -44,9 +46,13 @@ if (isset($_POST['simpan'])) {
     );
 
     if ($query_simpan) {
+
         echo "Data berhasil disimpan!";
+
     } else {
+
         echo "Data gagal disimpan!";
+
     }
 }
 
@@ -85,6 +91,7 @@ $query_guru = mysqli_query(
      WHERE status_aktif = 1
      ORDER BY nama ASC"
 );
+
 
 /* =========================
    DATA WALI KELAS
@@ -127,202 +134,344 @@ $query = mysqli_query(
 
     <title>Kelola Wali Kelas</title>
 
+    <!-- Bootstrap -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+        rel="stylesheet">
+
+
+    <!-- WARNA SAMA DENGAN HALAMAN LAIN -->
+    <style>
+
+        .btn-primary {
+            --bs-btn-color: #fff;
+            --bs-btn-bg: #6f96aa;
+            --bs-btn-border-color: #6f96aa;
+
+            --bs-btn-hover-color: #fff;
+            --bs-btn-hover-bg: #5f879b;
+            --bs-btn-hover-border-color: #5f879b;
+
+            --bs-btn-active-color: #fff;
+            --bs-btn-active-bg: #5f879b;
+            --bs-btn-active-border-color: #5f879b;
+        }
+
+        .btn-danger {
+            --bs-btn-color: #fff;
+            --bs-btn-bg: #cf8888;
+            --bs-btn-border-color: #cf8888;
+
+            --bs-btn-hover-color: #fff;
+            --bs-btn-hover-bg: #bd7777;
+            --bs-btn-hover-border-color: #bd7777;
+
+            --bs-btn-active-color: #fff;
+            --bs-btn-active-bg: #bd7777;
+            --bs-btn-active-border-color: #bd7777;
+        }
+
+    </style>
+
 </head>
 
 <body>
 
-<h2>Kelola Wali Kelas</h2>
+<div class="container mt-4">
 
-<a href="dashboard.php">Kembali ke Dashboard</a>
 
-<br><br>
+    <!-- KEMBALI -->
 
-<hr>
+    <a
+      href="../dashboard.php"
+        class="btn btn-secondary mb-3">
 
-<h3>Tambah Wali Kelas</h3>
+        Kembali ke Dashboard
 
-<form method="POST">
+    </a>
 
- <label>Tahun Ajaran</label>
-<br>
 
-<select name="tahun_ajaran_id" required>
+    <!-- JUDUL -->
 
-    <option value="">-- Pilih Tahun Ajaran --</option>
+    <h2>Kelola Wali Kelas</h2>
 
-    <?php while ($data = mysqli_fetch_assoc($query_tahun)) { ?>
+    <p class="text-muted">
+        Kelola data wali kelas.
+    </p>
 
-        <option value="<?= $data['id']; ?>">
-            <?= $data['nama']; ?>
-        </option>
+    <hr>
 
-    <?php } ?>
 
-</select>
-    <br><br>
+    <!-- TAMBAH WALI KELAS -->
 
+    <h3>Tambah Wali Kelas</h3>
 
-    <label>Kelas</label>
-<br>
+    <form method="POST">
 
-<select name="kelas_id" required>
 
-    <option value="">-- Pilih Kelas --</option>
+        <!-- TAHUN AJARAN -->
 
-    <?php while ($data = mysqli_fetch_assoc($query_kelas)) { ?>
+        <div class="mb-3">
 
-        <option value="<?= $data['id']; ?>">
+            <label class="form-label">
+                Tahun Ajaran
+            </label>
 
-            <?= $data['nama']; ?> -
-            <?= $data['tingkat']; ?> -
-            <?= $data['jurusan']; ?>
+            <select
+                name="tahun_ajaran_id"
+                class="form-select"
+                required>
 
-        </option>
+                <option value="">
+                    -- Pilih Tahun Ajaran --
+                </option>
 
-    <?php } ?>
+                <?php while ($data = mysqli_fetch_assoc($query_tahun)) { ?>
 
-</select>
+                    <option value="<?= $data['id']; ?>">
 
-    <br><br>
+                        <?= $data['nama']; ?>
 
+                    </option>
 
-   <label>Guru</label>
-<br>
+                <?php } ?>
 
-<select name="guru_id" required>
+            </select>
 
-    <option value="">-- Pilih Guru --</option>
+        </div>
 
-    <?php while ($data = mysqli_fetch_assoc($query_guru)) { ?>
 
-        <option value="<?= $data['id']; ?>">
+        <!-- KELAS -->
 
-            <?= $data['nip']; ?> -
-            <?= $data['nama']; ?>
+        <div class="mb-3">
 
-        </option>
+            <label class="form-label">
+                Kelas
+            </label>
 
-    <?php } ?>
+            <select
+                name="kelas_id"
+                class="form-select"
+                required>
 
-</select>
-    <br><br>
+                <option value="">
+                    -- Pilih Kelas --
+                </option>
 
+                <?php while ($data = mysqli_fetch_assoc($query_kelas)) { ?>
 
-    <label>Tanggal Mulai</label>
-    <br>
+                    <option value="<?= $data['id']; ?>">
 
-    <input
-        type="date"
-        name="tanggal_mulai"
-        value="2026-07-01"
-        required
-    >
+                        <?= $data['nama']; ?> -
+                        <?= $data['tingkat']; ?> -
+                        <?= $data['jurusan']; ?>
 
-    <br><br>
+                    </option>
 
+                <?php } ?>
 
-    <label>Tanggal Selesai</label>
-    <br>
+            </select>
 
-    <input
-        type="date"
-        name="tanggal_selesai"
-        value="2027-06-30"
-    >
+        </div>
 
-    <br><br>
 
+        <!-- GURU -->
 
-    <button type="submit" name="simpan">
-        Simpan
-    </button>
+        <div class="mb-3">
 
-</form>
+            <label class="form-label">
+                Guru
+            </label>
 
-<hr>
+            <select
+                name="guru_id"
+                class="form-select"
+                required>
 
-<h3>Data Wali Kelas</h3>
+                <option value="">
+                    -- Pilih Guru --
+                </option>
 
-<table border="1" cellpadding="8" cellspacing="0">
+                <?php while ($data = mysqli_fetch_assoc($query_guru)) { ?>
 
-    <tr>
+                    <option value="<?= $data['id']; ?>">
 
-        <th>No</th>
-        <th>Tahun Ajaran</th>
-        <th>Kelas</th>
-        <th>Tingkat</th>
-        <th>Jurusan</th>
-        <th>NIP</th>
-        <th>Nama Guru</th>
-        <th>Tanggal Mulai</th>
-        <th>Tanggal Selesai</th>
-        <th>Status</th>
+                        <?= $data['nip']; ?> -
+                        <?= $data['nama']; ?>
 
-    </tr>
+                    </option>
 
-    <?php
+                <?php } ?>
 
-    $no = 1;
+            </select>
 
-    while ($data = mysqli_fetch_assoc($query)) {
+        </div>
 
-    ?>
 
-    <tr>
+        <!-- TANGGAL MULAI -->
 
-        <td><?= $no++; ?></td>
+        <div class="mb-3">
 
-        <td>
-            <?= $data['tahun_ajaran']; ?>
-        </td>
+            <label class="form-label">
+                Tanggal Mulai
+            </label>
 
-        <td>
-            <?= $data['nama_kelas']; ?>
-        </td>
+            <input
+                type="date"
+                name="tanggal_mulai"
+                value="2026-07-01"
+                class="form-control"
+                required>
 
-        <td>
-            <?= $data['tingkat']; ?>
-        </td>
+        </div>
 
-        <td>
-            <?= $data['jurusan']; ?>
-        </td>
 
-        <td>
-            <?= $data['nip']; ?>
-        </td>
+        <!-- TANGGAL SELESAI -->
 
-        <td>
-            <?= $data['nama_guru']; ?>
-        </td>
+        <div class="mb-3">
 
-        <td>
-            <?= $data['tanggal_mulai']; ?>
-        </td>
+            <label class="form-label">
+                Tanggal Selesai
+            </label>
 
-        <td>
-            <?= $data['tanggal_selesai']; ?>
-        </td>
+            <input
+                type="date"
+                name="tanggal_selesai"
+                value="2027-06-30"
+                class="form-control">
 
-        <td>
+        </div>
+
+
+        <!-- BUTTON -->
+
+        <button
+            type="submit"
+            name="simpan"
+            class="btn btn-primary">
+
+            Simpan
+
+        </button>
+
+    </form>
+
+
+    <hr class="my-4">
+
+
+    <!-- DATA WALI KELAS -->
+
+    <h3>Data Wali Kelas</h3>
+
+    <div class="table-responsive">
+
+        <table class="table table-bordered mt-3">
+
+            <thead>
+
+                <tr>
+
+                    <th>No</th>
+                    <th>Tahun Ajaran</th>
+                    <th>Kelas</th>
+                    <th>Tingkat</th>
+                    <th>Jurusan</th>
+                    <th>NIP</th>
+                    <th>Nama Guru</th>
+                    <th>Tanggal Mulai</th>
+                    <th>Tanggal Selesai</th>
+                    <th>Status</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
 
             <?php
 
-            if ($data['status_aktif'] == 1) {
-                echo "Aktif";
-            } else {
-                echo "Tidak Aktif";
-            }
+            $no = 1;
+
+            while ($data = mysqli_fetch_assoc($query)) {
 
             ?>
 
-        </td>
+                <tr>
 
-    </tr>
+                    <td>
+                        <?= $no++; ?>
+                    </td>
 
-    <?php } ?>
+                    <td>
+                        <?= $data['tahun_ajaran']; ?>
+                    </td>
 
-</table>
+                    <td>
+                        <?= $data['nama_kelas']; ?>
+                    </td>
+
+                    <td>
+                        <?= $data['tingkat']; ?>
+                    </td>
+
+                    <td>
+                        <?= $data['jurusan']; ?>
+                    </td>
+
+                    <td>
+                        <?= $data['nip']; ?>
+                    </td>
+
+                    <td>
+                        <?= $data['nama_guru']; ?>
+                    </td>
+
+                    <td>
+                        <?= $data['tanggal_mulai']; ?>
+                    </td>
+
+                    <td>
+                        <?= $data['tanggal_selesai']; ?>
+                    </td>
+
+                    <td>
+
+                        <?php
+
+                        if ($data['status_aktif'] == 1) {
+
+                            echo "Aktif";
+
+                        } else {
+
+                            echo "Tidak Aktif";
+
+                        }
+
+                        ?>
+
+                    </td>
+
+                </tr>
+
+            <?php } ?>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+<!-- Bootstrap JS -->
+
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+    crossorigin="anonymous">
+</script>
 
 </body>
 

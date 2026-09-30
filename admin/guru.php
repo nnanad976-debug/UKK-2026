@@ -4,7 +4,9 @@ include "../middleware/auth.php";
 include "../config/koneksi.php";
 
 if ($_SESSION['role'] != 'admin') {
+
     echo "Anda tidak memiliki akses";
+
     exit;
 }
 
@@ -39,9 +41,13 @@ if (isset($_POST['simpan'])) {
     );
 
     if ($query_simpan) {
+
         echo "Data guru berhasil disimpan!";
+
     } else {
+
         echo "Data guru gagal disimpan!";
+
     }
 }
 
@@ -52,7 +58,8 @@ if (isset($_POST['simpan'])) {
 
 $query = mysqli_query(
     $koneksi,
-    "SELECT * FROM t_guru
+    "SELECT *
+     FROM t_guru
      ORDER BY id DESC"
 );
 
@@ -65,160 +72,283 @@ $query = mysqli_query(
 
     <title>Kelola Guru</title>
 
+    <!-- Bootstrap -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+        rel="stylesheet">
+
+    <!-- WARNA DISAMAKAN DENGAN TAHUN AJARAN -->
+    <style>
+
+        .btn-primary {
+            --bs-btn-color: #fff;
+            --bs-btn-bg: #6f96aa;
+            --bs-btn-border-color: #6f96aa;
+
+            --bs-btn-hover-color: #fff;
+            --bs-btn-hover-bg: #5f879b;
+            --bs-btn-hover-border-color: #5f879b;
+
+            --bs-btn-active-color: #fff;
+            --bs-btn-active-bg: #5f879b;
+            --bs-btn-active-border-color: #5f879b;
+        }
+
+        .btn-danger {
+            --bs-btn-color: #fff;
+            --bs-btn-bg: #cf8888;
+            --bs-btn-border-color: #cf8888;
+
+            --bs-btn-hover-color: #fff;
+            --bs-btn-hover-bg: #bd7777;
+            --bs-btn-hover-border-color: #bd7777;
+
+            --bs-btn-active-color: #fff;
+            --bs-btn-active-bg: #bd7777;
+            --bs-btn-active-border-color: #bd7777;
+        }
+
+    </style>
+
 </head>
 
 <body>
 
-<h2>Kelola Guru</h2>
-
-<a href="dashboard.php">Kembali ke Dashboard</a>
-
-<br><br>
-
-<hr>
-
-<h3>Tambah Data Guru</h3>
-
-<form method="POST">
-
-    <label>NIP</label>
-    <br>
-
-    <input
-        type="text"
-        name="nip"
-        required
-    >
-
-    <br><br>
+<div class="container mt-4">
 
 
-    <label>Nama Guru</label>
-    <br>
+    <!-- KEMBALI -->
 
-    <input
-        type="text"
-        name="nama"
-        required
-    >
+    <a
+       href="../dashboard.php"
+        class="btn btn-secondary mb-3">
 
-    <br><br>
+        Kembali ke Dashboard
 
-
-    <label>Email</label>
-    <br>
-
-    <input
-        type="email"
-        name="email"
-        required
-    >
-
-    <br><br>
+    </a>
 
 
-    <label>Status</label>
-    <br>
+    <!-- JUDUL -->
 
-    <select name="status_aktif" required>
+    <h2>Kelola Guru</h2>
 
-        <option value="1">
-            Aktif
-        </option>
+    <p class="text-muted">
+        Kelola data guru.
+    </p>
 
-        <option value="0">
-            Tidak Aktif
-        </option>
+    <hr>
 
-    </select>
 
-    <br><br>
+    <!-- TAMBAH DATA -->
 
-    <button type="submit" name="simpan">
-        Tambah Guru
-    </button>
+    <h3>Tambah Data Guru</h3>
 
-</form>
+    <form method="POST">
 
-<hr>
 
-<h3>Data Guru</h3>
+        <!-- NIP -->
 
-<table border="1" cellpadding="8" cellspacing="0">
+        <div class="mb-3">
 
-    <tr>
+            <label class="form-label">
+                NIP
+            </label>
 
-        <th>No</th>
-        <th>NIP</th>
-        <th>Nama</th>
-        <th>Email</th>
-        <th>Status</th>
-        <th>Aksi</th>
+            <input
+                type="text"
+                name="nip"
+                class="form-control"
+                required>
 
-    </tr>
+        </div>
 
-    <?php
 
-    $no = 1;
+        <!-- NAMA -->
 
-    while ($guru = mysqli_fetch_assoc($query)) {
+        <div class="mb-3">
 
-    ?>
+            <label class="form-label">
+                Nama Guru
+            </label>
 
-    <tr>
+            <input
+                type="text"
+                name="nama"
+                class="form-control"
+                required>
 
-        <td>
-            <?= $no++; ?>
-        </td>
+        </div>
 
-        <td>
-            <?= $guru['nip']; ?>
-        </td>
 
-        <td>
-            <?= $guru['nama']; ?>
-        </td>
+        <!-- EMAIL -->
 
-        <td>
-            <?= $guru['email']; ?>
-        </td>
+        <div class="mb-3">
 
-        <td>
+            <label class="form-label">
+                Email
+            </label>
+
+            <input
+                type="email"
+                name="email"
+                class="form-control"
+                required>
+
+        </div>
+
+
+        <!-- STATUS -->
+
+        <div class="mb-3">
+
+            <label class="form-label">
+                Status
+            </label>
+
+            <select
+                name="status_aktif"
+                class="form-select"
+                required>
+
+                <option value="1">
+                    Aktif
+                </option>
+
+                <option value="0">
+                    Tidak Aktif
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <!-- BUTTON -->
+
+        <button
+            type="submit"
+            name="simpan"
+            class="btn btn-primary">
+
+            Tambah Guru
+
+        </button>
+
+    </form>
+
+
+    <hr class="my-4">
+
+
+    <!-- DATA GURU -->
+
+    <h3>Data Guru</h3>
+
+    <div class="table-responsive">
+
+        <table class="table table-bordered mt-3">
+
+            <thead>
+
+                <tr>
+
+                    <th>No</th>
+                    <th>NIP</th>
+                    <th>Nama</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
 
             <?php
 
-            if ($guru['status_aktif'] == 1) {
-                echo "Aktif";
-            } else {
-                echo "Tidak Aktif";
-            }
+            $no = 1;
+
+            while ($guru = mysqli_fetch_assoc($query)) {
 
             ?>
 
-        </td>
+                <tr>
 
-        <td>
+                    <td>
+                        <?= $no++; ?>
+                    </td>
 
-            <a href="edit_guru.php?id=<?= $guru['id']; ?>">
-                Edit
-            </a>
+                    <td>
+                        <?= $guru['nip']; ?>
+                    </td>
 
-            |
+                    <td>
+                        <?= $guru['nama']; ?>
+                    </td>
 
-            <a
-                href="hapus_guru.php?id=<?= $guru['id']; ?>"
-                onclick="return confirm('Yakin ingin menghapus guru ini?')"
-            >
-                Hapus
-            </a>
+                    <td>
+                        <?= $guru['email']; ?>
+                    </td>
 
-        </td>
+                    <td>
 
-    </tr>
+                        <?php
 
-    <?php } ?>
+                        if ($guru['status_aktif'] == 1) {
 
-</table>
+                            echo "Aktif";
+
+                        } else {
+
+                            echo "Tidak Aktif";
+
+                        }
+
+                        ?>
+
+                    </td>
+
+                    <td>
+
+                        <a
+                            href="edit_guru.php?id=<?= $guru['id']; ?>"
+                            class="btn btn-sm btn-primary">
+
+                            Edit
+
+                        </a>
+
+                        <a
+                            href="hapus_guru.php?id=<?= $guru['id']; ?>"
+                            class="btn btn-sm btn-danger"
+                            onclick="return confirm('Yakin ingin menghapus guru ini?')">
+
+                            Hapus
+
+                        </a>
+
+                    </td>
+
+                </tr>
+
+            <?php } ?>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+<!-- Bootstrap JS -->
+
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+    crossorigin="anonymous">
+</script>
 
 </body>
 

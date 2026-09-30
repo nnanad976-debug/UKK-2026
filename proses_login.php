@@ -21,16 +21,7 @@ if ($user && password_verify($password, $user['password'])) {
     $_SESSION['nama'] = $user['name'];
     $_SESSION['role'] = $user['role'];
 
-    if ($user['role'] == 'admin') {
-
-        header("Location: admin/dashboard.php");
-
-    } elseif ($user['role'] == 'guru') {
-
-        header("Location: guru/dashboard.php");
-
-    }
-
+    header("Location: dashboard.php");
     exit;
 
 } else {
