@@ -19,7 +19,6 @@ $nama = $_SESSION['nama'];
         :root {
             --blue: #2878cf;
             --blue-dark: #203e68;
-            --blue-soft: #eef5fd;
             --text: #263f63;
             --muted: #7890ad;
             --line: #dce9f8;
@@ -27,9 +26,9 @@ $nama = $_SESSION['nama'];
         }
 
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
         }
 
         body {
@@ -37,7 +36,6 @@ $nama = $_SESSION['nama'];
             background: var(--page);
             color: var(--text);
         }
-
 
         /* =========================
            SIDEBAR
@@ -51,52 +49,54 @@ $nama = $_SESSION['nama'];
             width: 214px;
             height: 100vh;
 
-            background: #ffffff;
+            background: white;
             border-right: 1px solid var(--line);
 
-            padding: 22px 14px;
+            padding: 23px 14px;
 
             display: flex;
             flex-direction: column;
+
+            overflow-y: auto;
         }
 
         .brand {
             padding: 0 9px 20px;
             border-bottom: 1px solid var(--line);
-            margin-bottom: 18px;
+            margin-bottom: 20px;
         }
 
         .brand h5 {
+            font-size: 14px;
             color: var(--blue-dark);
-            font-size: 15px;
             margin-bottom: 5px;
         }
 
         .brand small {
-            color: var(--muted);
             font-size: 11px;
+            color: var(--muted);
         }
 
         .menu-title {
-            color: #9aabc0;
             font-size: 10px;
             font-weight: 700;
+            color: #9aabc0;
             text-transform: uppercase;
-            letter-spacing: .5px;
 
-            margin: 12px 9px 8px;
+            margin: 10px 9px 8px;
+            letter-spacing: .4px;
         }
 
         .menu-link {
             display: block;
 
             padding: 9px 10px;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
+
+            border-radius: 7px;
 
             color: var(--text);
             text-decoration: none;
-
-            border-radius: 8px;
 
             font-size: 12px;
 
@@ -104,19 +104,21 @@ $nama = $_SESSION['nama'];
         }
 
         .menu-link:hover {
-            background: var(--blue-soft);
+            background: #edf5ff;
             color: var(--blue);
         }
 
         .menu-link.active {
-            background: var(--blue-soft);
+            background: #e9f3ff;
             color: var(--blue);
             font-weight: 600;
         }
 
         .logout {
             margin-top: auto;
-            padding-top: 15px;
+
+            padding-top: 14px;
+
             border-top: 1px solid var(--line);
         }
 
@@ -131,7 +133,6 @@ $nama = $_SESSION['nama'];
             font-size: 12px;
         }
 
-
         /* =========================
            MAIN
         ========================= */
@@ -140,84 +141,79 @@ $nama = $_SESSION['nama'];
             margin-left: 214px;
             min-height: 100vh;
 
-            padding: 38px 42px;
+            padding: 35px 45px;
         }
 
         .topbar {
-            margin-bottom: 24px;
+            margin-bottom: 28px;
         }
 
         .topbar h3 {
+            font-size: 20px;
             color: var(--blue-dark);
-            font-size: 19px;
             margin-bottom: 5px;
         }
 
         .topbar p {
+            font-size: 13px;
             color: var(--muted);
-            font-size: 12px;
         }
 
-
         /* =========================
-           ABOUT
+           ABOUT SECTION
         ========================= */
 
-        .about-container {
+        .about-section {
             max-width: 1120px;
             margin: 0 auto;
 
-            background: #ffffff;
-
-            border: 1px solid var(--line);
-
             min-height: 590px;
 
-            padding: 58px 68px;
+            background: white;
+
+            border-top: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+
+            padding: 65px 70px;
 
             display: grid;
-
-            grid-template-columns: 1.55fr .75fr;
+            grid-template-columns: 1fr 300px;
 
             align-items: center;
 
-            column-gap: 60px;
+            column-gap: 70px;
         }
-
 
         /* =========================
-           LEFT
+           TEXT
         ========================= */
 
-        .about-left {
-            padding-right: 10px;
+        .about-text {
+            max-width: 650px;
         }
 
-        .label {
-            color: var(--blue);
+        .small-title {
             font-size: 11px;
-
             font-weight: 700;
 
-            letter-spacing: 3px;
+            color: var(--blue);
 
-            margin-bottom: 14px;
+            letter-spacing: 2px;
+
+            margin-bottom: 15px;
         }
 
         .about-title {
-            color: var(--blue-dark);
-
             font-size: 64px;
+            line-height: .95;
 
-            line-height: 1;
+            color: var(--blue-dark);
 
             font-weight: 800;
 
             letter-spacing: -3px;
 
             margin-bottom: 25px;
-
-            white-space: nowrap;
         }
 
         .about-title span {
@@ -225,104 +221,91 @@ $nama = $_SESSION['nama'];
         }
 
         .intro {
-            color: var(--blue-dark);
-
             font-size: 17px;
+            line-height: 1.65;
 
-            line-height: 1.55;
+            color: var(--blue-dark);
 
             font-weight: 600;
 
-            max-width: 650px;
+            max-width: 610px;
 
             margin-bottom: 20px;
         }
 
         .description {
-            color: #657f9e;
-
             font-size: 13px;
-
             line-height: 1.8;
 
-            max-width: 680px;
+            color: #687f9c;
 
-            margin-bottom: 10px;
+            max-width: 620px;
+
+            margin-bottom: 12px;
         }
-
-        .description strong {
-            color: var(--blue-dark);
-        }
-
 
         /* =========================
            DATA DIRI
         ========================= */
 
         .profile-info {
-            margin-top: 25px;
+            margin-top: 27px;
 
-            padding-top: 20px;
+            display: grid;
+
+            grid-template-columns:
+                120px
+                1fr;
+
+            row-gap: 9px;
+
+            max-width: 520px;
 
             border-top: 1px solid var(--line);
 
-            max-width: 620px;
+            padding-top: 20px;
         }
 
-        .profile-row {
-            display: grid;
+        .profile-info .label {
+            font-size: 11px;
+            color: #91a3b9;
+        }
 
-            grid-template-columns: 95px 1fr;
-
-            margin-bottom: 9px;
-
+        .profile-info .value {
             font-size: 12px;
-        }
-
-        .profile-row .label-info {
-            color: #91a4bb;
-        }
-
-        .profile-row .value {
-            color: var(--blue-dark);
             font-weight: 600;
+            color: var(--text);
         }
-
 
         /* =========================
-           FOTO KANAN
+           FOTO
         ========================= */
 
-        .about-right {
+        .photo-area {
             display: flex;
 
-            flex-direction: column;
-
-            align-items: center;
-
             justify-content: center;
-
-            text-align: center;
+            align-items: center;
         }
 
-        .photo-wrapper {
-            width: 205px;
-            height: 205px;
+        .photo-frame {
+            width: 220px;
+            height: 220px;
 
             border-radius: 50%;
 
             overflow: hidden;
 
-            border: 7px solid #ffffff;
+            border: 7px solid white;
 
-            outline: 1px solid var(--line);
+            box-shadow:
+                0 0 0 1px var(--line),
+                0 12px 30px rgba(32, 62, 104, .12);
 
-            box-shadow: 0 12px 30px rgba(32, 62, 104, .12);
-
-            background: var(--blue-soft);
+            background: #edf5ff;
         }
 
-        .photo-wrapper img {
+        .photo-frame img {
             width: 100%;
             height: 100%;
 
@@ -333,120 +316,86 @@ $nama = $_SESSION['nama'];
             display: block;
         }
 
-        .photo-name {
-            margin-top: 22px;
-
-            color: var(--blue-dark);
-
-            font-size: 17px;
-
-            font-weight: 700;
-        }
-
-        .photo-role {
-            margin-top: 5px;
-
-            color: var(--muted);
-
-            font-size: 12px;
-
-            line-height: 1.6;
-
-            max-width: 230px;
-        }
-
-
         /* =========================
-           FOOTER
+           FOOTER TEXT
         ========================= */
 
-        .footer {
-            text-align: center;
+        .bottom-text {
+            margin-top: 22px;
+
+            font-size: 11px;
 
             color: #9aabc0;
 
-            font-size: 10px;
-
-            margin-top: 22px;
+            text-align: center;
         }
-
 
         /* =========================
            RESPONSIVE
         ========================= */
 
-        @media (max-width: 1000px) {
+        @media (max-width: 950px) {
 
-            .about-container {
-                grid-template-columns: 1fr .65fr;
+            .about-section {
+                grid-template-columns: 1fr;
+                text-align: center;
 
-                padding: 45px;
+                padding: 50px 35px;
 
-                column-gap: 30px;
+                row-gap: 45px;
             }
 
-            .about-title {
-                font-size: 52px;
+            .about-text {
+                max-width: 100%;
             }
 
-            .photo-wrapper {
-                width: 175px;
-                height: 175px;
+            .intro,
+            .description {
+                margin-left: auto;
+                margin-right: auto;
             }
+
+            .profile-info {
+                margin-left: auto;
+                margin-right: auto;
+
+                text-align: left;
+            }
+
+            .photo-area {
+                order: -1;
+            }
+
         }
 
-
-        @media (max-width: 800px) {
+        @media (max-width: 768px) {
 
             .sidebar {
                 position: relative;
 
                 width: 100%;
-
                 height: auto;
             }
 
             .main {
                 margin-left: 0;
 
-                padding: 25px;
+                padding: 25px 20px;
             }
 
-            .about-container {
-                grid-template-columns: 1fr;
-
-                text-align: center;
-
-                padding: 40px 30px;
-
-                row-gap: 45px;
-            }
-
-            .about-left {
-                padding: 0;
+            .about-section {
+                padding: 40px 25px;
             }
 
             .about-title {
                 font-size: 48px;
-
-                white-space: normal;
             }
 
-            .intro,
-            .description,
-            .profile-info {
-                margin-left: auto;
-                margin-right: auto;
-            }
-
-            .profile-row {
-                text-align: left;
-            }
-
-            .photo-wrapper {
+            .photo-frame {
                 width: 180px;
                 height: 180px;
             }
+
         }
 
     </style>
@@ -456,17 +405,21 @@ $nama = $_SESSION['nama'];
 <body>
 
 
-<!-- =====================================================
+<!-- =========================
      SIDEBAR
-===================================================== -->
+========================= -->
 
 <div class="sidebar">
 
     <div class="brand">
 
-        <h5>Sistem Pelanggaran</h5>
+        <h5>
+            Sistem Pelanggaran
+        </h5>
 
-        <small>SMK Muhammadiyah</small>
+        <small>
+            SMK Muhammadiyah
+        </small>
 
     </div>
 
@@ -556,16 +509,18 @@ $nama = $_SESSION['nama'];
 </div>
 
 
-<!-- =====================================================
+<!-- =========================
      MAIN
-===================================================== -->
+========================= -->
 
 <div class="main">
 
 
     <div class="topbar">
 
-        <h3>About Me</h3>
+        <h3>
+            About Me
+        </h3>
 
         <p>
             Mengenal lebih dekat pengembang Sistem Pelanggaran
@@ -574,54 +529,63 @@ $nama = $_SESSION['nama'];
     </div>
 
 
-    <!-- =================================================
-         ABOUT CONTENT
-    ================================================= -->
+    <!-- =========================
+         ABOUT
+    ========================= -->
 
-    <div class="about-container">
+    <section class="about-section">
 
 
-        <!-- ================= LEFT ================= -->
+        <!-- TEXT -->
 
-        <div class="about-left">
+        <div class="about-text">
 
-            <div class="label">
+            <div class="small-title">
                 PROFILE
             </div>
 
 
             <h1 class="about-title">
-                ABOUT <span>ME.</span>
+                ABOUT<br>
+                <span>ME.</span>
             </h1>
 
 
             <p class="intro">
-                Saya adalah seorang siswi yang memiliki
-                ketertarikan pada dunia teknologi, khususnya
-                dalam pengembangan website dan sistem informasi.
+                Saya adalah seorang siswi yang memiliki ketertarikan
+                pada dunia teknologi, khususnya dalam pengembangan
+                website dan sistem informasi.
             </p>
 
 
             <p class="description">
                 Halo, saya <strong>Nadia Zulfa</strong>, siswi
                 SMK Muhammadiyah Kota Tasikmalaya dari jurusan
-                Rekayasa Perangkat Lunak.
+                Rekayasa Perangkat Lunak. Saya sedang mempelajari
+                bagaimana sebuah sistem dapat dirancang agar
+                memiliki tampilan yang sederhana, terstruktur,
+                dan mudah digunakan.
             </p>
 
 
             <p class="description">
-                Saya sedang mempelajari HTML, CSS, PHP,
-                JavaScript, dan MySQL. Saya tertarik membuat
-                website yang sederhana, terstruktur, dan mudah
-                digunakan.
+                Dalam proses pembelajaran, saya mempelajari berbagai
+                teknologi seperti HTML, CSS, PHP, JavaScript,
+                serta database MySQL. Saya juga belajar memahami
+                bagaimana membuat sebuah website mulai dari
+                perancangan database, proses login, pengelolaan
+                data, hingga penyajian informasi kepada pengguna.
             </p>
 
 
             <p class="description">
-                Sistem Pelanggaran ini merupakan salah satu
-                project pembelajaran saya untuk menerapkan
-                kemampuan pemrograman, database, dan perancangan
-                antarmuka.
+                Sistem Pelanggaran ini merupakan salah satu project
+                pembelajaran yang saya kembangkan sebagai penerapan
+                dari ilmu Rekayasa Perangkat Lunak. Melalui project
+                ini, saya belajar menggabungkan kemampuan pemrograman,
+                pengelolaan database, dan perancangan antarmuka
+                menjadi sebuah sistem yang dapat digunakan untuk
+                membantu pengelolaan data pelanggaran di sekolah.
             </p>
 
 
@@ -629,55 +593,39 @@ $nama = $_SESSION['nama'];
 
             <div class="profile-info">
 
-                <div class="profile-row">
+                <div class="label">
+                    Nama
+                </div>
 
-                    <div class="label-info">
-                        Nama
-                    </div>
-
-                    <div class="value">
-                        Nadia Zulfa
-                    </div>
-
+                <div class="value">
+                    Nadia Zulfa
                 </div>
 
 
-                <div class="profile-row">
+                <div class="label">
+                    Sekolah
+                </div>
 
-                    <div class="label-info">
-                        Sekolah
-                    </div>
-
-                    <div class="value">
-                        SMK Muhammadiyah Kota Tasikmalaya
-                    </div>
-
+                <div class="value">
+                    SMK Muhammadiyah Kota Tasikmalaya
                 </div>
 
 
-                <div class="profile-row">
+                <div class="label">
+                    Jurusan
+                </div>
 
-                    <div class="label-info">
-                        Jurusan
-                    </div>
-
-                    <div class="value">
-                        Rekayasa Perangkat Lunak
-                    </div>
-
+                <div class="value">
+                    Rekayasa Perangkat Lunak
                 </div>
 
 
-                <div class="profile-row">
+                <div class="label">
+                    Project
+                </div>
 
-                    <div class="label-info">
-                        Project
-                    </div>
-
-                    <div class="value">
-                        Sistem Pelanggaran Sekolah
-                    </div>
-
+                <div class="value">
+                    Sistem Pelanggaran Sekolah
                 </div>
 
             </div>
@@ -685,42 +633,26 @@ $nama = $_SESSION['nama'];
         </div>
 
 
-        <!-- ================= RIGHT ================= -->
+        <!-- FOTO -->
 
-        <div class="about-right">
+        <div class="photo-area">
 
-
-            <div class="photo-wrapper">
+            <div class="photo-frame">
 
                 <img
                     src="assets/foto-nadia.png.png"
                     alt="Foto Nadia"
-                    onerror="
-                        this.style.display='none';
-                    "
                 >
 
             </div>
 
-
-            <div class="photo-name">
-                Nadia Zulfa
-            </div>
-
-
-            <div class="photo-role">
-                Student Developer<br>
-                Rekayasa Perangkat Lunak
-            </div>
-
-
         </div>
 
 
-    </div>
+    </section>
 
 
-    <div class="footer">
+    <div class="bottom-text">
         Sistem Pelanggaran Sekolah · Project Rekayasa Perangkat Lunak
     </div>
 
