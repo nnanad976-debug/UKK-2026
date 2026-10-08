@@ -2,39 +2,58 @@
 
 session_start();
 
-include "config/koneksi.php";
+include __DIR__ . "/config/koneksi.php";
 
-$email = $_POST['email'] ?? '';
-$password = $_POST['password'] ?? '';
-
-$query = mysqli_query(
-    $koneksi,
-    "SELECT * FROM t_users WHERE email='$email'"
-);
-
-$user = mysqli_fetch_assoc($query);
-
-if ($user && password_verify($password, $user['password'])) {
-
-    $_SESSION['login'] = true;
-    $_SESSION['user_id'] = $user['id'];
-    $_SESSION['nama'] = $user['name'];
-    $_SESSION['email'] = $user['email'];
-    $_SESSION['role'] = $user['role'];
-
-    // TES SESSION
-    echo "LOGIN BERHASIL<br>";
-    echo "Nama: " . $_SESSION['nama'] . "<br>";
-    echo "Role: " . $_SESSION['role'] . "<br>";
-    echo "Session login: " . $_SESSION['login'];
-
-    echo '<br><br><a href="dashboard.php">MASUK DASHBOARD</a>';
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: login.php");
     exit;
 }
 
-echo "LOGIN GAGAL";
-echo "<br>Email atau password salah";
-echo '<br><br><a href="login.php">Kembali ke Login</a>';
-exit;
+$email = trim($_POST['email'] ?? '');
+$password = $_POST['password'] ?? '';
 
+if ($email === '' || $password === '') {
+    $_SESSION['pesan_error'] = 'Email dan password wajib diisi.';
+    header("Location: login.php");
+    exit;
+}
+
+$email = mysqli_real_escape_string($koneksi, $email);
+
+$query = mysqli_query(
+    $koneksi,
+    "SELECT id, name, email, password, role
+     FROM t_users
+     WHERE email = '$email'
+     LIMIT 1"
+);
+
+if (!$query) {
+    die("Query login gagal: " . mysqli_error($koneksi));
+}
+
+$user = mysqli_fetch_assoc($query);
+
+if (!$user || !password_verify($password, $user['password'])) {
+    $_SESSION['pesan_error'] = 'Email atau password salah.';
+    header("Location: login.php");
+    exit;
+}
+
+if ($user['role'] !== 'admin' && $user['role'] !== 'guru') {
+    $_SESSION['pesan_error'] = 'Role akun tidak valid.';
+    header("Location: login.php");
+    exit;
+}
+
+session_regenerate_id(true);
+
+$_SESSION['login']   = true;
+$_SESSION['user_id'] = $user['id'];
+$_SESSION['nama']    = $user['name'];
+$_SESSION['email']   = $user['email'];
+$_SESSION['role']    = $user['role'];
+
+header("Location: dashboard.php");
+exit;
 ?>

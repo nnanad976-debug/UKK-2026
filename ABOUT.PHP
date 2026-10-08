@@ -37,127 +37,143 @@ $nama = $_SESSION['nama'];
             color: var(--text);
         }
 
-        /* =========================
-           SIDEBAR
-        ========================= */
+       /* =========================
+   SIDEBAR — SAMAKAN DENGAN DASHBOARD
+========================= */
 
-        .sidebar {
-            position: fixed;
-            left: 0;
-            top: 0;
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
 
-            width: 214px;
-            height: 100vh;
+    width: 282px;
+    height: 100vh;
 
-            background: white;
-            border-right: 1px solid var(--line);
+    background: white;
+    border-right: 1px solid var(--line);
 
-            padding: 23px 14px;
+    padding: 25px 14px 16px;
 
-            display: flex;
-            flex-direction: column;
+    display: flex;
+    flex-direction: column;
 
-            overflow-y: auto;
-        }
+    overflow-y: auto;
 
-        .brand {
-            padding: 0 9px 20px;
-            border-bottom: 1px solid var(--line);
-            margin-bottom: 20px;
-        }
+    z-index: 1000;
+}
 
-        .brand h5 {
-            font-size: 14px;
-            color: var(--blue-dark);
-            margin-bottom: 5px;
-        }
+.brand {
+    padding: 0 15px 22px;
 
-        .brand small {
-            font-size: 11px;
-            color: var(--muted);
-        }
+    border-bottom: 1px solid var(--line);
 
-        .menu-title {
-            font-size: 10px;
-            font-weight: 700;
-            color: #9aabc0;
-            text-transform: uppercase;
+    margin-bottom: 22px;
+}
 
-            margin: 10px 9px 8px;
-            letter-spacing: .4px;
-        }
+.brand h5 {
+    font-size: 18px;
+    font-weight: 700;
 
-        .menu-link {
-            display: block;
+    color: var(--blue-dark);
 
-            padding: 9px 10px;
-            margin-bottom: 3px;
+    margin-bottom: 5px;
+}
 
-            border-radius: 7px;
+.brand small {
+    font-size: 12px;
+    color: var(--muted);
+}
 
-            color: var(--text);
-            text-decoration: none;
+.menu-title {
+    font-size: 10px;
+    font-weight: 700;
 
-            font-size: 12px;
+    color: #9aabc0;
 
-            transition: .2s;
-        }
+    text-transform: uppercase;
 
-        .menu-link:hover {
-            background: #edf5ff;
-            color: var(--blue);
-        }
+    margin: 0 15px 10px;
 
-        .menu-link.active {
-            background: #e9f3ff;
-            color: var(--blue);
-            font-weight: 600;
-        }
+    letter-spacing: 1px;
+}
 
-        .logout {
-            margin-top: auto;
+.menu-link {
+    display: flex;
+    align-items: center;
 
-            padding-top: 14px;
+    min-height: 43px;
 
-            border-top: 1px solid var(--line);
-        }
+    padding: 10px 15px;
 
-        .logout a {
-            display: block;
+    margin-bottom: 3px;
 
-            padding: 9px 10px;
+    border-radius: 10px;
 
-            color: #d9534f;
-            text-decoration: none;
+    color: #5e7695;
 
-            font-size: 12px;
-        }
+    text-decoration: none;
 
-        /* =========================
-           MAIN
-        ========================= */
+    font-size: 13px;
 
-        .main {
-            margin-left: 214px;
-            min-height: 100vh;
+    transition: .2s;
+}
 
-            padding: 35px 45px;
-        }
+.menu-link:hover {
+    background: #edf5ff;
+    color: var(--blue);
+}
 
-        .topbar {
-            margin-bottom: 28px;
-        }
+.menu-link.active {
+    background: #e9f3ff;
 
-        .topbar h3 {
-            font-size: 20px;
-            color: var(--blue-dark);
-            margin-bottom: 5px;
-        }
+    color: var(--blue);
 
-        .topbar p {
-            font-size: 13px;
-            color: var(--muted);
-        }
+    font-weight: 600;
+
+    box-shadow: inset 4px 0 0 var(--blue);
+}
+
+.logout {
+    margin-top: auto;
+
+    padding-top: 14px;
+
+    border-top: 1px solid var(--line);
+}
+
+.logout a {
+    display: flex;
+    align-items: center;
+
+    min-height: 43px;
+
+    padding: 10px 15px;
+
+    border-radius: 10px;
+
+    color: #d9534f;
+
+    text-decoration: none;
+
+    font-size: 13px;
+}
+
+.logout a:hover {
+    background: #fff0ef;
+}
+
+
+/* =========================
+   MAIN — SESUAI DASHBOARD
+========================= */
+
+.main {
+    margin-left: 282px;
+
+    min-height: 100vh;
+
+    padding: 24px 28px 40px;
+}
 
         /* =========================
            ABOUT SECTION
@@ -559,7 +575,7 @@ $nama = $_SESSION['nama'];
 
 
             <p class="description">
-                Halo, saya <strong>Nadia Zulfa</strong>, siswi
+                Halo, saya <strong>Nadia Zulfa Soraya</strong>, siswi
                 SMK Muhammadiyah Kota Tasikmalaya dari jurusan
                 Rekayasa Perangkat Lunak. Saya sedang mempelajari
                 bagaimana sebuah sistem dapat dirancang agar
