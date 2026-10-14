@@ -1,4 +1,3 @@
-```php
 <?php
 include __DIR__ . "/middleware/auth.php";
 
@@ -590,4 +589,3 @@ $nama = $_SESSION['nama'] ?? 'User';
 
 </body>
 </html>
-```
