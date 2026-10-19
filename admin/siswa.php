@@ -399,47 +399,73 @@ if (!$query) {
             font-size: 14px;
         }
 
-        /* DATATABLES */
-        .dt-container {
-            color: #5e7695;
-            font-size: 13px;
+        /* DATATABLES - disamakan dengan halaman Kelola Guru */
+        .dt-container .dt-layout-row {
+            margin: 12px 0;
         }
 
-        .dt-container .dt-search input,
+        .dt-container .dt-layout-row:first-child {
+            margin-top: 22px;
+            margin-bottom: 8px;
+        }
+
+        .dt-container .dt-layout-cell {
+            display: flex;
+            align-items: center;
+        }
+
+        .dt-container .dt-length,
+        .dt-container .dt-search {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dt-container .dt-length label,
+        .dt-container .dt-search label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
         .dt-container .dt-length select {
+            width: 45px !important;
+            min-width: 45px;
+            height: 38px;
+            padding: 6px 5px;
             border: 1px solid #d7e3ef;
             border-radius: 7px;
-            padding: 7px 10px;
+            background-color: #fff;
             color: #344b63;
-            background: #fff;
         }
 
-        .dt-container .dt-search input:focus,
-        .dt-container .dt-length select:focus {
-            border-color: #8eb5d8;
+        .dt-container .dt-search input {
+            width: 175px;
+            height: 38px;
+            padding: 7px 12px;
+            border: 1px solid #d7e3ef;
+            border-radius: 7px;
+            margin-left: 0 !important;
+        }
+
+        .dt-container .dt-length select:focus,
+        .dt-container .dt-search input:focus {
             outline: none;
+            border-color: #8eb5d8;
             box-shadow: 0 0 0 .15rem rgba(87, 143, 190, .14);
         }
 
-        .dt-container .dt-paging .dt-paging-button {
-            border-radius: 6px !important;
-            color: #426584 !important;
+        .dt-container .dt-layout-table {
+            margin-top: 8px;
         }
 
-        .dt-container .dt-paging .dt-paging-button.current {
-            background: #5f91ba !important;
-            color: #fff !important;
-            border: 1px solid #5f91ba !important;
-        }
-
-        .dt-container .dt-paging .dt-paging-button:hover {
-            background: #eaf3ff !important;
-            color: #234e78 !important;
-            border: 1px solid #d8e5f1 !important;
-        }
-
-        .dt-container .dt-info {
-            padding-top: 12px;
+        @media (max-width: 576px) {
+            .dt-container .dt-search input {
+                width: 140px;
+            }
         }
 
         .table-responsive {
@@ -875,10 +901,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 emptyTable: 'Belum ada data siswa',
 
                 paginate: {
-                    first: 'Pertama',
-                    last: 'Terakhir',
-                    next: 'Berikutnya',
-                    previous: 'Sebelumnya'
+                    previous: 'Sebelumnya',
+                    next: 'Berikutnya'
                 }
             },
 

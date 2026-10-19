@@ -1,4 +1,3 @@
-```php
 <?php
 include "../middleware/auth.php";
 include "../config/koneksi.php";
@@ -135,6 +134,7 @@ if (!$query) {
 <title>Kelola Kelas</title>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.datatables.net/2.3.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 
 <style>
 :root {
@@ -335,6 +335,101 @@ a { text-decoration: none; }
 .status-nonaktif { background: #fce9e9; color: #a34f4f; }
 .keterangan { color: #71849a; font-size: 14px; }
 
+
+/* Kontrol tabel dibuat seragam dan rapi seperti halaman Data Siswa */
+#tabelKelas_wrapper .dt-layout-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin: 10px 0;
+}
+
+#tabelKelas_wrapper .dt-layout-row:first-child {
+    margin-top: 22px;
+    margin-bottom: 8px;
+}
+
+#tabelKelas_wrapper .dt-layout-cell {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+#tabelKelas_wrapper .dt-length,
+#tabelKelas_wrapper .dt-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+
+#tabelKelas_wrapper .dt-length label,
+#tabelKelas_wrapper .dt-search label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: #344b63;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+#tabelKelas_wrapper .dt-length select {
+    width: 45px !important;
+    min-width: 45px;
+    height: 38px;
+    margin: 0 !important;
+    padding: 6px 4px;
+    border: 1px solid #d7e3ef;
+    border-radius: 7px;
+    background-color: #fff;
+    color: #344b63;
+    font-size: 13px;
+}
+
+#tabelKelas_wrapper .dt-search input {
+    width: 175px;
+    height: 38px;
+    margin: 0 !important;
+    padding: 7px 12px;
+    border: 1px solid #d7e3ef;
+    border-radius: 7px;
+    color: #344b63;
+    font-size: 13px;
+}
+
+#tabelKelas_wrapper .dt-length select:focus,
+#tabelKelas_wrapper .dt-search input:focus {
+    outline: none;
+    border-color: #8eb5d8;
+    box-shadow: 0 0 0 .15rem rgba(87, 143, 190, .14);
+}
+
+#tabelKelas_wrapper .dt-layout-table {
+    margin-top: 8px;
+}
+
+#tabelKelas_wrapper .dt-info,
+#tabelKelas_wrapper .dt-paging {
+    font-size: 13px;
+    color: #5e7695;
+}
+
+#tabelKelas_wrapper .dt-paging .dt-paging-button {
+    border-radius: 6px !important;
+}
+
+@media (max-width: 576px) {
+    #tabelKelas_wrapper .dt-layout-row {
+        flex-wrap: wrap;
+    }
+
+    #tabelKelas_wrapper .dt-search input {
+        width: 145px;
+    }
+}
+
 @media (max-width: 900px) {
     .sidebar {
         position: relative;
@@ -465,7 +560,7 @@ a { text-decoration: none; }
             </p>
 
             <div class="table-responsive">
-                <table class="table table-bordered table-hover align-middle">
+                <table id="tabelKelas" class="table table-bordered table-hover align-middle">
                     <thead>
                     <tr>
                         <th style="width:60px">No</th>
@@ -509,13 +604,6 @@ a { text-decoration: none; }
                         </tr>
                     <?php } ?>
 
-                    <?php if (mysqli_num_rows($query) === 0) { ?>
-                        <tr>
-                            <td colspan="6" class="text-center text-muted py-4">
-                                Belum ada data kelas.
-                            </td>
-                        </tr>
-                    <?php } ?>
                     </tbody>
                 </table>
             </div>
@@ -526,6 +614,29 @@ a { text-decoration: none; }
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.min.js"></script>
+<script>
+$(document).ready(function () {
+    $('#tabelKelas').DataTable({
+        pageLength: 10,
+        lengthMenu: [10, 25, 50, 100],
+        language: {
+            search: "Cari:",
+            lengthMenu: "Tampilkan _MENU_ data",
+            info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ kelas",
+            infoEmpty: "Belum ada data kelas",
+            zeroRecords: "Data kelas tidak ditemukan",
+            emptyTable: "Belum ada data kelas",
+            paginate: {
+                previous: "Sebelumnya",
+                next: "Berikutnya"
+            }
+        }
+    });
+});
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const tombol = document.getElementById('btnToggleKelas');
@@ -556,4 +667,3 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 </body>
 </html>
-```

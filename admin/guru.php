@@ -216,6 +216,67 @@ a { text-decoration:none; }
 .status-nonaktif { background:#fce9e9; color:#a34f4f; }
 .keterangan { color:#71849a; font-size:14px; }
 
+
+/* Kontrol DataTables dirapikan agar konsisten dengan halaman Data Siswa */
+.dt-container .dt-layout-row {
+    margin: 12px 0;
+}
+.dt-container .dt-layout-row:first-child {
+    margin-top: 22px;
+    margin-bottom: 8px;
+}
+.dt-container .dt-layout-cell {
+    display: flex;
+    align-items: center;
+}
+.dt-container .dt-length,
+.dt-container .dt-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.dt-container .dt-length label,
+.dt-container .dt-search label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 13px;
+    white-space: nowrap;
+}
+.dt-container .dt-length select {
+    width: 45px !important;
+    min-width: 45px;
+    height: 38px;
+    padding: 6px 5px;
+    border: 1px solid #d7e3ef;
+    border-radius: 7px;
+    background-color: #fff;
+    color: #344b63;
+}
+.dt-container .dt-search input {
+    width: 175px;
+    height: 38px;
+    padding: 7px 12px;
+    border: 1px solid #d7e3ef;
+    border-radius: 7px;
+    margin-left: 0 !important;
+}
+.dt-container .dt-length select:focus,
+.dt-container .dt-search input:focus {
+    outline: none;
+    border-color: #8eb5d8;
+    box-shadow: 0 0 0 .15rem rgba(87, 143, 190, .14);
+}
+.dt-container .dt-layout-table {
+    margin-top: 8px;
+}
+@media (max-width: 576px) {
+    .dt-container .dt-search input {
+        width: 140px;
+    }
+}
+
 @media(max-width:900px) {
     .sidebar {
         position:relative;
@@ -286,7 +347,7 @@ a { text-decoration:none; }
 
     <div class="collapse <?= $pesan != '' ? 'show' : ''; ?>" id="formTambahGuru">
         <div class="card mb-4">
-            <div class="card-body">
+            <div clAass="card-body">
                 <h4 class="mb-4">Tambah Data Guru</h4>
 
                 <?php if ($pesan != ''): ?>
