@@ -1,10 +1,14 @@
+```php
 <?php
 include "../middleware/auth.php";
 include "../config/koneksi.php";
 
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
-    echo "Anda tidak memiliki akses";
-    exit;
+    exit("Anda tidak memiliki akses");
+}
+
+function e($value) {
+    return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
 $pesan = "";
@@ -32,14 +36,27 @@ $batas_kelas = [
     'BD'  => ['X' => 1, 'XI' => 1, 'XII' => 1]
 ];
 
+/* PESAN BERHASIL */
+if (isset($_GET['berhasil'])) {
+    $pesan = "Data kelas berhasil disimpan!";
+    $jenis_pesan = "success";
+} elseif (isset($_GET['berhasil_edit'])) {
+    $pesan = "Data kelas berhasil diperbarui!";
+    $jenis_pesan = "success";
+} elseif (isset($_GET['berhasil_hapus'])) {
+    $pesan = "Data kelas berhasil dihapus!";
+    $jenis_pesan = "success";
+}
+
+/* TAMBAH KELAS */
 if (isset($_POST['simpan'])) {
     $tingkat = trim($_POST['tingkat'] ?? '');
     $jurusan = trim($_POST['jurusan'] ?? '');
-    $nomor = filter_var(
-        $_POST['nomor'] ?? '',
+    $nomor = filter_var($_POST['nomor'] ?? '', FILTER_VALIDATE_INT);
+    $status_aktif = filter_var(
+        $_POST['status_aktif'] ?? '',
         FILTER_VALIDATE_INT
     );
-    $status_aktif = (int)($_POST['status_aktif'] ?? 1);
 
     if (
         !isset($urutan_tingkat[$tingkat]) ||
@@ -74,7 +91,7 @@ if (isset($_POST['simpan'])) {
             $pesan = "Kelas $nama sudah terdaftar.";
             $jenis_pesan = "danger";
         } else {
-            $query_simpan = mysqli_query(
+            $simpan = mysqli_query(
                 $koneksi,
                 "INSERT INTO t_kelas
                     (nama, tingkat, jurusan, status_aktif)
@@ -82,23 +99,18 @@ if (isset($_POST['simpan'])) {
                     ('$nama_db', '$tingkat_db', '$jurusan_db', $status_aktif)"
             );
 
-            if ($query_simpan) {
+            if ($simpan) {
                 header("Location: kelas.php?berhasil=1");
                 exit;
             } else {
-                $pesan = "Data kelas gagal disimpan: " .
-                    mysqli_error($koneksi);
+                $pesan = "Data kelas gagal disimpan: " . mysqli_error($koneksi);
                 $jenis_pesan = "danger";
             }
         }
     }
 }
 
-if (isset($_GET['berhasil'])) {
-    $pesan = "Data kelas berhasil disimpan!";
-    $jenis_pesan = "success";
-}
-
+/* AMBIL DATA KELAS */
 $query = mysqli_query(
     $koneksi,
     "SELECT * FROM t_kelas
@@ -122,8 +134,7 @@ $query = mysqli_query(
 );
 
 if (!$query) {
-    die("Gagal mengambil data kelas: " .
-        htmlspecialchars(mysqli_error($koneksi)));
+    die("Gagal mengambil data kelas: " . e(mysqli_error($koneksi)));
 }
 ?>
 <!DOCTYPE html>
@@ -145,7 +156,9 @@ if (!$query) {
     --line: #dce9f8;
 }
 
-* { box-sizing: border-box; }
+* {
+    box-sizing: border-box;
+}
 
 body {
     margin: 0;
@@ -154,7 +167,9 @@ body {
     font-family: "Segoe UI", Arial, sans-serif;
 }
 
-a { text-decoration: none; }
+a {
+    text-decoration: none;
+}
 
 .sidebar {
     position: fixed;
@@ -183,7 +198,10 @@ a { text-decoration: none; }
     margin-bottom: 5px;
 }
 
-.brand-subtitle { font-size: 12px; color: var(--muted); }
+.brand-subtitle {
+    font-size: 12px;
+    color: var(--muted);
+}
 
 .menu-title {
     font-size: 10px;
@@ -194,7 +212,11 @@ a { text-decoration: none; }
     margin: 0 15px 10px;
 }
 
-.menu { display: flex; flex-direction: column; gap: 3px; }
+.menu {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
 
 .menu-link {
     min-height: 43px;
@@ -224,8 +246,14 @@ a { text-decoration: none; }
     border-top: 1px solid var(--line);
 }
 
-.logout .menu-link { color: #d9534f; }
-.logout .menu-link:hover { background: #fff0ef; color: #c03935; }
+.logout .menu-link {
+    color: #d9534f;
+}
+
+.logout .menu-link:hover {
+    background: #fff0ef;
+    color: #c03935;
+}
 
 .main {
     margin-left: 282px;
@@ -240,7 +268,10 @@ a { text-decoration: none; }
     padding: 0 !important;
 }
 
-.judul, h4 { color: #234e78; }
+.judul,
+h4 {
+    color: #234e78;
+}
 
 .card {
     border: 1px solid #e1eaf4 !important;
@@ -248,20 +279,24 @@ a { text-decoration: none; }
     box-shadow: 0 3px 12px rgba(35,78,120,.05) !important;
 }
 
-.card-body { padding: 24px; }
+.card-body {
+    padding: 24px;
+}
 
 .form-label {
     color: #405873;
     font-weight: 600;
 }
 
-.form-control, .form-select {
+.form-control,
+.form-select {
     border-color: #d7e3ef;
     border-radius: 7px;
     padding: 10px 12px;
 }
 
-.form-control:focus, .form-select:focus {
+.form-control:focus,
+.form-select:focus {
     border-color: #8eb5d8;
     box-shadow: 0 0 0 .2rem rgba(87,143,190,.14);
 }
@@ -297,7 +332,9 @@ a { text-decoration: none; }
     border-radius: 6px;
 }
 
-.btn-sm { padding: 5px 11px; }
+.btn-sm {
+    padding: 5px 11px;
+}
 
 .table {
     color: #344b63;
@@ -323,7 +360,8 @@ a { text-decoration: none; }
     --bs-table-accent-bg: #f4f8fc;
 }
 
-.status-aktif, .status-nonaktif {
+.status-aktif,
+.status-nonaktif {
     display: inline-block;
     padding: 5px 10px;
     border-radius: 20px;
@@ -331,12 +369,22 @@ a { text-decoration: none; }
     font-weight: 600;
 }
 
-.status-aktif { background: #e4f3e9; color: #34734b; }
-.status-nonaktif { background: #fce9e9; color: #a34f4f; }
-.keterangan { color: #71849a; font-size: 14px; }
+.status-aktif {
+    background: #e4f3e9;
+    color: #34734b;
+}
 
+.status-nonaktif {
+    background: #fce9e9;
+    color: #a34f4f;
+}
 
-/* Kontrol tabel dibuat seragam dan rapi seperti halaman Data Siswa */
+.keterangan {
+    color: #71849a;
+    font-size: 14px;
+}
+
+/* Perbaikan tombol dan kontrol DataTables */
 #tabelKelas_wrapper .dt-layout-row {
     display: flex;
     align-items: center;
@@ -376,14 +424,14 @@ a { text-decoration: none; }
 }
 
 #tabelKelas_wrapper .dt-length select {
-    width: 45px !important;
-    min-width: 45px;
+    width: 55px !important;
+    min-width: 55px;
     height: 38px;
     margin: 0 !important;
     padding: 6px 4px;
     border: 1px solid #d7e3ef;
     border-radius: 7px;
-    background-color: #fff;
+    background: #fff;
     color: #344b63;
     font-size: 13px;
 }
@@ -403,7 +451,7 @@ a { text-decoration: none; }
 #tabelKelas_wrapper .dt-search input:focus {
     outline: none;
     border-color: #8eb5d8;
-    box-shadow: 0 0 0 .15rem rgba(87, 143, 190, .14);
+    box-shadow: 0 0 0 .15rem rgba(87,143,190,.14);
 }
 
 #tabelKelas_wrapper .dt-layout-table {
@@ -418,6 +466,27 @@ a { text-decoration: none; }
 
 #tabelKelas_wrapper .dt-paging .dt-paging-button {
     border-radius: 6px !important;
+}
+
+/* Pastikan tombol aksi tidak tertutup elemen lain */
+#tabelKelas td:last-child {
+    position: relative;
+    z-index: 2;
+    white-space: nowrap;
+}
+
+#tabelKelas td:last-child a {
+    position: relative;
+    z-index: 3;
+    display: inline-block;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+#tabelKelas_wrapper,
+#tabelKelas_wrapper .dt-layout-table,
+#tabelKelas {
+    position: relative;
 }
 
 @media (max-width: 576px) {
@@ -437,20 +506,27 @@ a { text-decoration: none; }
         height: auto;
         min-height: auto;
     }
+
     .main {
         margin-left: 0;
         padding: 18px 14px 30px;
     }
-    .logout { margin-top: 14px; }
+
+    .logout {
+        margin-top: 14px;
+    }
 }
 
 @media (max-width: 576px) {
-    .card-body { padding: 17px; }
+    .card-body {
+        padding: 17px;
+    }
 }
 </style>
 </head>
 
 <body>
+
 <aside class="sidebar">
     <div class="brand">
         <div class="brand-title">Sistem Pelanggaran</div>
@@ -482,7 +558,10 @@ a { text-decoration: none; }
 <div class="container py-4">
 
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
-        <a href="../dashboard.php" class="btn btn-secondary">&larr; Kembali ke Dashboard</a>
+        <a href="../dashboard.php" class="btn btn-secondary">
+            &larr; Kembali ke Dashboard
+        </a>
+
         <button type="button" class="btn btn-primary" id="btnToggleKelas">
             + Tambah Data Kelas
         </button>
@@ -495,15 +574,16 @@ a { text-decoration: none; }
         </div>
     </div>
 
-    <div class="card mb-4 <?= ($pesan !== '' && $jenis_pesan === 'danger') ? '' : 'd-none'; ?>" id="formTambahKelas">
+    <?php if ($pesan !== '') { ?>
+        <div class="alert alert-<?= e($jenis_pesan); ?> alert-dismissible fade show" role="alert">
+            <?= e($pesan); ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php } ?>
+
+    <div class="card mb-4 d-none" id="formTambahKelas">
         <div class="card-body">
             <h4 class="mb-4">Tambah Data Kelas</h4>
-
-            <?php if ($pesan !== '') { ?>
-                <div class="alert alert-<?= htmlspecialchars($jenis_pesan); ?>">
-                    <?= htmlspecialchars($pesan); ?>
-                </div>
-            <?php } ?>
 
             <form method="POST" action="kelas.php">
                 <div class="mb-3">
@@ -533,7 +613,7 @@ a { text-decoration: none; }
                     <input type="number" name="nomor" class="form-control"
                            min="1" max="5" placeholder="Contoh: 1" required>
                     <small class="text-muted">
-                        Nama kelas akan dibuat otomatis, misalnya X TKR 1.
+                        Nama kelas dibuat otomatis, misalnya X TKR 1.
                     </small>
                 </div>
 
@@ -579,9 +659,9 @@ a { text-decoration: none; }
                     ?>
                         <tr>
                             <td><?= $no++; ?></td>
-                            <td><?= htmlspecialchars($kelas['nama']); ?></td>
-                            <td><?= htmlspecialchars($kelas['tingkat']); ?></td>
-                            <td><?= htmlspecialchars($kelas['jurusan']); ?></td>
+                            <td><?= e($kelas['nama']); ?></td>
+                            <td><?= e($kelas['tingkat']); ?></td>
+                            <td><?= e($kelas['jurusan']); ?></td>
                             <td>
                                 <?php if ((int)$kelas['status_aktif'] === 1) { ?>
                                     <span class="status-aktif">Aktif</span>
@@ -592,7 +672,9 @@ a { text-decoration: none; }
                             <td>
                                 <div class="d-flex gap-2">
                                     <a href="edit_kelas.php?id=<?= (int)$kelas['id']; ?>"
-                                       class="btn btn-sm btn-primary">Edit</a>
+                                       class="btn btn-sm btn-primary">
+                                        Edit
+                                    </a>
 
                                     <a href="hapus_kelas.php?id=<?= (int)$kelas['id']; ?>"
                                        class="btn btn-sm btn-danger"
@@ -603,7 +685,6 @@ a { text-decoration: none; }
                             </td>
                         </tr>
                     <?php } ?>
-
                     </tbody>
                 </table>
             </div>
@@ -617,6 +698,7 @@ a { text-decoration: none; }
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/2.3.4/js/dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.min.js"></script>
+
 <script>
 $(document).ready(function () {
     $('#tabelKelas').DataTable({
@@ -636,8 +718,8 @@ $(document).ready(function () {
         }
     });
 });
-</script>
-<script>
+
+/* Buka dan tutup form tambah */
 document.addEventListener('DOMContentLoaded', function () {
     const tombol = document.getElementById('btnToggleKelas');
     const form = document.getElementById('formTambahKelas');
@@ -650,20 +732,15 @@ document.addEventListener('DOMContentLoaded', function () {
         if (tersembunyi) {
             form.classList.remove('d-none');
             tombol.textContent = 'Tutup Form';
-            tombol.setAttribute('aria-expanded', 'true');
             form.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else {
             form.classList.add('d-none');
             tombol.textContent = '+ Tambah Data Kelas';
-            tombol.setAttribute('aria-expanded', 'false');
         }
     });
-
-    if (!form.classList.contains('d-none')) {
-        tombol.textContent = 'Tutup Form';
-        tombol.setAttribute('aria-expanded', 'true');
-    }
 });
 </script>
+
 </body>
 </html>
+```

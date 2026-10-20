@@ -376,9 +376,6 @@ $nama = $_SESSION['nama'] ?? 'User';
                     Tindakan
                 </a>
 
-                <a href="guru/laporan.php" class="menu-link">
-                    Laporan
-                </a>
 
                 <a href="guru/riwayat.php" class="menu-link">
                     Riwayat

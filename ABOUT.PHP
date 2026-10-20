@@ -468,9 +468,7 @@ if (is_file($foto_path)) {
     <!-- MAIN -->
     <main class="main">
 
-        <div class="topbar">
-            <h3>About Me</h3>
-        </div>
+       
 
         <section class="about-section">
 
@@ -581,7 +579,125 @@ if (is_file($foto_path)) {
         </div>
 
     </main>
+<!-- GSAP LIBRARY -->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
 
+<script>
+    // Aktifkan plugin ScrollTrigger
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Animasi sidebar saat halaman dibuka
+    gsap.from(".sidebar", {
+        x: -40,
+        opacity: 0,
+        duration: 0.8,
+        ease: "power3.out"
+    });
+
+    // Animasi bagian About Me
+    gsap.from(".about-section", {
+        y: 40,
+        opacity: 0,
+        duration: 1,
+        delay: 0.2,
+        ease: "power3.out"
+    });
+
+    // Animasi judul ABOUT ME
+    gsap.from(".small-title, .about-title", {
+        y: 35,
+        opacity: 0,
+        duration: 1,
+        stagger: 0.2,
+        delay: 0.4,
+        ease: "power3.out"
+    });
+
+    // Animasi paragraf
+    gsap.from(".intro, .description", {
+        y: 25,
+        opacity: 0,
+        duration: 0.8,
+        stagger: 0.15,
+        delay: 0.7,
+        ease: "power2.out"
+    });
+
+    // Animasi data diri
+    gsap.from(".profile-info > div", {
+        y: 15,
+        opacity: 0,
+        duration: 0.6,
+        stagger: 0.1,
+        delay: 1,
+        ease: "power2.out"
+    });
+
+    // Animasi foto profil
+    gsap.from(".photo-frame", {
+        scale: 0.8,
+        opacity: 0,
+        rotation: -8,
+        duration: 1.2,
+        delay: 0.5,
+        ease: "back.out(1.7)"
+    });
+
+    // Efek hover foto profil
+    const foto = document.querySelector(".photo-frame");
+
+    if (foto) {
+        foto.addEventListener("mouseenter", function () {
+            gsap.to(foto, {
+                scale: 1.04,
+                duration: 0.3,
+                ease: "power2.out"
+            });
+        });
+
+        foto.addEventListener("mouseleave", function () {
+            gsap.to(foto, {
+                scale: 1,
+                duration: 0.3,
+                ease: "power2.out"
+            });
+        });
+    }
+
+    // Animasi menu sidebar ketika disentuh atau diarahkan mouse
+    document.querySelectorAll(".menu-link").forEach(function (menu) {
+        menu.addEventListener("mouseenter", function () {
+            if (!menu.classList.contains("active")) {
+                gsap.to(menu, {
+                    x: 5,
+                    duration: 0.2,
+                    ease: "power2.out"
+                });
+            }
+        });
+
+        menu.addEventListener("mouseleave", function () {
+            gsap.to(menu, {
+                x: 0,
+                duration: 0.2,
+                ease: "power2.out"
+            });
+        });
+    });
+
+    // Animasi footer ketika masuk ke layar
+    gsap.from(".bottom-text", {
+        scrollTrigger: {
+            trigger: ".bottom-text",
+            start: "top 95%"
+        },
+        y: 20,
+        opacity: 0,
+        duration: 0.8,
+        ease: "power2.out"
+    });
+</script>
 </body>
 </html>
 ```
