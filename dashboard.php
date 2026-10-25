@@ -363,7 +363,7 @@ $nama = $_SESSION['nama'] ?? 'User';
                 </a>
 
                 <a href="admin/cetak_export.php" class="menu-link">
-                    Cetak / Export
+                    Laporan
                 </a>
 
             <?php else: ?>

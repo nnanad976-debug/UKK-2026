@@ -1,4 +1,3 @@
-
 <?php
 include "../middleware/auth.php";
 include "../config/koneksi.php";
@@ -148,8 +147,14 @@ if ($guru_id > 0) {
             box-sizing: border-box;
         }
 
-        body {
+        html, body {
+            width: 100%;
+            max-width: 100%;
             margin: 0;
+            overflow-x: hidden;
+        }
+
+        body {
             background: var(--page);
             color: var(--text);
             font-family: "Segoe UI", Arial, sans-serif;
@@ -248,14 +253,25 @@ if ($guru_id > 0) {
         /* KONTEN UTAMA */
         .main {
             min-height: 100vh;
+            width: calc(100% - 242px);
+            max-width: calc(100% - 242px);
+            min-width: 0;
             margin-left: 242px;
             padding: 22px 24px 38px;
         }
 
         .page-container {
             width: 100%;
-            max-width: none;
+            max-width: 100%;
+            min-width: 0;
             margin: 0 auto;
+        }
+
+        .main > .page-container,
+        .page-container > .card,
+        .card-body {
+            min-width: 0;
+            max-width: 100%;
         }
 
         .judul {
@@ -323,19 +339,56 @@ if ($guru_id > 0) {
 
         /* TABEL */
         .table-responsive {
+            display: block;
             width: 100%;
+            max-width: 100%;
+            min-width: 0;
             overflow-x: auto;
+            overflow-y: hidden;
             border-radius: 7px;
+            -webkit-overflow-scrolling: touch;
         }
 
         #tabelTindakan {
             width: 100% !important;
-            min-width: 1250px;
+            min-width: 0 !important;
+            table-layout: fixed;
             margin-bottom: 0 !important;
             color: #344b63;
             font-size: 12px;
             vertical-align: middle;
         }
+
+        /* Bagi lebar kolom agar tabel tidak memaksa halaman melebar */
+        #tabelTindakan th:nth-child(1),
+        #tabelTindakan td:nth-child(1) { width: 4%; }
+
+        #tabelTindakan th:nth-child(2),
+        #tabelTindakan td:nth-child(2) { width: 9%; }
+
+        #tabelTindakan th:nth-child(3),
+        #tabelTindakan td:nth-child(3) { width: 12%; }
+
+        #tabelTindakan th:nth-child(4),
+        #tabelTindakan td:nth-child(4) { width: 8%; }
+
+        #tabelTindakan th:nth-child(5),
+        #tabelTindakan td:nth-child(5) { width: 16%; }
+
+        #tabelTindakan th:nth-child(6),
+        #tabelTindakan td:nth-child(6) { width: 5%; }
+
+        #tabelTindakan th:nth-child(7),
+        #tabelTindakan td:nth-child(7) { width: 13%; }
+
+        #tabelTindakan th:nth-child(8),
+        #tabelTindakan td:nth-child(8) { width: 13%; }
+
+        #tabelTindakan th:nth-child(9),
+        #tabelTindakan td:nth-child(9) { width: 10%; }
+
+        #tabelTindakan th:nth-child(10),
+        #tabelTindakan td:nth-child(10) { width: 10%; }
 
         #tabelTindakan thead th {
             padding: 12px 10px;
@@ -343,13 +396,18 @@ if ($guru_id > 0) {
             color: #315b82;
             border-color: #dce7f1;
             font-weight: 600;
-            white-space: nowrap;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: normal;
         }
 
         #tabelTindakan tbody td {
-            padding: 10px;
+            padding: 10px 8px;
             border-color: #e2eaf3;
             vertical-align: middle;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: normal;
         }
 
         #tabelTindakan tbody tr:hover > * {
@@ -358,7 +416,6 @@ if ($guru_id > 0) {
 
         #tabelTindakan th:first-child,
         #tabelTindakan td:first-child {
-            min-width: 48px;
             text-align: center;
         }
 
@@ -370,17 +427,16 @@ if ($guru_id > 0) {
 
         #tabelTindakan th:last-child,
         #tabelTindakan td:last-child {
-            width: 100px;
-            min-width: 100px;
             text-align: center;
-            white-space: nowrap;
         }
 
         #tabelTindakan .btn {
             display: inline-block;
-            min-width: 64px;
-            padding: 5px 9px;
-            font-size: 12px;
+            max-width: 100%;
+            min-width: 0;
+            padding: 5px 7px;
+            font-size: 11px;
+            white-space: normal;
             visibility: visible;
             opacity: 1;
         }
@@ -412,6 +468,18 @@ if ($guru_id > 0) {
         /* DATATABLES */
         .dt-container {
             width: 100%;
+            max-width: 100%;
+            min-width: 0;
+        }
+
+        .dt-container .dt-layout-table {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+        }
+
+        .dt-container table {
+            max-width: 100%;
         }
 
         .dt-container .dt-layout-row {
@@ -524,6 +592,7 @@ if ($guru_id > 0) {
             .sidebar {
                 position: relative;
                 width: 100%;
+                max-width: 100%;
                 height: auto;
                 min-height: auto;
             }
@@ -533,8 +602,15 @@ if ($guru_id > 0) {
             }
 
             .main {
+                width: 100%;
+                max-width: 100%;
                 margin-left: 0;
                 padding: 18px 14px 28px;
+            }
+
+            #tabelTindakan {
+                table-layout: auto;
+                min-width: 850px !important;
             }
         }
 
@@ -551,8 +627,21 @@ if ($guru_id > 0) {
                 flex-wrap: wrap;
             }
 
+            .dt-container .dt-layout-cell {
+                width: 100%;
+            }
+
+            .dt-container .dt-search {
+                justify-content: flex-start;
+            }
+
             .dt-container .dt-search input {
                 width: 130px;
+                max-width: calc(100vw - 150px);
+            }
+
+            #tabelTindakan {
+                min-width: 850px !important;
             }
         }
     </style>
@@ -818,6 +907,7 @@ $(function () {
         lengthMenu: [10, 25, 50, 100],
         order: [],
         autoWidth: false,
+        scrollX: false,
         language: {
             search: 'Cari:',
             lengthMenu: 'Tampilkan _MENU_ data',

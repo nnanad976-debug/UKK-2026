@@ -1,67 +1,70 @@
-
+```php
 <?php
 include "../middleware/auth.php";
 include "../config/koneksi.php";
 
-if (($_SESSION['role'] ?? '') !== 'admin') {
+if (strtolower($_SESSION['role'] ?? '') !== 'admin') {
+    http_response_code(403);
     exit("Anda tidak memiliki akses");
 }
 
-if (!isset($_GET['id']) || !ctype_digit((string)$_GET['id']) || (int)$_GET['id'] < 1) {
+// Penghapusan hanya boleh dilakukan melalui formulir POST.
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: jenis_pelanggaran.php");
     exit;
 }
 
-$id = (int)$_GET['id'];
+$id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
 
-// Pastikan data jenis pelanggaran tersedia.
-$stmt = mysqli_prepare(
+if (!$id || $id <= 0) {
+    header("Location: jenis_pelanggaran.php");
+    exit;
+}
+
+// Periksa apakah data tersedia.
+$cek = mysqli_prepare(
     $koneksi,
     "SELECT id FROM t_pelanggaran WHERE id = ? LIMIT 1"
 );
-mysqli_stmt_bind_param($stmt, "i", $id);
-mysqli_stmt_execute($stmt);
-$result = mysqli_stmt_get_result($stmt);
-$data = mysqli_fetch_assoc($result);
-mysqli_stmt_close($stmt);
 
-if (!$data) {
-    header("Location: jenis_pelanggaran.php?hapus=gagal");
+if (!$cek) {
+    header("Location: jenis_pelanggaran.php?gagal_hapus=1");
     exit;
 }
 
-// Periksa apakah masih digunakan oleh catatan pelanggaran siswa.
-$stmt = mysqli_prepare(
-    $koneksi,
-    "SELECT COUNT(*) AS total
-     FROM t_pelanggaran_siswa
-     WHERE pelanggaran_id = ?"
-);
-mysqli_stmt_bind_param($stmt, "i", $id);
-mysqli_stmt_execute($stmt);
-$result = mysqli_stmt_get_result($stmt);
-$cek = mysqli_fetch_assoc($result);
-mysqli_stmt_close($stmt);
+mysqli_stmt_bind_param($cek, "i", $id);
+mysqli_stmt_execute($cek);
+$hasil = mysqli_stmt_get_result($cek);
+$ada = mysqli_num_rows($hasil) > 0;
+mysqli_stmt_close($cek);
 
-if ((int)$cek['total'] > 0) {
-    header("Location: jenis_pelanggaran.php?hapus=dipakai");
+if (!$ada) {
+    header("Location: jenis_pelanggaran.php");
     exit;
 }
 
-// Hapus jenis pelanggaran.
-$stmt = mysqli_prepare(
+// Hapus data yang dipilih.
+$hapus = mysqli_prepare(
     $koneksi,
     "DELETE FROM t_pelanggaran WHERE id = ?"
 );
-mysqli_stmt_bind_param($stmt, "i", $id);
 
-if (mysqli_stmt_execute($stmt)) {
-    mysqli_stmt_close($stmt);
-    header("Location: jenis_pelanggaran.php?hapus=sukses");
+if (!$hapus) {
+    header("Location: jenis_pelanggaran.php?gagal_hapus=1");
     exit;
 }
 
-mysqli_stmt_close($stmt);
-header("Location: jenis_pelanggaran.php?hapus=gagal");
+mysqli_stmt_bind_param($hapus, "i", $id);
+$berhasil = mysqli_stmt_execute($hapus);
+mysqli_stmt_close($hapus);
+
+if ($berhasil) {
+    header("Location: jenis_pelanggaran.php?dihapus=1");
+    exit;
+}
+
+// Kemungkinan data masih digunakan oleh tabel lain.
+header("Location: jenis_pelanggaran.php?gagal_hapus=1");
 exit;
 ?>
+```

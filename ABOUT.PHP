@@ -570,7 +570,7 @@ function e($value) {
         <a href="admin/wali_kelas.php" class="menu-link">Wali Kelas</a>
         <a href="admin/kategori_pelanggaran.php" class="menu-link">Kategori Pelanggaran</a>
         <a href="admin/jenis_pelanggaran.php" class="menu-link">Jenis Pelanggaran</a>
-        <a href="admin/cetak_export.php" class="menu-link">Cetak / Export</a>
+        <a href="admin/cetak_export.php" class="menu-link">Laporan</a>
         <a href="about.php" class="menu-link active">About Me</a>
     </nav>
 
