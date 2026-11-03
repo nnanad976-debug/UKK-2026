@@ -8,152 +8,180 @@ if (strtolower($_SESSION['role'] ?? '') !== 'admin') {
     exit("Anda tidak memiliki akses");
 }
 
-$pesan = "";
-$jenis_pesan = "";
+if (!function_exists('e')) {
+    function e($value): string {
+        return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
+    }
+}
+
+$pesan = '';
+$jenis_pesan = 'success';
 $bukaForm = false;
 
-function e($value): string {
-    return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
-}
+$old = [
+    'pelanggaran_kategori_id' => '',
+    'kode' => '',
+    'nama' => '',
+    'poin' => '',
+    'deskripsi' => '',
+    'status_aktif' => '1'
+];
 
-/* Pesan notifikasi */
+/* NOTIFIKASI */
 if (isset($_GET['berhasil'])) {
-    $pesan = "Jenis pelanggaran berhasil disimpan.";
-    $jenis_pesan = "success";
+    $pesan = 'Data jenis pelanggaran berhasil ditambahkan.';
 } elseif (isset($_GET['diubah'])) {
-    $pesan = "Jenis pelanggaran berhasil diperbarui.";
-    $jenis_pesan = "success";
+    $pesan = 'Data jenis pelanggaran berhasil diperbarui.';
 } elseif (isset($_GET['dihapus'])) {
-    $pesan = "Jenis pelanggaran berhasil dihapus.";
-    $jenis_pesan = "success";
+    $pesan = 'Data jenis pelanggaran berhasil dihapus.';
 } elseif (isset($_GET['gagal_hapus'])) {
-    $pesan = "Data tidak dapat dihapus karena masih digunakan oleh data pelanggaran siswa.";
-    $jenis_pesan = "danger";
+    $pesan = 'Data gagal dihapus karena masih digunakan.';
+    $jenis_pesan = 'danger';
 }
 
-/* Proses tambah jenis pelanggaran */
-if (isset($_POST['simpan'])) {
+/* PROSES TAMBAH DATA */
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan'])) {
+
     $bukaForm = true;
 
     $kategori_id = (int)($_POST['pelanggaran_kategori_id'] ?? 0);
     $kode = strtoupper(trim($_POST['kode'] ?? ''));
     $nama = trim($_POST['nama'] ?? '');
-    $poin = filter_var($_POST['poin'] ?? null, FILTER_VALIDATE_INT);
+    $poin = filter_var($_POST['poin'] ?? '', FILTER_VALIDATE_INT);
     $deskripsi = trim($_POST['deskripsi'] ?? '');
-    $status_aktif = (string)($_POST['status_aktif'] ?? '');
+    $status = filter_var($_POST['status_aktif'] ?? 1, FILTER_VALIDATE_INT);
 
-    if (
-        $kategori_id <= 0 ||
-        $kode === '' ||
-        $nama === '' ||
-        $deskripsi === '' ||
-        $poin === false ||
-        $poin === null ||
-        $poin < 0 ||
-        !in_array($status_aktif, ['0', '1'], true)
-    ) {
-        $pesan = "Semua kolom wajib diisi dengan data yang benar.";
-        $jenis_pesan = "danger";
+    $old = [
+        'pelanggaran_kategori_id' => $kategori_id,
+        'kode' => $kode,
+        'nama' => $nama,
+        'poin' => $poin === false ? '' : $poin,
+        'deskripsi' => $deskripsi,
+        'status_aktif' => $status === false ? '1' : $status
+    ];
+
+    if ($kategori_id <= 0 || $kode === '' || $nama === '') {
+        $pesan = 'Kategori, kode, dan nama pelanggaran wajib diisi.';
+        $jenis_pesan = 'danger';
+
+    } elseif ($poin === false || $poin < 0) {
+        $pesan = 'Poin harus berupa angka dan tidak boleh kurang dari 0.';
+        $jenis_pesan = 'danger';
+
+    } elseif ($status === false || !in_array($status, [0, 1], true)) {
+        $pesan = 'Status tidak valid.';
+        $jenis_pesan = 'danger';
+
     } else {
-        /* Pastikan kategori tersedia dan aktif */
-        $stmtKategori = mysqli_prepare(
+
+        /* CEK KATEGORI */
+        $cekKategori = mysqli_prepare(
             $koneksi,
             "SELECT id
              FROM t_pelanggaran_kategori
-             WHERE id = ? AND status_aktif = 1
-             LIMIT 1"
+             WHERE id = ? AND status_aktif = 1"
         );
 
-        if (!$stmtKategori) {
-            $pesan = "Gagal memeriksa kategori pelanggaran.";
-            $jenis_pesan = "danger";
+        if (!$cekKategori) {
+            $pesan = 'Gagal memeriksa kategori pelanggaran.';
+            $jenis_pesan = 'danger';
+
         } else {
-            mysqli_stmt_bind_param($stmtKategori, "i", $kategori_id);
-            mysqli_stmt_execute($stmtKategori);
-            mysqli_stmt_store_result($stmtKategori);
+            mysqli_stmt_bind_param($cekKategori, 'i', $kategori_id);
+            mysqli_stmt_execute($cekKategori);
 
-            $kategoriValid = mysqli_stmt_num_rows($stmtKategori) > 0;
-            mysqli_stmt_close($stmtKategori);
+            $hasilKategori = mysqli_stmt_get_result($cekKategori);
 
-            if (!$kategoriValid) {
-                $pesan = "Kategori tidak ditemukan atau sudah tidak aktif.";
-                $jenis_pesan = "danger";
+            if (!$hasilKategori || mysqli_num_rows($hasilKategori) === 0) {
+                $pesan = 'Kategori tidak ditemukan atau tidak aktif.';
+                $jenis_pesan = 'danger';
+            }
+
+            mysqli_stmt_close($cekKategori);
+        }
+
+        /* CEK KODE DUPLIKAT */
+        if ($pesan === '') {
+
+            $cekKode = mysqli_prepare(
+                $koneksi,
+                "SELECT id
+                 FROM t_pelanggaran
+                 WHERE kode = ?
+                 LIMIT 1"
+            );
+
+            if (!$cekKode) {
+                $pesan = 'Gagal memeriksa kode pelanggaran.';
+                $jenis_pesan = 'danger';
+
             } else {
-                /* Pastikan kode belum digunakan */
-                $stmtKode = mysqli_prepare(
-                    $koneksi,
-                    "SELECT id
-                     FROM t_pelanggaran
-                     WHERE kode = ?
-                     LIMIT 1"
+                mysqli_stmt_bind_param($cekKode, 's', $kode);
+                mysqli_stmt_execute($cekKode);
+
+                $hasilKode = mysqli_stmt_get_result($cekKode);
+
+                if ($hasilKode && mysqli_num_rows($hasilKode) > 0) {
+                    $pesan = 'Kode pelanggaran sudah digunakan.';
+                    $jenis_pesan = 'danger';
+                }
+
+                mysqli_stmt_close($cekKode);
+            }
+        }
+
+        /* SIMPAN DATA */
+        if ($pesan === '') {
+
+            $stmt = mysqli_prepare(
+                $koneksi,
+                "INSERT INTO t_pelanggaran
+                (
+                    pelanggaran_kategori_id,
+                    kode,
+                    nama,
+                    poin,
+                    deskripsi,
+                    status_aktif
+                )
+                VALUES (?, ?, ?, ?, ?, ?)"
+            );
+
+            if (!$stmt) {
+                $pesan = 'Data gagal disimpan. Silakan coba kembali.';
+                $jenis_pesan = 'danger';
+
+            } else {
+
+                mysqli_stmt_bind_param(
+                    $stmt,
+                    'issisi',
+                    $kategori_id,
+                    $kode,
+                    $nama,
+                    $poin,
+                    $deskripsi,
+                    $status
                 );
 
-                if (!$stmtKode) {
-                    $pesan = "Gagal memeriksa kode pelanggaran.";
-                    $jenis_pesan = "danger";
+                if (mysqli_stmt_execute($stmt)) {
+                    mysqli_stmt_close($stmt);
+
+                    header("Location: jenis_pelanggaran.php?berhasil=1");
+                    exit;
+
                 } else {
-                    mysqli_stmt_bind_param($stmtKode, "s", $kode);
-                    mysqli_stmt_execute($stmtKode);
-                    mysqli_stmt_store_result($stmtKode);
-
-                    $kodeAda = mysqli_stmt_num_rows($stmtKode) > 0;
-                    mysqli_stmt_close($stmtKode);
-
-                    if ($kodeAda) {
-                        $pesan = "Kode pelanggaran sudah digunakan. Gunakan kode lain.";
-                        $jenis_pesan = "danger";
-                    } else {
-                        $status = (int)$status_aktif;
-
-                        $stmtSimpan = mysqli_prepare(
-                            $koneksi,
-                            "INSERT INTO t_pelanggaran
-                            (
-                                pelanggaran_kategori_id,
-                                kode,
-                                nama,
-                                poin,
-                                deskripsi,
-                                status_aktif
-                            )
-                            VALUES (?, ?, ?, ?, ?, ?)"
-                        );
-
-                        if (!$stmtSimpan) {
-                            $pesan = "Data gagal disimpan. Periksa struktur tabel database.";
-                            $jenis_pesan = "danger";
-                        } else {
-                            mysqli_stmt_bind_param(
-                                $stmtSimpan,
-                                "issisi",
-                                $kategori_id,
-                                $kode,
-                                $nama,
-                                $poin,
-                                $deskripsi,
-                                $status
-                            );
-
-                            if (mysqli_stmt_execute($stmtSimpan)) {
-                                mysqli_stmt_close($stmtSimpan);
-
-                                header("Location: jenis_pelanggaran.php?berhasil=1");
-                                exit;
-                            }
-
-                            $pesan = "Data gagal disimpan. Silakan periksa kembali data dan struktur database.";
-                            $jenis_pesan = "danger";
-
-                            mysqli_stmt_close($stmtSimpan);
-                        }
-                    }
+                    $pesan = 'Data gagal disimpan. Silakan coba kembali.';
+                    $jenis_pesan = 'danger';
                 }
+
+                mysqli_stmt_close($stmt);
             }
         }
     }
 }
 
-/* Ambil kategori aktif */
+/* AMBIL KATEGORI AKTIF */
 $query_kategori = mysqli_query(
     $koneksi,
     "SELECT id, nama
@@ -162,14 +190,8 @@ $query_kategori = mysqli_query(
      ORDER BY nama ASC"
 );
 
-if (!$query_kategori) {
-    die("Gagal mengambil kategori pelanggaran.");
-}
-
-/* Ambil data jenis pelanggaran.
-   Data dengan nama, poin, dan kategori yang sama
-   ditampilkan satu kali agar data duplikat tidak memenuhi tabel. */
-$query = mysqli_query(
+/* AMBIL DATA JENIS PELANGGARAN */
+$query_data = mysqli_query(
     $koneksi,
     "SELECT
         p.id,
@@ -179,736 +201,969 @@ $query = mysqli_query(
         p.deskripsi,
         p.status_aktif,
         k.nama AS nama_kategori
-     FROM t_pelanggaran p
-     INNER JOIN t_pelanggaran_kategori k
+    FROM t_pelanggaran p
+    LEFT JOIN t_pelanggaran_kategori k
         ON p.pelanggaran_kategori_id = k.id
-     WHERE p.id = (
+    WHERE p.id = (
         SELECT MIN(p2.id)
         FROM t_pelanggaran p2
         WHERE p2.nama = p.nama
           AND p2.poin = p.poin
           AND p2.pelanggaran_kategori_id = p.pelanggaran_kategori_id
-     )
-     ORDER BY p.id DESC"
+    )
+    ORDER BY p.id DESC"
 );
 
-if (!$query) {
-    die("Gagal mengambil data jenis pelanggaran. Periksa struktur tabel database.");
+if (!$query_data) {
+    die('Gagal mengambil data jenis pelanggaran.');
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Kelola Jenis Pelanggaran</title>
+    <title>Jenis Pelanggaran - Sistem Pelanggaran</title>
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.datatables.net/2.3.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
 
-<style>
-:root {
-    --blue: #2878cf;
-    --blue-dark: #203e68;
-    --blue-soft: #eaf3ff;
-    --page: #f3f7fc;
-    --white: #ffffff;
-    --text: #2f435a;
-    --muted: #7890ad;
-    --line: #dce9f8;
-}
+    <link href="https://cdn.datatables.net/2.3.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 
-* {
-    box-sizing: border-box;
-}
+    <style>
+        :root {
+            --blue: #2878cf;
+            --blue-dark: #203e68;
+            --blue-soft: #eaf3ff;
+            --page: #f3f7fc;
+            --white: #ffffff;
+            --text: #2f435a;
+            --muted: #7890ad;
+            --line: #dce9f8;
+        }
 
-body {
-    margin: 0;
-    background: var(--page);
-    color: var(--text);
-    font-family: "Segoe UI", Arial, sans-serif;
-    font-size: 14px;
-}
+        * {
+            box-sizing: border-box;
+        }
 
-a {
-    text-decoration: none;
-}
+        body {
+            margin: 0;
+            background: var(--page);
+            color: var(--text);
+            font-family: "Segoe UI", Arial, sans-serif;
+        }
 
-/* SIDEBAR */
-.sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 282px;
-    min-width: 282px;
-    height: 100vh;
-    overflow-y: auto;
-    background: var(--white);
-    border-right: 1px solid var(--line);
-    padding: 25px 14px 16px;
-    display: flex;
-    flex-direction: column;
-    z-index: 1000;
-}
+        a {
+            text-decoration: none;
+        }
 
-.brand {
-    padding: 0 15px 22px;
-    border-bottom: 1px solid var(--line);
-    margin-bottom: 22px;
-}
+        /* ================= SIDEBAR ================= */
 
-.brand-title {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--blue-dark);
-    margin-bottom: 5px;
-}
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 282px;
+            min-width: 282px;
+            height: 100vh;
+            padding: 25px 14px 16px;
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+            border-right: 1px solid var(--line);
+            z-index: 1000;
+            overflow-y: auto;
+        }
 
-.brand-subtitle {
-    font-size: 12px;
-    color: var(--muted);
-}
+        .brand {
+            padding: 0 14px 20px;
+            margin-bottom: 22px;
+            border-bottom: 1px solid var(--line);
+        }
 
-.menu-title {
-    font-size: 10px;
-    font-weight: 700;
-    color: #9aabc0;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    margin: 0 15px 10px;
-}
+        .brand-title {
+            color: var(--blue-dark);
+            font-size: 19px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
 
-.menu {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-}
+        .brand-subtitle {
+            color: var(--muted);
+            font-size: 12px;
+        }
 
-.menu-link {
-    min-height: 43px;
-    display: flex;
-    align-items: center;
-    padding: 10px 15px;
-    border-radius: 10px;
-    color: #5e7695;
-    font-size: 13px;
-    transition: background .2s ease, color .2s ease;
-}
+        .menu-title {
+            margin: 0 14px 11px;
+            color: #91a5bd;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
 
-.menu-link:hover {
-    background: var(--blue-soft);
-    color: var(--blue);
-}
+        .menu {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
 
-.menu-link.active {
-    background: var(--blue-soft);
-    color: var(--blue);
-    font-weight: 600;
-    box-shadow: inset 4px 0 0 var(--blue);
-}
+        .menu-link {
+            display: flex;
+            align-items: center;
+            min-height: 42px;
+            padding: 11px 14px;
+            border-radius: 9px;
+            color: #5e7695;
+            font-size: 13px;
+            transition: .2s;
+        }
 
-.logout {
-    margin-top: auto;
-    padding-top: 14px;
-    border-top: 1px solid var(--line);
-}
+        .menu-link:hover {
+            background: #f2f7fd;
+            color: var(--blue);
+        }
 
-.logout .menu-link {
-    color: #d9534f;
-}
+        .menu-link.active {
+            background: var(--blue-soft);
+            color: var(--blue);
+            font-weight: 600;
+            box-shadow: inset 3px 0 0 var(--blue);
+        }
 
-.logout .menu-link:hover {
-    background: #fff0ef;
-    color: #c03935;
-}
+        .logout {
+            margin-top: auto;
+            padding-top: 14px;
+            border-top: 1px solid var(--line);
+        }
 
-/* AREA KONTEN */
-.main {
-    margin-left: 282px;
-    min-height: 100vh;
-    padding: 24px 28px 40px;
-}
+        .logout .menu-link {
+            color: #d9534f;
+        }
 
-.container {
-    width: 100%;
-    max-width: none !important;
-    margin: 0 auto;
-    padding: 0 !important;
-}
+        .logout .menu-link:hover {
+            background: #fff0ef;
+        }
 
-.judul,
-h4 {
-    color: #234e78;
-}
+        /* ================= KONTEN ================= */
 
-.judul {
-    font-size: 28px;
-    font-weight: 600;
-}
+        .main {
+            width: calc(100% - 282px);
+            min-height: 100vh;
+            margin-left: 282px;
+            padding: 24px 28px 40px;
+        }
 
-.card {
-    background: #fff;
-    border: 1px solid #e1eaf4 !important;
-    border-radius: 10px;
-    box-shadow: 0 3px 12px rgba(35, 78, 120, .05) !important;
-}
+        .container {
+            width: 100%;
+            max-width: none !important;
+            margin: 0 auto;
+            padding: 0 !important;
+        }
 
-.card-body {
-    padding: 22px;
-}
+        .judul,
+        h4 {
+            color: #234e78;
+        }
 
-.form-label {
-    color: #405873;
-    font-weight: 600;
-    font-size: 14px;
-}
+        .card {
+            border: 1px solid #e1eaf4 !important;
+            border-radius: 10px;
+            box-shadow: 0 3px 12px rgba(35, 78, 120, .05) !important;
+        }
 
-.form-control,
-.form-select {
-    border-color: #d7e3ef;
-    border-radius: 7px;
-    padding: 10px 12px;
-    color: #344b63;
-}
+        .card-body {
+            padding: 22px;
+        }
 
-.form-control:focus,
-.form-select:focus {
-    border-color: #8eb5d8;
-    box-shadow: 0 0 0 .2rem rgba(87, 143, 190, .14);
-}
+        .keterangan {
+            color: #71849a;
+            font-size: 14px;
+        }
 
-.btn {
-    font-size: 13px;
-    font-weight: 500;
-    border-radius: 7px;
-}
+        /* ================= FORM ================= */
 
-.btn-primary {
-    --bs-btn-color: #fff;
-    --bs-btn-bg: #5f91ba;
-    --bs-btn-border-color: #5f91ba;
-    --bs-btn-hover-color: #fff;
-    --bs-btn-hover-bg: #4b7fa9;
-    --bs-btn-hover-border-color: #4b7fa9;
-    padding: 9px 15px;
-}
+        .form-label {
+            color: #405873;
+            font-weight: 600;
+            font-size: 14px;
+        }
 
-.btn-secondary {
-    --bs-btn-bg: #e8f0f8;
-    --bs-btn-border-color: #d8e5f1;
-    --bs-btn-color: #426584;
-    --bs-btn-hover-bg: #dceaf6;
-    --bs-btn-hover-border-color: #cbddeb;
-    --bs-btn-hover-color: #234e78;
-    padding: 9px 15px;
-}
+        .form-control,
+        .form-select {
+            border-color: #d7e3ef;
+            border-radius: 7px;
+            padding: 10px 12px;
+            font-size: 14px;
+        }
 
-.btn-danger {
-    --bs-btn-color: #fff;
-    --bs-btn-bg: #cf8888;
-    --bs-btn-border-color: #cf8888;
-    --bs-btn-hover-color: #fff;
-    --bs-btn-hover-bg: #bd7777;
-    --bs-btn-hover-border-color: #bd7777;
-}
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #8eb5d8;
+            box-shadow: 0 0 0 .2rem rgba(87, 143, 190, .14);
+        }
 
-.btn-sm {
-    padding: 5px 11px;
-}
+        textarea.form-control {
+            min-height: 100px;
+        }
 
-/* TABEL */
-.table-responsive {
-    width: 100%;
-    overflow-x: auto;
-}
+        /* ================= TOMBOL ================= */
 
-.table {
-    width: 100%;
-    color: #344b63;
-    vertical-align: middle;
-    margin-bottom: 0;
-}
+        .btn {
+            border-radius: 7px;
+            font-size: 13px;
+        }
 
-.table thead th {
-    background: #eaf2fa;
-    color: #315b82;
-    border-color: #dce7f1;
-    font-weight: 600;
-    padding: 13px 12px;
-    white-space: nowrap;
-}
+        .btn-primary {
+            --bs-btn-color: #fff;
+            --bs-btn-bg: #5f91ba;
+            --bs-btn-border-color: #5f91ba;
+            --bs-btn-hover-color: #fff;
+            --bs-btn-hover-bg: #4b7fa9;
+            --bs-btn-hover-border-color: #4b7fa9;
+            padding: 8px 15px;
+        }
 
-.table tbody td {
-    border-color: #e5edf5;
-    padding: 12px;
-}
+        .btn-secondary {
+            --bs-btn-bg: #e8f0f8;
+            --bs-btn-border-color: #d8e5f1;
+            --bs-btn-color: #426584;
+            --bs-btn-hover-bg: #dceaf6;
+            --bs-btn-hover-border-color: #cbddeb;
+            --bs-btn-hover-color: #234e78;
+            padding: 8px 15px;
+        }
 
-.table-hover tbody tr:hover > * {
-    --bs-table-bg: #f4f8fc;
-}
+        .btn-danger {
+            --bs-btn-color: #fff;
+            --bs-btn-bg: #cf8888;
+            --bs-btn-border-color: #cf8888;
+            --bs-btn-hover-color: #fff;
+            --bs-btn-hover-bg: #bd7777;
+            --bs-btn-hover-border-color: #bd7777;
+        }
 
-.status-aktif,
-.status-nonaktif {
-    display: inline-block;
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    white-space: nowrap;
-}
+        .btn-sm {
+            padding: 5px 11px;
+        }
 
-.status-aktif {
-    background: #e4f3e9;
-    color: #34734b;
-}
+        /* ================= STATUS ================= */
 
-.status-nonaktif {
-    background: #fce9e9;
-    color: #a34f4f;
-}
+        .status-aktif,
+        .status-nonaktif {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
 
-.keterangan {
-    color: #71849a;
-    font-size: 14px;
-}
+        .status-aktif {
+            background: #e4f3e9;
+            color: #34734b;
+        }
 
-/* DATATABLES */
-div.dt-container {
-    width: 100%;
-    color: #344b63;
-}
+        .status-nonaktif {
+            background: #fce9e9;
+            color: #a34f4f;
+        }
 
-div.dt-container .dt-layout-row {
-    margin: 12px 0;
-}
+        /* ================= TABEL ================= */
 
-div.dt-container .dt-layout-row:first-child {
-    margin-top: 22px;
-    margin-bottom: 12px;
-}
+        .table {
+            color: #344b63;
+            vertical-align: middle;
+            margin-bottom: 0;
+        }
 
-div.dt-container .dt-length label,
-div.dt-container .dt-search label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0;
-    font-size: 13px;
-}
+        .table thead th {
+            background: #eaf2fa;
+            color: #315b82;
+            border-color: #dce7f1;
+            font-weight: 600;
+            padding: 12px;
+            white-space: nowrap;
+        }
 
-div.dt-container .dt-length select,
-div.dt-container .dt-search input {
-    min-height: 38px;
-    padding: 7px 10px;
-    border: 1px solid #d7e3ef;
-    border-radius: 7px;
-    background: #fff;
-    color: #344b63;
-}
+        .table tbody td {
+            border-color: #e5edf5;
+            padding: 11px 12px;
+        }
 
-div.dt-container .dt-search input {
-    width: 190px;
-}
+        .table-hover tbody tr:hover > * {
+            --bs-table-accent-bg: #f4f8fc;
+        }
 
-div.dt-container .dt-info {
-    padding-top: 12px;
-    color: #71849a;
-    font-size: 13px;
-}
+        .aksi {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+        }
 
-div.dt-container .dt-paging {
-    padding-top: 10px;
-}
+        .aksi form {
+            margin: 0;
+        }
 
-div.dt-container .dt-paging .dt-paging-button {
-    border-radius: 6px !important;
-}
+        #tabelJenis td:last-child {
+            white-space: nowrap;
+        }
 
-div.dt-container .dt-paging .dt-paging-button.current {
-    background: #eaf3ff !important;
-    border-color: #dce9f8 !important;
-    color: #2878cf !important;
-}
+        /* ================= DATATABLES ================= */
 
-div.dt-container .dt-paging .dt-paging-button:hover {
-    background: #eaf3ff !important;
-    border-color: #dce9f8 !important;
-    color: #2878cf !important;
-}
+        .dt-container .dt-layout-row {
+            margin: 12px 0;
+        }
 
-#formTambahJenis {
-    scroll-margin-top: 20px;
-}
+        .dt-container .dt-layout-row:first-child {
+            margin-top: 22px;
+            margin-bottom: 8px;
+        }
 
-.alert {
-    border-radius: 8px;
-    font-size: 13px;
-}
+        /* Baris bawah: info kiri dan pagination kanan */
+        .dt-container .dt-layout-row:last-child {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-top: 15px;
+        }
 
-/* RESPONSIVE */
-@media (max-width: 900px) {
-    .sidebar {
-        position: relative;
-        width: 100%;
-        min-width: 100%;
-        height: auto;
-        min-height: auto;
-    }
+        .dt-container .dt-layout-cell {
+            display: flex;
+            align-items: center;
+            min-width: 0;
+        }
 
-    .main {
-        margin-left: 0;
-        padding: 18px 14px 30px;
-    }
+        .dt-container .dt-length,
+        .dt-container .dt-search {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-    .logout {
-        margin-top: 14px;
-    }
-}
+        .dt-container .dt-length label,
+        .dt-container .dt-search label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            font-size: 13px;
+            white-space: nowrap;
+        }
 
-@media (max-width: 576px) {
-    .main {
-        padding: 14px 10px 25px;
-    }
+        .dt-container .dt-length select {
+            width: 60px !important;
+            min-width: 60px;
+            height: 38px;
+            padding: 6px 5px;
+            border: 1px solid #d7e3ef;
+            border-radius: 7px;
+            background: #fff;
+            color: #344b63;
+        }
 
-    .card-body {
-        padding: 17px;
-    }
+        .dt-container .dt-search input {
+            width: 190px;
+            height: 38px;
+            padding: 7px 12px;
+            border: 1px solid #d7e3ef;
+            border-radius: 7px;
+            margin-left: 0 !important;
+        }
 
-    .judul {
-        font-size: 24px;
-    }
+        .dt-container .dt-length select:focus,
+        .dt-container .dt-search input:focus {
+            outline: none;
+            border-color: #8eb5d8;
+            box-shadow: 0 0 0 .15rem rgba(87, 143, 190, .14);
+        }
 
-    div.dt-container .dt-search input {
-        width: 140px;
-    }
+        .dt-container .dt-layout-table {
+            margin-top: 8px;
+        }
 
-    div.dt-container .dt-paging {
-        overflow-x: auto;
-    }
-}
-</style>
+        .dt-container .dt-info {
+            font-size: 13px;
+            color: #5e7695;
+            padding-top: 0 !important;
+        }
+
+        .dt-container .dt-paging {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .dt-container .dt-paging .pagination {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0;
+            margin: 0;
+        }
+
+        .dt-container .dt-paging .page-item {
+            margin: 0;
+        }
+
+        .dt-container .dt-paging .page-link {
+            min-width: 36px;
+            height: 39px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 6px 12px;
+            margin-left: -1px;
+            border: 1px solid #d8e1e9;
+            border-radius: 0;
+            background: #fff;
+            color: #0d6efd;
+            font-size: 14px;
+            box-shadow: none;
+        }
+
+        .dt-container .dt-paging .page-item:first-child .page-link {
+            border-radius: 6px 0 0 6px;
+        }
+
+        .dt-container .dt-paging .page-item:last-child .page-link {
+            border-radius: 0 6px 6px 0;
+        }
+
+        .dt-container .dt-paging .page-item.active .page-link {
+            position: relative;
+            z-index: 2;
+            background: #0d6efd;
+            border-color: #0d6efd;
+            color: #fff;
+        }
+
+        .dt-container .dt-paging .page-item.disabled .page-link {
+            background: #f1f3f5;
+            border-color: #d8e1e9;
+            color: #64748b;
+            pointer-events: none;
+        }
+
+        .dt-container .dt-paging .page-link:hover {
+            background: #eaf3ff;
+            border-color: #d8e1e9;
+            color: #0d6efd;
+        }
+
+        .dt-container .dt-paging .page-item.active .page-link:hover {
+            background: #0d6efd;
+            color: #fff;
+        }
+
+        .table-responsive {
+            width: 100%;
+        }
+
+        /* ================= RESPONSIVE ================= */
+
+        @media (max-width: 900px) {
+            .sidebar {
+                position: relative;
+                width: 100%;
+                min-width: 100%;
+                height: auto;
+                min-height: auto;
+            }
+
+            .main {
+                width: 100%;
+                margin-left: 0;
+                padding: 18px 14px 30px;
+            }
+
+            .logout {
+                margin-top: 14px;
+            }
+
+            .dt-container .dt-layout-row:last-child {
+                flex-wrap: wrap;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .card-body {
+                padding: 17px;
+            }
+
+            .dt-container .dt-layout-row {
+                flex-wrap: wrap;
+            }
+
+            .dt-container .dt-search input {
+                width: 140px;
+            }
+
+            .dt-container .dt-layout-row:last-child {
+                justify-content: center;
+            }
+
+            .dt-container .dt-info {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
+<!-- SIDEBAR -->
 <aside class="sidebar">
-    <div class="brand">
-        <div class="brand-title">Sistem Pelanggaran</div>
-        <div class="brand-subtitle">SMK Muhammadiyah</div>
-    </div>
-
-    <div class="menu-title">Menu Utama</div>
-
-    <nav class="menu">
-        <a href="../dashboard.php" class="menu-link">Dashboard</a>
-        <a href="guru.php" class="menu-link">Kelola Guru</a>
-        <a href="siswa.php" class="menu-link">Kelola Siswa</a>
-        <a href="kelas.php" class="menu-link">Kelola Kelas</a>
-        <a href="tahun_ajaran.php" class="menu-link">Tahun Ajaran</a>
-        <a href="penempatan_siswa.php" class="menu-link">Penempatan Siswa</a>
-        <a href="wali_kelas.php" class="menu-link">Wali Kelas</a>
-        <a href="kategori_pelanggaran.php" class="menu-link">Kategori Pelanggaran</a>
-        <a href="jenis_pelanggaran.php" class="menu-link active">Jenis Pelanggaran</a>
-        <a href="cetak_export.php" class="menu-link">Laporan</a>
-        <a href="../about.php" class="menu-link">About Me</a>
-    </nav>
-
-    <div class="logout">
-        <a href="../logout.php" class="menu-link">Logout</a>
-    </div>
+    <?php include "layout/sidebar.php"; ?>
 </aside>
 
+<!-- KONTEN UTAMA -->
 <main class="main">
-<div class="container py-2">
+    <div class="container py-2">
 
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
-        <a href="../dashboard.php" class="btn btn-secondary">
-            &larr; Kembali ke Dashboard
-        </a>
+        <!-- TOMBOL ATAS -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
 
-        <button
-            type="button"
-            class="btn btn-primary"
-            id="tombolTambah"
-            data-bs-toggle="collapse"
-            data-bs-target="#formTambahJenis"
-            aria-controls="formTambahJenis"
-            aria-expanded="<?= $bukaForm ? 'true' : 'false'; ?>">
-            + Tambah Jenis Pelanggaran
-        </button>
-    </div>
+            <a href="../dashboard.php" class="btn btn-secondary">
+                &larr; Kembali ke Dashboard
+            </a>
 
-    <div class="card mb-4">
-        <div class="card-body">
-            <h2 class="judul mb-1">Kelola Jenis Pelanggaran</h2>
-            <p class="text-muted mb-0">
-                Tambah dan kelola data jenis pelanggaran siswa.
-            </p>
+            <button
+                type="button"
+                class="btn btn-primary"
+                id="tombolTambah"
+                data-bs-toggle="collapse"
+                data-bs-target="#formTambahJenis"
+                aria-expanded="<?= $bukaForm ? 'true' : 'false'; ?>"
+                aria-controls="formTambahJenis">
+
+                + Tambah Data Jenis Pelanggaran
+            </button>
+
         </div>
-    </div>
 
-    <?php if ($pesan !== '' && !$bukaForm): ?>
-        <div class="alert alert-<?= e($jenis_pesan); ?> alert-dismissible fade show" role="alert">
-            <?= e($pesan); ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
-        </div>
-    <?php endif; ?>
-
-    <div class="collapse <?= $bukaForm ? 'show' : ''; ?>" id="formTambahJenis">
+        <!-- JUDUL HALAMAN -->
         <div class="card mb-4">
             <div class="card-body">
 
-                <h4 class="mb-4">Tambah Jenis Pelanggaran</h4>
+                <h2 class="judul mb-1">Jenis Pelanggaran</h2>
 
-                <?php if ($pesan !== '' && $bukaForm): ?>
-                    <div class="alert alert-<?= e($jenis_pesan); ?> alert-dismissible fade show" role="alert">
-                        <?= e($pesan); ?>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
-                    </div>
-                <?php endif; ?>
+                <p class="text-muted mb-0">
+                    Tambah dan kelola data jenis pelanggaran siswa.
+                </p>
 
-                <form method="POST" action="jenis_pelanggaran.php" autocomplete="off">
+            </div>
+        </div>
 
-                    <div class="mb-3">
-                        <label for="kategori" class="form-label">Kategori Pelanggaran</label>
-                        <select name="pelanggaran_kategori_id" id="kategori" class="form-select" required>
-                            <option value="">-- Pilih Kategori --</option>
+        <!-- FORM TAMBAH -->
+        <div
+            class="collapse <?= $bukaForm ? 'show' : ''; ?>"
+            id="formTambahJenis">
 
-                            <?php while ($kategori = mysqli_fetch_assoc($query_kategori)): ?>
-                                <option
-                                    value="<?= (int)$kategori['id']; ?>"
-                                    <?= ((string)($_POST['pelanggaran_kategori_id'] ?? '') === (string)$kategori['id']) ? 'selected' : ''; ?>>
-                                    <?= e($kategori['nama']); ?>
-                                </option>
-                            <?php endwhile; ?>
-                        </select>
-                    </div>
+            <div class="card mb-4">
+                <div class="card-body">
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="kode" class="form-label">Kode Pelanggaran</label>
-                            <input
-                                type="text"
-                                id="kode"
-                                name="kode"
-                                class="form-control"
-                                placeholder="Contoh: PLG-051"
-                                maxlength="50"
-                                value="<?= e($_POST['kode'] ?? ''); ?>"
-                                required>
+                    <h4 class="mb-4">Tambah Jenis Pelanggaran</h4>
+
+                    <?php if ($pesan !== '' && $jenis_pesan === 'danger'): ?>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+
+                            <?= e($pesan); ?>
+
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="alert"
+                                aria-label="Tutup">
+                            </button>
+
                         </div>
+                    <?php endif; ?>
 
-                        <div class="col-md-6 mb-3">
-                            <label for="nama" class="form-label">Nama Pelanggaran</label>
-                            <input
-                                type="text"
-                                id="nama"
-                                name="nama"
-                                class="form-control"
-                                placeholder="Contoh: Datang terlambat"
-                                value="<?= e($_POST['nama'] ?? ''); ?>"
+                    <form
+                        method="POST"
+                        action="jenis_pelanggaran.php"
+                        id="formJenis"
+                        autocomplete="off">
+
+                        <div class="mb-3">
+                            <label for="pelanggaran_kategori_id" class="form-label">
+                                Kategori Pelanggaran
+                            </label>
+
+                            <select
+                                name="pelanggaran_kategori_id"
+                                id="pelanggaran_kategori_id"
+                                class="form-select"
                                 required>
-                        </div>
-                    </div>
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="poin" class="form-label">Poin</label>
-                            <input
-                                type="number"
-                                id="poin"
-                                name="poin"
-                                class="form-control"
-                                min="0"
-                                value="<?= e($_POST['poin'] ?? ''); ?>"
-                                required>
-                        </div>
+                                <option value="">-- Pilih Kategori --</option>
 
-                        <div class="col-md-6 mb-3">
-                            <label for="status_aktif" class="form-label">Status</label>
-                            <select id="status_aktif" name="status_aktif" class="form-select" required>
-                                <option value="1" <?= (($_POST['status_aktif'] ?? '1') === '1') ? 'selected' : ''; ?>>
-                                    Aktif
-                                </option>
-                                <option value="0" <?= (($_POST['status_aktif'] ?? '') === '0') ? 'selected' : ''; ?>>
-                                    Tidak Aktif
-                                </option>
+                                <?php if ($query_kategori): ?>
+                                    <?php while ($kategori = mysqli_fetch_assoc($query_kategori)): ?>
+
+                                        <option
+                                            value="<?= e($kategori['id']); ?>"
+                                            <?= (string)$old['pelanggaran_kategori_id'] === (string)$kategori['id'] ? 'selected' : ''; ?>>
+
+                                            <?= e($kategori['nama']); ?>
+
+                                        </option>
+
+                                    <?php endwhile; ?>
+                                <?php endif; ?>
+
                             </select>
                         </div>
-                    </div>
 
-                    <div class="mb-4">
-                        <label for="deskripsi" class="form-label">Deskripsi</label>
-                        <textarea
-                            id="deskripsi"
-                            name="deskripsi"
-                            class="form-control"
-                            rows="3"
-                            required><?= e($_POST['deskripsi'] ?? ''); ?></textarea>
-                    </div>
+                        <div class="mb-3">
+                            <label for="kode" class="form-label">
+                                Kode Pelanggaran
+                            </label>
 
-                    <button type="submit" name="simpan" class="btn btn-primary">
-                        Simpan Jenis Pelanggaran
-                    </button>
+                            <input
+                                type="text"
+                                name="kode"
+                                id="kode"
+                                class="form-control"
+                                placeholder="Contoh: PLG001"
+                                value="<?= e($old['kode']); ?>"
+                                required>
+                        </div>
 
-                    <button
-                        type="button"
-                        class="btn btn-secondary"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#formTambahJenis">
-                        Tutup Form
-                    </button>
+                        <div class="mb-3">
+                            <label for="nama" class="form-label">
+                                Nama Pelanggaran
+                            </label>
 
-                </form>
+                            <input
+                                type="text"
+                                name="nama"
+                                id="nama"
+                                class="form-control"
+                                placeholder="Masukkan nama pelanggaran"
+                                value="<?= e($old['nama']); ?>"
+                                required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="poin" class="form-label">
+                                Poin Pelanggaran
+                            </label>
+
+                            <input
+                                type="number"
+                                name="poin"
+                                id="poin"
+                                class="form-control"
+                                min="0"
+                                placeholder="Masukkan jumlah poin"
+                                value="<?= e($old['poin']); ?>"
+                                required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="deskripsi" class="form-label">
+                                Deskripsi
+                            </label>
+
+                            <textarea
+                                name="deskripsi"
+                                id="deskripsi"
+                                class="form-control"
+                                placeholder="Masukkan deskripsi pelanggaran"><?= e($old['deskripsi']); ?></textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="status_aktif" class="form-label">
+                                Status
+                            </label>
+
+                            <select
+                                name="status_aktif"
+                                id="status_aktif"
+                                class="form-select"
+                                required>
+
+                                <option
+                                    value="1"
+                                    <?= (string)$old['status_aktif'] === '1' ? 'selected' : ''; ?>>
+                                    Aktif
+                                </option>
+
+                                <option
+                                    value="0"
+                                    <?= (string)$old['status_aktif'] === '0' ? 'selected' : ''; ?>>
+                                    Tidak Aktif
+                                </option>
+
+                            </select>
+                        </div>
+
+                        <button
+                            type="submit"
+                            name="simpan"
+                            value="1"
+                            class="btn btn-primary">
+                            Simpan
+                        </button>
+
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#formTambahJenis">
+                            Tutup Form
+                        </button>
+
+                    </form>
+
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="card">
-        <div class="card-body">
+        <!-- NOTIFIKASI BERHASIL -->
+        <?php if ($pesan !== '' && $jenis_pesan === 'success'): ?>
 
-            <h4 class="mb-1">Data Jenis Pelanggaran</h4>
-            <p class="keterangan mb-3">
-                Daftar jenis pelanggaran beserta kategori, poin, dan statusnya.
-            </p>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
 
-            <div class="table-responsive">
-                <table id="tabelPelanggaran" class="table table-bordered table-hover align-middle w-100">
-                    <thead>
-                        <tr>
-                            <th>No</th>
-                            <th>Kode</th>
-                            <th>Kategori</th>
-                            <th>Nama Pelanggaran</th>
-                            <th>Poin</th>
-                            <th>Deskripsi</th>
-                            <th>Status</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
+                <?= e($pesan); ?>
 
-                    <tbody>
-                    <?php
-                    $no = 1;
-                    while ($data = mysqli_fetch_assoc($query)):
-                    ?>
-                        <tr>
-                            <td><?= $no++; ?></td>
-                            <td><?= e($data['kode']); ?></td>
-                            <td><?= e($data['nama_kategori']); ?></td>
-                            <td><?= e($data['nama']); ?></td>
-                            <td><?= (int)$data['poin']; ?></td>
-                            <td><?= e($data['deskripsi']); ?></td>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Tutup">
+                </button>
 
-                            <td>
-                                <?php if ((int)$data['status_aktif'] === 1): ?>
-                                    <span class="status-aktif">Aktif</span>
-                                <?php else: ?>
-                                    <span class="status-nonaktif">Tidak Aktif</span>
-                                <?php endif; ?>
-                            </td>
-
-                            <td>
-                                <div class="d-flex flex-wrap gap-2">
-                                    <a
-                                        href="edit_jenis_pelanggaran.php?id=<?= (int)$data['id']; ?>"
-                                        class="btn btn-sm btn-primary">
-                                        Edit
-                                    </a>
-
-                                    <form
-                                        method="POST"
-                                        action="hapus_jenis_pelanggaran.php"
-                                        onsubmit="return confirm('Yakin ingin menghapus jenis pelanggaran ini?');">
-
-                                        <input
-                                            type="hidden"
-                                            name="id"
-                                            value="<?= (int)$data['id']; ?>">
-
-                                        <button type="submit" class="btn btn-sm btn-danger">
-                                            Hapus
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    <?php endwhile; ?>
-                    </tbody>
-                </table>
             </div>
 
-        </div>
-    </div>
+        <?php endif; ?>
 
-</div>
+        <!-- TABEL DATA -->
+        <div class="card">
+            <div class="card-body">
+
+                <h4 class="mb-1">Data Jenis Pelanggaran</h4>
+
+                <p class="keterangan mb-3">
+                    Daftar jenis pelanggaran siswa berdasarkan kategori dan poin.
+                </p>
+
+                <div class="table-responsive">
+
+                    <table
+                        id="tabelJenis"
+                        class="table table-bordered table-hover align-middle w-100">
+
+                        <thead>
+                            <tr>
+                                <th style="width:60px">No</th>
+                                <th>Kode</th>
+                                <th>Kategori</th>
+                                <th>Nama Pelanggaran</th>
+                                <th>Poin</th>
+                                <th>Deskripsi</th>
+                                <th>Status</th>
+                                <th style="width:150px">Aksi</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            <?php if (mysqli_num_rows($query_data) > 0): ?>
+
+                                <?php while ($data = mysqli_fetch_assoc($query_data)): ?>
+
+                                    <tr>
+                                        <td></td>
+
+                                        <td>
+                                            <?= e($data['kode']); ?>
+                                        </td>
+
+                                        <td>
+                                            <?= e($data['nama_kategori'] ?? '-'); ?>
+                                        </td>
+
+                                        <td>
+                                            <?= e($data['nama']); ?>
+                                        </td>
+
+                                        <td>
+                                            <?= e($data['poin']); ?>
+                                        </td>
+
+                                        <td>
+                                            <?= e($data['deskripsi'] ?: '-'); ?>
+                                        </td>
+
+                                        <td>
+                                            <?php if ((int)$data['status_aktif'] === 1): ?>
+
+                                                <span class="status-aktif">
+                                                    Aktif
+                                                </span>
+
+                                            <?php else: ?>
+
+                                                <span class="status-nonaktif">
+                                                    Tidak Aktif
+                                                </span>
+
+                                            <?php endif; ?>
+                                        </td>
+
+                                        <td>
+                                            <div class="aksi">
+
+                                                <a
+                                                    href="edit_jenis_pelanggaran.php?id=<?= (int)$data['id']; ?>"
+                                                    class="btn btn-sm btn-primary">
+                                                    Edit
+                                                </a>
+
+                                                <form
+                                                    action="hapus_jenis_pelanggaran.php"
+                                                    method="POST"
+                                                    onsubmit="return confirm('Yakin ingin menghapus jenis pelanggaran ini?')">
+
+                                                    <input
+                                                        type="hidden"
+                                                        name="id"
+                                                        value="<?= (int)$data['id']; ?>">
+
+                                                    <button
+                                                        type="submit"
+                                                        class="btn btn-sm btn-danger">
+                                                        Hapus
+                                                    </button>
+
+                                                </form>
+
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                <?php endwhile; ?>
+
+                            <?php endif; ?>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>
 </main>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
 <script src="https://cdn.datatables.net/2.3.4/js/dataTables.min.js"></script>
+
 <script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const tabel = document.getElementById('tabelPelanggaran');
+$(document).ready(function () {
 
-    if (tabel) {
-        $('#tabelPelanggaran').DataTable({
-            pageLength: 10,
-            lengthMenu: [5, 10, 25, 50, 100],
-            autoWidth: false,
-            language: {
-                search: 'Cari:',
-                searchPlaceholder: 'Cari jenis pelanggaran...',
-                lengthMenu: 'Tampilkan _MENU_ data',
-                info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
-                infoEmpty: 'Tidak ada data',
-                infoFiltered: '(difilter dari _MAX_ data)',
-                zeroRecords: 'Data tidak ditemukan',
-                emptyTable: 'Belum ada data jenis pelanggaran',
-                paginate: {
-                    first: 'Pertama',
-                    previous: 'Sebelumnya',
-                    next: 'Berikutnya',
-                    last: 'Terakhir'
-                }
-            },
-            columnDefs: [
-                {
-                    targets: [0, 7],
-                    orderable: false,
-                    searchable: false
-                }
-            ]
-        });
-    }
+    /* DATATABLES */
+    $('#tabelJenis').DataTable({
 
-    const form = document.getElementById('formTambahJenis');
-    const tombol = document.getElementById('tombolTambah');
+        pageLength: 10,
+        lengthMenu: [5, 10, 25, 50, 100],
 
-    if (form && tombol) {
-        form.addEventListener('shown.bs.collapse', function () {
-            tombol.textContent = '− Tutup Form Tambah';
-            tombol.setAttribute('aria-expanded', 'true');
+        ordering: true,
+        searching: true,
+        paging: true,
+        autoWidth: false,
 
-            form.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
+        // Pagination lengkap: first, previous, numbers, next, last.
+        pagingType: 'full_numbers',
+
+        order: [[1, 'desc']],
+
+        language: {
+            search: 'Cari:',
+            searchPlaceholder: 'Cari jenis pelanggaran...',
+            lengthMenu: 'Tampilkan _MENU_ data',
+
+            info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
+            infoEmpty: 'Menampilkan 0 sampai 0 dari 0 data',
+            infoFiltered: '(difilter dari _MAX_ total data)',
+
+            zeroRecords: 'Data jenis pelanggaran tidak ditemukan',
+            emptyTable: 'Belum ada data jenis pelanggaran',
+
+            paginate: {
+                first: '«',
+                previous: 'Sebelumnya',
+                next: 'Berikutnya',
+                last: '»'
+            }
+        },
+
+        columnDefs: [
+            {
+                targets: [0, 7],
+                orderable: false,
+                searchable: false
+            }
+        ],
+
+        drawCallback: function () {
+
+            const api = this.api();
+            const info = api.page.info();
+
+            api.column(0, {
+                page: 'current',
+                search: 'applied',
+                order: 'applied'
+            }).nodes().each(function (cell, i) {
+
+                cell.textContent = info.start + i + 1;
+
             });
-        });
 
-        form.addEventListener('hidden.bs.collapse', function () {
-            tombol.textContent = '+ Tambah Jenis Pelanggaran';
-            tombol.setAttribute('aria-expanded', 'false');
-        });
-
-        if (form.classList.contains('show')) {
-            tombol.textContent = '− Tutup Form Tambah';
-            tombol.setAttribute('aria-expanded', 'true');
         }
+
+    });
+
+    /* BUKA DAN TUTUP FORM */
+    const formTambah = document.getElementById('formTambahJenis');
+    const tombolTambah = document.getElementById('tombolTambah');
+
+    formTambah.addEventListener('shown.bs.collapse', function () {
+
+        tombolTambah.textContent = '− Tutup Form Tambah Jenis Pelanggaran';
+
+        formTambah.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+
+    });
+
+    formTambah.addEventListener('hidden.bs.collapse', function () {
+
+        tombolTambah.textContent = '+ Tambah Data Jenis Pelanggaran';
+
+    });
+
+    if (formTambah.classList.contains('show')) {
+
+        tombolTambah.textContent = '− Tutup Form Tambah Jenis Pelanggaran';
+
     }
+
 });
 </script>
 

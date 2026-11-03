@@ -1,3 +1,4 @@
+
 <?php
 include __DIR__ . "/middleware/auth.php";
 
@@ -41,72 +42,80 @@ $nama = $_SESSION['nama'] ?? 'User';
             text-decoration: none;
         }
 
-        /* LAYOUT */
+        /* =========================
+           LAYOUT
+        ========================= */
+
         .layout {
             min-height: 100vh;
         }
 
-        /* SIDEBAR */
+        /* =========================
+           SIDEBAR
+           Disamakan dengan halaman Tindakan Guru
+        ========================= */
+
         .sidebar {
             position: fixed;
-            left: 0;
             top: 0;
+            left: 0;
             width: 282px;
             height: 100vh;
-            background: var(--white);
-            border-right: 1px solid var(--line);
             padding: 25px 14px 16px;
             display: flex;
             flex-direction: column;
+            background: #fff;
+            border-right: 1px solid var(--line);
             z-index: 1000;
+            overflow-y: auto;
         }
 
         .brand {
-            padding: 0 15px 22px;
-            border-bottom: 1px solid var(--line);
+            padding: 0 14px 20px;
             margin-bottom: 22px;
+            border-bottom: 1px solid var(--line);
         }
 
         .brand-title {
-            font-size: 18px;
-            font-weight: 700;
             color: var(--blue-dark);
+            font-size: 19px;
+            font-weight: 700;
             margin-bottom: 5px;
         }
 
         .brand-subtitle {
-            font-size: 12px;
             color: var(--muted);
+            font-size: 12px;
         }
 
         .menu-title {
+            margin: 0 14px 11px;
+            color: #91a5bd;
             font-size: 10px;
             font-weight: 700;
-            color: #9aabc0;
             letter-spacing: 1px;
             text-transform: uppercase;
-            margin: 0 15px 10px;
         }
 
         .menu {
             display: flex;
             flex-direction: column;
-            gap: 3px;
+            gap: 5px;
         }
 
         .menu-link {
-            min-height: 43px;
             display: flex;
             align-items: center;
-            padding: 10px 15px;
-            border-radius: 10px;
+            min-height: 42px;
+            padding: 11px 14px;
+            border-radius: 9px;
             color: #5e7695;
             font-size: 13px;
-            transition: .2s ease;
+            transition: .2s;
         }
 
         .menu-link:hover {
-            background: var(--blue-soft);
+            background: #f2f7fd;
             color: var(--blue);
         }
 
@@ -114,7 +123,7 @@ $nama = $_SESSION['nama'] ?? 'User';
             background: var(--blue-soft);
             color: var(--blue);
             font-weight: 600;
-            box-shadow: inset 4px 0 0 var(--blue);
+            box-shadow: inset 3px 0 0 var(--blue);
         }
 
         .logout {
@@ -129,17 +138,23 @@ $nama = $_SESSION['nama'] ?? 'User';
 
         .logout .menu-link:hover {
             background: #fff0ef;
-            color: #c03935;
         }
 
-        /* MAIN */
+        /* =========================
+           MAIN
+        ========================= */
+
         .main {
-            margin-left: 282px;
+            width: calc(100% - 282px);
             min-height: 100vh;
+            margin-left: 282px;
             padding: 24px 28px 40px;
         }
 
-        /* TOPBAR */
+        /* =========================
+           TOPBAR
+        ========================= */
+
         .topbar {
             background: linear-gradient(
                 135deg,
@@ -184,7 +199,10 @@ $nama = $_SESSION['nama'] ?? 'User';
             white-space: nowrap;
         }
 
-        /* PAGE HEADER */
+        /* =========================
+           PAGE HEADER
+        ========================= */
+
         .page-head {
             margin: 4px 6px 18px;
         }
@@ -200,7 +218,10 @@ $nama = $_SESSION['nama'] ?? 'User';
             font-size: 13px;
         }
 
-        /* DASHBOARD 3 KOTAK */
+        /* =========================
+           DASHBOARD CARD
+        ========================= */
+
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -257,7 +278,10 @@ $nama = $_SESSION['nama'] ?? 'User';
             color: white;
         }
 
-        /* FOOTER */
+        /* =========================
+           FOOTER
+        ========================= */
+
         .footer {
             text-align: center;
             margin-top: 28px;
@@ -265,10 +289,13 @@ $nama = $_SESSION['nama'] ?? 'User';
             font-size: 10px;
         }
 
-        /* RESPONSIVE */
-        @media (max-width: 1000px) {
+        /* =========================
+           RESPONSIVE
+        ========================= */
+
+        @media (max-width: 1100px) {
             .dashboard-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
         }
 
@@ -280,6 +307,7 @@ $nama = $_SESSION['nama'] ?? 'User';
             }
 
             .main {
+                width: 100%;
                 margin-left: 0;
             }
 
@@ -297,6 +325,14 @@ $nama = $_SESSION['nama'] ?? 'User';
             .topbar {
                 padding: 20px;
             }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .page-head h3 {
+                font-size: 24px;
+            }
         }
     </style>
 </head>
@@ -305,7 +341,10 @@ $nama = $_SESSION['nama'] ?? 'User';
 
 <div class="layout">
 
-    <!-- SIDEBAR -->
+    <!-- =========================
+         SIDEBAR
+    ========================= -->
+
     <aside class="sidebar">
 
         <div class="brand">
@@ -329,6 +368,8 @@ $nama = $_SESSION['nama'] ?? 'User';
             </a>
 
             <?php if ($role === 'admin'): ?>
+
+                <!-- MENU ADMIN -->
 
                 <a href="admin/guru.php" class="menu-link">
                     Kelola Guru
@@ -368,6 +409,8 @@ $nama = $_SESSION['nama'] ?? 'User';
 
             <?php else: ?>
 
+                <!-- MENU GURU -->
+
                 <a href="guru/catat_pelanggaran.php" class="menu-link">
                     Catat Pelanggaran
                 </a>
@@ -376,9 +419,12 @@ $nama = $_SESSION['nama'] ?? 'User';
                     Tindakan
                 </a>
 
-
                 <a href="guru/riwayat.php" class="menu-link">
                     Riwayat
+                </a>
+
+                <a href="guru/rekap_poin.php" class="menu-link">
+                    Rekap Poin
                 </a>
 
             <?php endif; ?>
@@ -398,10 +444,14 @@ $nama = $_SESSION['nama'] ?? 'User';
     </aside>
 
 
-    <!-- MAIN -->
+    <!-- =========================
+         MAIN CONTENT
+    ========================= -->
+
     <main class="main">
 
         <!-- TOPBAR -->
+
         <section class="topbar">
 
             <div class="welcome">
@@ -425,6 +475,7 @@ $nama = $_SESSION['nama'] ?? 'User';
 
 
         <!-- PAGE HEADER -->
+
         <div class="page-head">
 
             <h3>
@@ -438,12 +489,14 @@ $nama = $_SESSION['nama'] ?? 'User';
         </div>
 
 
-        <!-- DASHBOARD -->
-        <section class="dashboard-grid">
+        <!-- =========================
+             DASHBOARD ADMIN
+        ========================= -->
 
-            <?php if ($role === 'admin'): ?>
+        <?php if ($role === 'admin'): ?>
 
-                <!-- KOTAK 1 -->
+            <section class="dashboard-grid">
+
                 <div class="card">
 
                     <div class="card-content">
@@ -465,7 +518,6 @@ $nama = $_SESSION['nama'] ?? 'User';
                 </div>
 
 
-                <!-- KOTAK 2 -->
                 <div class="card">
 
                     <div class="card-content">
@@ -486,7 +538,6 @@ $nama = $_SESSION['nama'] ?? 'User';
                 </div>
 
 
-                <!-- KOTAK 3 -->
                 <div class="card">
 
                     <div class="card-content">
@@ -506,10 +557,19 @@ $nama = $_SESSION['nama'] ?? 'User';
 
                 </div>
 
+            </section>
 
-            <?php else: ?>
+
+        <!-- =========================
+             DASHBOARD GURU
+        ========================= -->
+
+        <?php else: ?>
+
+            <section class="dashboard-grid">
 
                 <!-- KOTAK 1 -->
+
                 <div class="card">
 
                     <div class="card-content">
@@ -531,6 +591,7 @@ $nama = $_SESSION['nama'] ?? 'User';
 
 
                 <!-- KOTAK 2 -->
+
                 <div class="card">
 
                     <div class="card-content">
@@ -552,29 +613,32 @@ $nama = $_SESSION['nama'] ?? 'User';
 
 
                 <!-- KOTAK 3 -->
+
                 <div class="card">
 
                     <div class="card-content">
                         <h4>
-                            Laporan & Riwayat
+                            Riwayat
                         </h4>
 
                         <p>
-                            Lihat laporan dan riwayat
-                            pelanggaran siswa.
+                            Lihat riwayat pencatatan
+                            pelanggaran siswa yang telah dilakukan.
                         </p>
                     </div>
 
-                    <a href="guru/laporan.php" class="card-button">
+                    <a href="guru/riwayat.php" class="card-button">
                         Buka
                     </a>
 
                 </div>
 
-            <?php endif; ?>
+            </section>
 
-        </section>
+        <?php endif; ?>
 
+
+        <!-- FOOTER -->
 
         <div class="footer">
             Sistem Pelanggaran Sekolah · Project Rekayasa Perangkat Lunak

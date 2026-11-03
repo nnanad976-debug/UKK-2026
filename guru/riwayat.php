@@ -1,68 +1,58 @@
+
 <?php
 include "../middleware/auth.php";
 include "../config/koneksi.php";
 
 if (strtolower($_SESSION['role'] ?? '') !== 'guru') {
+    http_response_code(403);
     exit("Anda tidak memiliki akses");
 }
 
-$user_id = (int) ($_SESSION['user_id'] ?? 0);
+$user_id = (int)($_SESSION['user_id'] ?? 0);
 
-function e($value): string {
+function e($value) {
     return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
-// Ambil data guru yang sedang login.
-$stmt_guru = mysqli_prepare(
+// Ambil data guru yang sedang login
+$stmt = mysqli_prepare(
     $koneksi,
     "SELECT id, nama FROM t_guru WHERE user_id = ? LIMIT 1"
 );
+mysqli_stmt_bind_param($stmt, "i", $user_id);
+mysqli_stmt_execute($stmt);
+$data_guru = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+mysqli_stmt_close($stmt);
 
-if (!$stmt_guru) {
-    exit("Terjadi kesalahan saat menyiapkan data guru.");
-}
+$guru_id = (int)($data_guru['id'] ?? 0);
 
-mysqli_stmt_bind_param($stmt_guru, "i", $user_id);
-mysqli_stmt_execute($stmt_guru);
-$result_guru = mysqli_stmt_get_result($stmt_guru);
-$data_guru = mysqli_fetch_assoc($result_guru);
-mysqli_stmt_close($stmt_guru);
-
-$guru_id = (int) ($data_guru['id'] ?? 0);
-$nama_guru = $data_guru['nama'] ?? ($_SESSION['nama'] ?? 'Guru');
-
-// Riwayat hanya berisi pelanggaran yang sudah ditindaklanjuti atau selesai.
+// Ambil riwayat pelanggaran berdasarkan guru
 $daftar_riwayat = [];
-$pesan_error = '';
 
 if ($guru_id > 0) {
     $stmt = mysqli_prepare(
         $koneksi,
-        "SELECT id, tanggal, nama_siswa, nama_kelas, nama_pelanggaran,
-                poin, keterangan, tindakan, status
+        "SELECT id, tanggal, nama_siswa, nama_kelas,
+                nama_pelanggaran, poin, keterangan,
+                tindakan, status
          FROM t_pelanggaran_siswa
          WHERE guru_id = ?
-           AND status IN ('Ditindaklanjuti', 'Selesai')
          ORDER BY tanggal DESC, id DESC"
     );
 
-    if ($stmt) {
-        mysqli_stmt_bind_param($stmt, "i", $guru_id);
-        mysqli_stmt_execute($stmt);
-        $hasil = mysqli_stmt_get_result($stmt);
+    mysqli_stmt_bind_param($stmt, "i", $guru_id);
+    mysqli_stmt_execute($stmt);
 
-        while ($data = mysqli_fetch_assoc($hasil)) {
-            $daftar_riwayat[] = $data;
-        }
+    $hasil = mysqli_stmt_get_result($stmt);
 
-        mysqli_stmt_close($stmt);
-    } else {
-        $pesan_error = 'Data riwayat gagal dimuat. Silakan coba lagi.';
+    while ($data = mysqli_fetch_assoc($hasil)) {
+        $daftar_riwayat[] = $data;
     }
-} else {
-    $pesan_error = 'Data guru tidak ditemukan.';
+
+    mysqli_stmt_close($stmt);
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -78,284 +68,512 @@ if ($guru_id > 0) {
             --blue: #2878cf;
             --blue-dark: #203e68;
             --blue-soft: #eaf3ff;
-            --page: #f6f9fd;
-            --white: #fff;
+            --page: #f3f7fc;
             --text: #263f63;
             --muted: #7890ad;
             --line: #dce9f8;
         }
 
-        * { box-sizing: border-box; }
-        html, body { min-height: 100%; }
-        body {
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            min-height: 100%;
             margin: 0;
+            overflow-x: hidden;
+        }
+
+        body {
             background: var(--page);
             color: var(--text);
             font-family: "Segoe UI", Arial, sans-serif;
-            font-size: 13px;
-            overflow-x: hidden;
+            font-size: 15px;
         }
-        a { text-decoration: none; }
 
+        a {
+            text-decoration: none;
+        }
+
+        /* SIDEBAR - SAMA DENGAN HALAMAN TINDAKAN */
         .sidebar {
             position: fixed;
-            inset: 0 auto 0 0;
-            width: 242px;
+            top: 0;
+            left: 0;
+            width: 282px;
             height: 100vh;
-            overflow-y: auto;
-            background: var(--white);
-            border-right: 1px solid var(--line);
-            padding: 25px 12px 16px;
+            padding: 25px 14px 16px;
             display: flex;
             flex-direction: column;
+            background: #fff;
+            border-right: 1px solid var(--line);
             z-index: 1000;
+            overflow-y: auto;
         }
+
         .brand {
-            padding: 0 13px 22px;
-            border-bottom: 1px solid var(--line);
+            padding: 0 14px 20px;
             margin-bottom: 22px;
+            border-bottom: 1px solid var(--line);
         }
+
         .brand-title {
-            font-size: 18px;
-            font-weight: 700;
             color: var(--blue-dark);
+            font-size: 19px;
+            font-weight: 700;
             margin-bottom: 5px;
         }
-        .brand-subtitle { font-size: 12px; color: var(--muted); }
+
+        .brand-subtitle {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
         .menu-title {
+            margin: 0 14px 11px;
+            color: #91a5bd;
             font-size: 10px;
             font-weight: 700;
-            color: #9aabc0;
             letter-spacing: 1px;
             text-transform: uppercase;
-            margin: 0 13px 10px;
         }
-        .menu { display: flex; flex-direction: column; gap: 3px; }
+
+        .menu {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
         .menu-link {
-            min-height: 39px;
             display: flex;
             align-items: center;
-            padding: 10px 13px;
-            border-radius: 10px;
+            min-height: 42px;
+            padding: 11px 14px;
+            border-radius: 9px;
             color: #5e7695;
             font-size: 13px;
-            transition: .2s ease;
+            transition: .2s;
         }
-        .menu-link:hover { background: var(--blue-soft); color: var(--blue); }
+
+        .menu-link:hover {
+            background: #f2f7fd;
+            color: var(--blue);
+        }
+
         .menu-link.active {
             background: var(--blue-soft);
             color: var(--blue);
             font-weight: 600;
-            box-shadow: inset 4px 0 0 var(--blue);
+            box-shadow: inset 3px 0 0 var(--blue);
         }
-        .logout { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line); }
-        .logout .menu-link { color: #d9534f; }
-        .logout .menu-link:hover { background: #fff0ef; color: #c03935; }
 
+        .logout {
+            margin-top: auto;
+            padding-top: 14px;
+            border-top: 1px solid var(--line);
+        }
+
+        .logout .menu-link {
+            color: #d9534f;
+        }
+
+        .logout .menu-link:hover {
+            background: #fff0ef;
+        }
+
+        /* KONTEN */
         .main {
-            width: calc(100% - 242px);
+            width: calc(100% - 282px);
             min-height: 100vh;
-            margin-left: 242px;
-            padding: 24px;
-        }
-        .container-page { width: 100%; max-width: 100%; min-width: 0; margin: 0; padding: 0; }
-        .judul, h4 { color: #234e78; }
-        .card {
-            min-width: 0;
-            background: #fff;
-            border: 1px solid #e1eaf4 !important;
-            border-radius: 10px;
-            box-shadow: 0 3px 12px rgba(35, 78, 120, .05);
-        }
-        .card-body { min-width: 0; padding: 24px; }
-        .keterangan { color: #71849a; font-size: 13px; }
-        .btn-primary {
-            --bs-btn-color: #fff;
-            --bs-btn-bg: #5f91ba;
-            --bs-btn-border-color: #5f91ba;
-            --bs-btn-hover-color: #fff;
-            --bs-btn-hover-bg: #4b7fa9;
-            --bs-btn-hover-border-color: #4b7fa9;
-            border-radius: 7px;
-            padding: 8px 15px;
-        }
-        .btn-secondary {
-            --bs-btn-bg: #e8f0f8;
-            --bs-btn-border-color: #d8e5f1;
-            --bs-btn-color: #426584;
-            --bs-btn-hover-bg: #dceaf6;
-            --bs-btn-hover-border-color: #cbddeb;
-            --bs-btn-hover-color: #234e78;
-            border-radius: 7px;
+            margin-left: 282px;
+            padding: 24px 28px 40px;
         }
 
-        /* Tabel dibatasi pada card; teks panjang dapat turun baris. */
+        .page-container {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            margin: 0 auto;
+        }
+
+        .judul {
+            color: #234e78;
+            font-size: 30px;
+            line-height: 1.25;
+            font-weight: 650;
+        }
+
+        .subjudul {
+            color: #7890ad;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* CARD */
+        .card {
+            background: #fff;
+            border: 1px solid #dce9f8;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(35, 78, 120, .045);
+            overflow: hidden;
+        }
+
+        .card-body {
+            padding: 20px;
+            min-width: 0;
+        }
+
+        .section-title {
+            color: #234e78;
+            font-size: 21px;
+            line-height: 1.3;
+            font-weight: 650;
+            margin-bottom: 5px;
+        }
+
+        .section-description {
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 22px;
+        }
+
+        /* TABEL */
         .table-responsive {
             width: 100%;
             max-width: 100%;
             overflow-x: auto;
-            border-radius: 7px;
+            overflow-y: hidden;
+            border-radius: 8px;
+            -webkit-overflow-scrolling: touch;
         }
+
         #tabelRiwayat {
             width: 100% !important;
-            margin: 0 !important;
-            table-layout: fixed;
+            min-width: 1050px;
+            margin-bottom: 0 !important;
             color: #344b63;
-            font-size: 12px;
+            font-size: 14px;
             vertical-align: middle;
         }
-        #tabelRiwayat th,
-        #tabelRiwayat td {
-            padding: 11px 9px;
-            border-color: #e5edf5;
-            overflow-wrap: anywhere;
-            word-break: normal;
-            vertical-align: middle;
-        }
-        #tabelRiwayat thead th {
-            background: #eaf2fa;
-            color: #315b82;
-            font-weight: 600;
-        }
-        #tabelRiwayat tbody tr:hover > * { background-color: #f4f8fc; }
-        #tabelRiwayat th:nth-child(1), #tabelRiwayat td:nth-child(1) { width: 5%; text-align: center; }
-        #tabelRiwayat th:nth-child(2), #tabelRiwayat td:nth-child(2) { width: 10%; }
-        #tabelRiwayat th:nth-child(3), #tabelRiwayat td:nth-child(3) { width: 12%; }
-        #tabelRiwayat th:nth-child(4), #tabelRiwayat td:nth-child(4) { width: 8%; }
-        #tabelRiwayat th:nth-child(5), #tabelRiwayat td:nth-child(5) { width: 17%; }
-        #tabelRiwayat th:nth-child(6), #tabelRiwayat td:nth-child(6) { width: 6%; text-align: center; }
-        #tabelRiwayat th:nth-child(7), #tabelRiwayat td:nth-child(7) { width: 15%; }
-        #tabelRiwayat th:nth-child(8), #tabelRiwayat td:nth-child(8) { width: 13%; }
-        #tabelRiwayat th:nth-child(9), #tabelRiwayat td:nth-child(9) { width: 14%; }
 
-        .badge-status {
-            display: inline-block;
-            padding: 6px 9px;
-            border-radius: 20px;
-            font-size: 11px;
+        #tabelRiwayat thead th {
+            padding: 14px 12px;
+            background: #edf4fb;
+            color: #315b82;
+            border-color: #dce7f1;
+            font-size: 14px;
             font-weight: 600;
-            white-space: normal;
+            white-space: nowrap;
+        }
+
+        #tabelRiwayat tbody td {
+            padding: 13px 11px;
+            border-color: #e2eaf3;
+            vertical-align: middle;
+            line-height: 1.45;
+        }
+
+        #tabelRiwayat tbody tr:hover > * {
+            background-color: #f5f9fe;
+        }
+
+        #tabelRiwayat th:first-child,
+        #tabelRiwayat td:first-child,
+        #tabelRiwayat th:nth-child(6),
+        #tabelRiwayat td:nth-child(6) {
             text-align: center;
         }
-        .status-ditindaklanjuti { color: #245c9b; background: #e4efff; }
-        .status-selesai { color: #34734b; background: #e4f3e9; }
 
-        .dt-container { width: 100%; max-width: 100%; }
+        /* STATUS */
+        .status-badge {
+            display: inline-block;
+            padding: 7px 11px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .status-diproses {
+            background: #fff2d8;
+            color: #966b16;
+        }
+
+        .status-ditindaklanjuti {
+            background: #e5f0ff;
+            color: #2868ad;
+        }
+
+        .status-selesai {
+            background: #e4f3e9;
+            color: #34734b;
+        }
+
+        .status-belum {
+            background: #f0f2f5;
+            color: #748195;
+        }
+
+        .badge-poin {
+            display: inline-block;
+            min-width: 38px;
+            padding: 6px 10px;
+            border-radius: 7px;
+            background: var(--blue-soft);
+            color: var(--blue);
+            font-weight: 700;
+            text-align: center;
+        }
+
+        /* DATATABLES */
+        .dt-container {
+            width: 100%;
+            min-width: 0;
+            color: var(--text);
+        }
+
         .dt-container .dt-layout-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            flex-wrap: wrap;
             gap: 12px;
-            margin: 12px 0;
+            margin: 15px 0;
         }
-        .dt-container .dt-layout-cell { min-width: 0; }
+
+        .dt-container .dt-layout-cell {
+            min-width: 0;
+        }
+
         .dt-container .dt-length,
-        .dt-container .dt-search { display: flex; align-items: center; gap: 8px; }
+        .dt-container .dt-search {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         .dt-container .dt-length label,
         .dt-container .dt-search label {
             display: flex;
             align-items: center;
             gap: 8px;
             margin: 0;
-            font-size: 12px;
+            color: #526b86;
+            font-size: 13px;
             white-space: nowrap;
         }
-        .dt-container .dt-length select {
-            width: 58px !important;
-            min-width: 58px;
-            height: 36px;
-            padding: 5px;
+
+        .dt-container .dt-length select,
+        .dt-container .dt-search input {
+            height: 38px;
             border: 1px solid #d7e3ef;
             border-radius: 7px;
             background: #fff;
+            color: var(--text);
+            font-size: 13px;
+            outline: none;
         }
+
+        .dt-container .dt-length select {
+            width: 70px;
+            padding: 5px 8px;
+        }
+
         .dt-container .dt-search input {
-            width: 160px;
-            max-width: 100%;
-            height: 36px;
-            padding: 7px 10px;
-            border: 1px solid #d7e3ef;
-            border-radius: 7px;
+            width: 205px;
             margin-left: 0 !important;
+            padding: 7px 10px;
         }
-        .dt-container .dt-paging .dt-paging-button { border-radius: 6px !important; }
+
+        .dt-container .dt-search input:focus,
+        .dt-container .dt-length select:focus {
+            border-color: #8eb5d8;
+            box-shadow: 0 0 0 .2rem rgba(87, 143, 190, .14);
+        }
+
+        .dt-container .dt-paging {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .dt-container .dt-paging .dt-paging-button {
+            border-radius: 5px !important;
+            font-size: 13px;
+        }
+
         .dt-container .dt-paging .dt-paging-button.current {
             background: var(--blue) !important;
             border-color: var(--blue) !important;
             color: #fff !important;
         }
-        .dt-container .dt-info { color: #526b86; font-size: 12px; }
-        .alert { border-radius: 8px; }
 
-        @media (max-width: 1100px) {
-            .main { padding: 20px 16px; }
-            .card-body { padding: 18px; }
-            #tabelRiwayat { font-size: 11px; }
-            #tabelRiwayat th, #tabelRiwayat td { padding: 9px 6px; }
+        .dt-container .dt-info {
+            color: #526b86;
+            font-size: 13px;
         }
-        @media (max-width: 700px) {
-            .sidebar { position: relative; width: 100%; height: auto; min-height: auto; }
-            .logout { margin-top: 14px; }
-            .main { width: 100%; margin-left: 0; padding: 18px 12px 28px; }
-            .card-body { padding: 15px; }
-            .dt-container .dt-layout-cell { width: 100%; }
-            .dt-container .dt-search input { width: 150px; }
-            #tabelRiwayat { min-width: 850px; table-layout: auto; }
+
+        /* DATA KOSONG */
+        .empty-state {
+            padding: 35px 15px;
+            color: var(--muted);
+            text-align: center;
+            background: #f8fbff;
+            border: 1px dashed var(--line);
+            border-radius: 9px;
+        }
+
+        .empty-state h5 {
+            color: #234e78;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .empty-state p {
+            margin: 5px 0 0;
+            font-size: 13px;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 900px) {
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+                min-height: auto;
+            }
+
+            .logout {
+                margin-top: 14px;
+            }
+
+            .main {
+                width: 100%;
+                margin-left: 0;
+                padding: 20px 18px 30px;
+            }
+        }
+
+        @media (max-width: 650px) {
+            .main {
+                padding: 16px 12px 25px;
+            }
+
+            .card-body {
+                padding: 16px;
+            }
+
+            .judul {
+                font-size: 25px;
+            }
+
+            #tabelRiwayat {
+                font-size: 13px;
+            }
+
+            .dt-container .dt-layout-row {
+                flex-wrap: wrap;
+            }
+
+            .dt-container .dt-layout-cell {
+                width: 100%;
+            }
+
+            .dt-container .dt-search {
+                justify-content: flex-start;
+            }
+
+            .dt-container .dt-search input {
+                width: 150px;
+            }
         }
     </style>
 </head>
+
 <body>
-    <aside class="sidebar">
-        <div class="brand">
-            <div class="brand-title">Sistem Pelanggaran</div>
-            <div class="brand-subtitle">SMK Muhammadiyah</div>
-        </div>
 
-        <div class="menu-title">Menu Utama</div>
-        <nav class="menu">
-            <a href="../dashboard.php" class="menu-link">Dashboard</a>
-            <a href="catat_pelanggaran.php" class="menu-link">Catat Pelanggaran</a>
-            <a href="tindakan.php" class="menu-link">Tindakan</a>
-            <a href="riwayat.php" class="menu-link active" aria-current="page">Riwayat</a>
-            <a href="rekap_poin.php" class="menu-link">Rekap Poin</a>
-            <a href="../about.php" class="menu-link">About Me</a>
-        </nav>
+<!-- SIDEBAR -->
+<aside class="sidebar">
 
-        <div class="logout">
-            <a href="../logout.php" class="menu-link">Logout</a>
-        </div>
-    </aside>
+    <div class="brand">
+        <div class="brand-title">Sistem Pelanggaran</div>
+        <div class="brand-subtitle">SMK Muhammadiyah</div>
+    </div>
 
-    <main class="main">
-        <div class="container-page">
-            <div class="mb-3">
-                <a href="../dashboard.php" class="btn btn-secondary">&larr; Kembali ke Dashboard</a>
+    <div class="menu-title">Menu Utama</div>
+
+    <nav class="menu">
+        <a href="../dashboard.php" class="menu-link">
+            Dashboard
+        </a>
+
+        <a href="catat_pelanggaran.php" class="menu-link">
+            Catat Pelanggaran
+        </a>
+
+        <a href="tindakan.php" class="menu-link">
+            Tindakan
+        </a>
+
+        <a href="riwayat.php" class="menu-link active">
+            Riwayat
+        </a>
+
+        <a href="rekap_poin.php" class="menu-link">
+            Rekap Poin
+        </a>
+
+        <a href="../about.php" class="menu-link">
+            About Me
+        </a>
+    </nav>
+
+    <div class="logout">
+        <a href="../logout.php" class="menu-link">
+            Logout
+        </a>
+    </div>
+
+</aside>
+
+<!-- KONTEN UTAMA -->
+<main class="main">
+    <div class="page-container">
+
+        <section class="card mb-4">
+            <div class="card-body">
+                <h1 class="judul mb-1">
+                    Riwayat Pelanggaran
+                </h1>
+
+                <p class="subjudul mb-0">
+                    Lihat riwayat pelanggaran siswa yang telah Anda catat.
+                </p>
             </div>
+        </section>
 
-            <section class="card mb-4">
-                <div class="card-body">
-                    <h2 class="judul mb-1">Riwayat Pelanggaran</h2>
-                    <p class="text-muted mb-0">Catatan pelanggaran yang sudah ditindaklanjuti atau diselesaikan oleh <?= e($nama_guru); ?>.</p>
-                </div>
-            </section>
+        <section class="card">
+            <div class="card-body">
 
-            <?php if ($pesan_error !== ''): ?>
-                <div class="alert alert-warning" role="alert"><?= e($pesan_error); ?></div>
-            <?php endif; ?>
+                <h2 class="section-title">
+                    Data Riwayat Pelanggaran
+                </h2>
 
-            <section class="card">
-                <div class="card-body">
-                    <h4 class="mb-1">Data Riwayat Pelanggaran</h4>
-                    <p class="keterangan mb-3">Hanya pelanggaran berstatus Ditindaklanjuti atau Selesai yang ditampilkan di halaman ini.</p>
+                <p class="section-description">
+                    Daftar seluruh pelanggaran yang telah dicatat oleh Anda.
+                </p>
+
+                <?php if (!empty($daftar_riwayat)): ?>
 
                     <div class="table-responsive">
-                        <table id="tabelRiwayat" class="table table-bordered table-hover align-middle">
+                        <table id="tabelRiwayat"
+                               class="table table-bordered table-hover align-middle">
+
                             <thead>
                                 <tr>
                                     <th>No</th>
                                     <th>Tanggal</th>
-                                    <th>Siswa</th>
+                                    <th>Nama Siswa</th>
                                     <th>Kelas</th>
                                     <th>Pelanggaran</th>
                                     <th>Poin</th>
@@ -364,67 +582,115 @@ if ($guru_id > 0) {
                                     <th>Status</th>
                                 </tr>
                             </thead>
+
                             <tbody>
                                 <?php foreach ($daftar_riwayat as $index => $data): ?>
+
                                     <?php
-                                        $status = trim((string)($data['status'] ?? ''));
-                                        $status_class = strcasecmp($status, 'Selesai') === 0
-                                            ? 'status-selesai'
-                                            : 'status-ditindaklanjuti';
+                                    $status = trim($data['status'] ?? '');
+                                    $status_class = 'status-belum';
+
+                                    if ($status === 'Diproses') {
+                                        $status_class = 'status-diproses';
+                                    } elseif ($status === 'Ditindaklanjuti') {
+                                        $status_class = 'status-ditindaklanjuti';
+                                    } elseif ($status === 'Selesai') {
+                                        $status_class = 'status-selesai';
+                                    }
+
+                                    $tanggal = !empty($data['tanggal'])
+                                        ? date('d-m-Y', strtotime($data['tanggal']))
+                                        : '-';
                                     ?>
+
                                     <tr>
                                         <td><?= $index + 1; ?></td>
-                                        <td><?= e($data['tanggal'] ?? '-'); ?></td>
-                                        <td><?= e($data['nama_siswa'] ?? '-'); ?></td>
-                                        <td><?= e(($data['nama_kelas'] ?? '') ?: '-'); ?></td>
-                                        <td><?= e($data['nama_pelanggaran'] ?? '-'); ?></td>
-                                        <td><?= (int)($data['poin'] ?? 0); ?></td>
-                                        <td><?= e(($data['keterangan'] ?? '') ?: '-'); ?></td>
-                                        <td><?= e(($data['tindakan'] ?? '') ?: '-'); ?></td>
-                                        <td><span class="badge-status <?= e($status_class); ?>"><?= e($status); ?></span></td>
+
+                                        <td><?= e($tanggal); ?></td>
+
+                                        <td><?= e($data['nama_siswa']); ?></td>
+
+                                        <td><?= e($data['nama_kelas'] ?: '-'); ?></td>
+
+                                        <td><?= e($data['nama_pelanggaran']); ?></td>
+
+                                        <td>
+                                            <span class="badge-poin">
+                                                <?= (int)$data['poin']; ?>
+                                            </span>
+                                        </td>
+
+                                        <td>
+                                            <?= e($data['keterangan'] ?: '-'); ?>
+                                        </td>
+
+                                        <td>
+                                            <?= e(trim((string)($data['tindakan'] ?? '')) ?: '-'); ?>
+                                        </td>
+
+                                        <td>
+                                            <span class="status-badge <?= e($status_class); ?>">
+                                                <?= e($status ?: 'Belum diproses'); ?>
+                                            </span>
+                                        </td>
                                     </tr>
+
                                 <?php endforeach; ?>
                             </tbody>
+
                         </table>
                     </div>
 
-                    <?php if (empty($daftar_riwayat) && $pesan_error === ''): ?>
-                        <div class="text-center text-muted py-3">Belum ada riwayat. Pelanggaran akan muncul di sini setelah statusnya diubah menjadi Ditindaklanjuti atau Selesai.</div>
-                    <?php endif; ?>
-                </div>
-            </section>
-        </div>
-    </main>
+                <?php else: ?>
 
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.datatables.net/2.3.4/js/dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.min.js"></script>
-    <script>
-        $(function () {
-            $('#tabelRiwayat').DataTable({
-                pageLength: 10,
-                lengthMenu: [10, 25, 50, 100],
-                autoWidth: false,
-                scrollX: false,
-                order: [],
-                language: {
-                    search: 'Cari:',
-                    lengthMenu: 'Tampilkan _MENU_ data',
-                    info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ riwayat',
-                    infoEmpty: 'Tidak ada riwayat pelanggaran',
-                    infoFiltered: '(difilter dari _MAX_ data)',
-                    zeroRecords: 'Riwayat pelanggaran tidak ditemukan',
-                    emptyTable: 'Belum ada riwayat pelanggaran',
-                    paginate: {
-                        first: 'Pertama',
-                        previous: 'Sebelumnya',
-                        next: 'Berikutnya',
-                        last: 'Terakhir'
-                    }
+                    <div class="empty-state">
+                        <h5>Belum Ada Riwayat Pelanggaran</h5>
+                        <p>
+                            Data pelanggaran yang Anda catat akan ditampilkan di sini.
+                        </p>
+                    </div>
+
+                <?php endif; ?>
+
+            </div>
+        </section>
+
+    </div>
+</main>
+
+<!-- JAVASCRIPT -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+$(document).ready(function () {
+    const tabel = $('#tabelRiwayat');
+
+    if (tabel.length) {
+        tabel.DataTable({
+            pageLength: 10,
+            lengthMenu: [10, 25, 50, 100],
+            order: [],
+            autoWidth: false,
+            language: {
+                search: 'Cari:',
+                lengthMenu: 'Tampilkan _MENU_ data',
+                info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ riwayat',
+                infoEmpty: 'Tidak ada data riwayat',
+                infoFiltered: '(disaring dari _MAX_ data)',
+                zeroRecords: 'Data riwayat tidak ditemukan',
+                emptyTable: 'Belum ada riwayat pelanggaran.',
+                paginate: {
+                    previous: 'Sebelumnya',
+                    next: 'Berikutnya'
                 }
-            });
+            }
         });
-    </script>
+    }
+});
+</script>
+
 </body>
 </html>
