@@ -3,37 +3,22 @@
 include "../middleware/auth.php";
 include "../config/koneksi.php";
 
-/* =========================================
-   CEK HAK AKSES GURU
-========================================= */
 if (strtolower($_SESSION['role'] ?? '') !== 'guru') {
     http_response_code(403);
     exit("Anda tidak memiliki akses");
 }
 
-/* =========================================
-   FUNGSI OUTPUT
-========================================= */
 function e($value): string
 {
-    return htmlspecialchars(
-        (string)($value ?? ''),
-        ENT_QUOTES,
-        'UTF-8'
-    );
+    return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
-/* =========================================
-   DATA GURU
-========================================= */
+/* DATA GURU */
 $user_id = (int)($_SESSION['user_id'] ?? 0);
 
 $stmt_guru = mysqli_prepare(
     $koneksi,
-    "SELECT id, nama
-     FROM t_guru
-     WHERE user_id = ?
-     LIMIT 1"
+    "SELECT id, nama FROM t_guru WHERE user_id = ? LIMIT 1"
 );
 
 if (!$stmt_guru) {
@@ -42,10 +27,7 @@ if (!$stmt_guru) {
 
 mysqli_stmt_bind_param($stmt_guru, "i", $user_id);
 mysqli_stmt_execute($stmt_guru);
-
-$hasil_guru = mysqli_stmt_get_result($stmt_guru);
-$data_guru = mysqli_fetch_assoc($hasil_guru);
-
+$data_guru = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_guru));
 mysqli_stmt_close($stmt_guru);
 
 if (!$data_guru) {
@@ -53,11 +35,8 @@ if (!$data_guru) {
 }
 
 $guru_id = (int)$data_guru['id'];
-$nama_guru = $data_guru['nama'];
 
-/* =========================================
-   DATA REKAP POIN
-========================================= */
+/* DATA REKAP POIN */
 $daftar_rekap = [];
 $pesan_error = '';
 
@@ -77,81 +56,54 @@ $sql = "
 $stmt_rekap = mysqli_prepare($koneksi, $sql);
 
 if ($stmt_rekap) {
-
-    mysqli_stmt_bind_param(
-        $stmt_rekap,
-        "i",
-        $guru_id
-    );
+    mysqli_stmt_bind_param($stmt_rekap, "i", $guru_id);
 
     if (mysqli_stmt_execute($stmt_rekap)) {
-
         $hasil_rekap = mysqli_stmt_get_result($stmt_rekap);
 
         while ($data = mysqli_fetch_assoc($hasil_rekap)) {
             $daftar_rekap[] = $data;
         }
-
     } else {
-
         $pesan_error = "Data rekap poin gagal dimuat.";
-
     }
 
     mysqli_stmt_close($stmt_rekap);
-
 } else {
-
     $pesan_error = "Data rekap poin gagal diproses.";
-
 }
 
-/* =========================================
-   RINGKASAN TIGA KOTAK
-========================================= */
+/* STATISTIK */
 $total_siswa = count($daftar_rekap);
 $total_pelanggaran = 0;
 $total_poin = 0;
 
 foreach ($daftar_rekap as $data) {
-
     $total_pelanggaran += (int)$data['jumlah_pelanggaran'];
-
     $total_poin += (int)$data['total_poin'];
-
 }
+
+/* ACTIVE SIDEBAR */
+$halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
 ?>
 
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <title>Rekap Poin - Sistem Pelanggaran</title>
 
-    <!-- BOOTSTRAP -->
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-    >
-
-    <!-- DATATABLES -->
-    <link
-        href="https://cdn.datatables.net/2.3.4/css/dataTables.bootstrap5.min.css"
-        rel="stylesheet"
-    >
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/2.3.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 
     <style>
-
         :root {
             --blue: #2878cf;
             --blue-dark: #203e68;
             --blue-soft: #eaf3ff;
-            --page: #f5f8fc;
-            --white: #ffffff;
+            --page: #f3f7fc;
             --text: #263f63;
             --muted: #7890ad;
             --line: #dce9f8;
@@ -161,58 +113,61 @@ foreach ($daftar_rekap as $data) {
             box-sizing: border-box;
         }
 
-        body {
-            min-height: 100vh;
+        html, body {
+            width: 100%;
+            min-height: 100%;
             margin: 0;
+            overflow-x: hidden;
+        }
+
+        body {
             background: var(--page);
             color: var(--text);
             font-family: "Segoe UI", Arial, sans-serif;
-            font-size: 13px;
-            overflow-x: hidden;
+            font-size: 15px;
         }
 
         a {
             text-decoration: none;
         }
 
-        /* =====================================
-           SIDEBAR - SAMA DENGAN RIWAYAT
-        ===================================== */
+        /* SIDEBAR */
 
         .sidebar {
             position: fixed;
             top: 0;
             left: 0;
-            width: 242px;
+            width: 282px;
             height: 100vh;
-            padding: 25px 12px 16px;
+            padding: 25px 14px 16px;
             display: flex;
             flex-direction: column;
-            background: #ffffff;
+            background: #fff;
             border-right: 1px solid var(--line);
             z-index: 1000;
+            overflow-y: auto;
         }
 
         .brand {
-            padding: 0 13px 20px;
-            margin-bottom: 20px;
+            padding: 0 14px 20px;
+            margin-bottom: 22px;
             border-bottom: 1px solid var(--line);
         }
 
         .brand-title {
             color: var(--blue-dark);
-            font-size: 18px;
+            font-size: 19px;
             font-weight: 700;
             margin-bottom: 5px;
         }
 
         .brand-subtitle {
             color: var(--muted);
-            font-size: 11px;
+            font-size: 12px;
         }
 
         .menu-title {
-            margin: 0 13px 10px;
+            margin: 0 14px 11px;
             color: #91a5bd;
             font-size: 10px;
             font-weight: 700;
@@ -223,19 +178,18 @@ foreach ($daftar_rekap as $data) {
         .menu {
             display: flex;
             flex-direction: column;
-            gap: 3px;
+            gap: 5px;
         }
 
         .menu-link {
             display: flex;
             align-items: center;
-            min-height: 40px;
-            padding: 10px 13px;
+            min-height: 42px;
+            padding: 11px 14px;
             border-radius: 9px;
             color: #5e7695;
-            font-size: 12px;
-            font-weight: 400;
-            transition: .2s ease;
+            font-size: 13px;
+            transition: .2s;
         }
 
         .menu-link:hover {
@@ -262,63 +216,56 @@ foreach ($daftar_rekap as $data) {
 
         .logout .menu-link:hover {
             background: #fff0ef;
-            color: #c03935;
         }
 
-        /* =====================================
-           KONTEN UTAMA
-        ===================================== */
+        /* KONTEN UTAMA */
 
         .main {
-            width: calc(100% - 242px);
+            width: calc(100% - 282px);
             min-height: 100vh;
-            margin-left: 242px;
-            padding: 20px 24px 35px;
+            margin-left: 282px;
+            padding: 24px 28px 40px;
         }
 
         .page-container {
             width: 100%;
             max-width: 100%;
             min-width: 0;
+            margin: 0 auto;
         }
 
-        /* =====================================
-           KOTAK JUDUL
-           SAMA SEPERTI RIWAYAT
-        ===================================== */
-
-        .page-header {
-            background: #ffffff;
+        .card {
+            background: #fff;
             border: 1px solid var(--line);
-            border-radius: 11px;
-            padding: 19px 18px;
-            margin-bottom: 20px;
-            box-shadow: 0 3px 12px rgba(35, 78, 120, .04);
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(35, 78, 120, .045);
+            overflow: hidden;
+        }
+
+        .card-body {
+            padding: 20px;
+            min-width: 0;
         }
 
         .judul {
             color: #234e78;
-            font-size: 25px;
-            line-height: 1.3;
-            font-weight: 700;
-            margin: 0 0 5px;
+            font-size: 30px;
+            line-height: 1.25;
+            font-weight: 650;
         }
 
         .subjudul {
-            color: var(--muted);
-            font-size: 12px;
-            margin: 0;
+            color: #7890ad;
+            font-size: 14px;
+            line-height: 1.5;
         }
 
-        /* =====================================
-           TIGA KOTAK STATISTIK
-           TETAP DIPERTAHANKAN
-        ===================================== */
+        /* TIGA KOTAK STATISTIK */
 
         .summary-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 14px;
+            gap: 16px;
             margin-bottom: 20px;
         }
 
@@ -328,16 +275,21 @@ foreach ($daftar_rekap as $data) {
             display: flex;
             flex-direction: column;
             justify-content: center;
-            background: #ffffff;
+            background: #fff;
             border: 1px solid var(--line);
-            border-radius: 11px;
-            padding: 19px 21px;
-            box-shadow: 0 3px 12px rgba(35, 78, 120, .04);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 3px 12px rgba(35, 78, 120, .045);
+            transition: .2s ease;
+        }
+
+        .summary-card:hover {
+            border-color: #c8def5;
         }
 
         .summary-label {
             color: var(--muted);
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 400;
             margin-bottom: 9px;
         }
@@ -351,83 +303,65 @@ foreach ($daftar_rekap as $data) {
 
         .summary-description {
             color: #91a5bd;
-            font-size: 11px;
+            font-size: 12px;
             margin-top: 7px;
         }
 
-        /* =====================================
-           KOTAK DATA REKAP
-           SAMA SEPERTI RIWAYAT
-        ===================================== */
-
-        .content-card {
-            min-width: 0;
-            background: #ffffff;
-            border: 1px solid var(--line);
-            border-radius: 11px;
-            padding: 18px;
-            box-shadow: 0 3px 12px rgba(35, 78, 120, .04);
-        }
+        /* CARD DATA REKAP */
 
         .section-title {
             color: #234e78;
-            font-size: 18px;
-            font-weight: 700;
-            margin: 0 0 5px;
+            font-size: 21px;
+            line-height: 1.3;
+            font-weight: 650;
+            margin-bottom: 5px;
         }
 
         .section-description {
             color: var(--muted);
-            font-size: 11px;
-            margin: 0 0 21px;
+            font-size: 13px;
+            margin-bottom: 22px;
         }
 
-        /* =====================================
-           TABEL REKAP
-        ===================================== */
+        /* TABEL */
 
         .table-responsive {
             width: 100%;
+            max-width: 100%;
             overflow-x: auto;
-            border-radius: 7px;
+            overflow-y: hidden;
+            border-radius: 8px;
+            -webkit-overflow-scrolling: touch;
         }
 
         #tabelRekap {
             width: 100% !important;
-            min-width: 800px;
+            min-width: 850px;
             margin-bottom: 0 !important;
             color: #344b63;
-            font-family: "Segoe UI", Arial, sans-serif;
-            font-size: 12px;
-            font-weight: 400;
+            font-size: 14px;
             vertical-align: middle;
         }
 
         #tabelRekap thead th {
-            padding: 12px 10px;
+            padding: 14px 12px;
             background: #edf4fb;
             color: #315b82;
             border-color: #dce7f1;
-            font-family: "Segoe UI", Arial, sans-serif;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: 600;
             white-space: nowrap;
         }
 
         #tabelRekap tbody td {
-            padding: 12px 10px;
-            background: #ffffff;
-            color: #344b63;
+            padding: 13px 11px;
             border-color: #e2eaf3;
-            font-family: "Segoe UI", Arial, sans-serif;
-            font-size: 12px;
-            font-weight: 400;
             vertical-align: middle;
-            line-height: 1.5;
+            line-height: 1.45;
         }
 
         #tabelRekap tbody tr {
-            height: 49px;
+            height: 55px;
         }
 
         #tabelRekap tbody tr:hover > * {
@@ -444,43 +378,42 @@ foreach ($daftar_rekap as $data) {
         }
 
         .nama-siswa {
-            color: #344b63 !important;
-            font-weight: 400 !important;
+            color: #344b63;
         }
 
         .nama-kelas {
-            color: #344b63 !important;
+            color: #344b63;
             white-space: nowrap;
         }
 
+        /* BADGE POIN */
+
         .badge-poin {
             display: inline-block;
-            min-width: 36px;
-            padding: 6px 9px;
+            min-width: 38px;
+            padding: 6px 10px;
+            border-radius: 7px;
             background: var(--blue-soft);
             color: var(--blue);
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
+            font-size: 13px;
+            font-weight: 700;
             text-align: center;
         }
 
-        /* =====================================
-           TOMBOL RIWAYAT
-        ===================================== */
+        /* TOMBOL RIWAYAT */
 
         .btn-riwayat {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-height: 30px;
-            padding: 5px 10px;
+            min-height: 32px;
+            padding: 6px 11px;
             border: 1px solid #b9d5f1;
             border-radius: 6px;
             background: #f4f9ff;
             color: #2878cf;
             font-family: "Segoe UI", Arial, sans-serif;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 400;
             white-space: nowrap;
             transition: .2s ease;
@@ -489,28 +422,24 @@ foreach ($daftar_rekap as $data) {
         .btn-riwayat:hover {
             background: #2878cf;
             border-color: #2878cf;
-            color: #ffffff;
+            color: #fff;
         }
 
-        /* =====================================
-           DATATABLES
-           FONT MENGIKUTI RIWAYAT
-        ===================================== */
+        /* DATATABLES */
 
         .dt-container {
             width: 100%;
+            min-width: 0;
             color: var(--text);
             font-family: "Segoe UI", Arial, sans-serif;
-            font-size: 12px;
         }
 
         .dt-container .dt-layout-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin: 12px 0;
+            gap: 12px;
+            margin: 15px 0;
         }
 
         .dt-container .dt-layout-cell {
@@ -531,191 +460,107 @@ foreach ($daftar_rekap as $data) {
             gap: 8px;
             margin: 0;
             color: #526b86;
-            font-family: "Segoe UI", Arial, sans-serif;
-            font-size: 11px;
-            font-weight: 400;
+            font-size: 13px;
             white-space: nowrap;
         }
 
         .dt-container .dt-length select,
         .dt-container .dt-search input {
-            height: 34px;
+            height: 38px;
             border: 1px solid #d7e3ef;
             border-radius: 7px;
-            background: #ffffff;
+            background: #fff;
             color: var(--text);
-            font-family: "Segoe UI", Arial, sans-serif;
-            font-size: 12px;
-            font-weight: 400;
+            font-size: 13px;
             outline: none;
         }
 
         .dt-container .dt-length select {
-            width: 56px;
-            padding: 5px 7px;
+            width: 70px;
+            padding: 5px 8px;
         }
 
         .dt-container .dt-search input {
-            width: 190px;
+            width: 205px;
             margin-left: 0 !important;
             padding: 7px 10px;
         }
 
-        .dt-container .dt-length select:focus,
-        .dt-container .dt-search input:focus {
+        .dt-container .dt-search input:focus,
+        .dt-container .dt-length select:focus {
             border-color: #8eb5d8;
-            box-shadow: 0 0 0 .15rem rgba(87, 143, 190, .14);
+            box-shadow: 0 0 0 .2rem rgba(87, 143, 190, .14);
         }
-
-        /* =====================================
-           INFORMASI JUMLAH DATA
-        ===================================== */
 
         .dt-container .dt-info {
             color: #526b86;
-            font-family: "Segoe UI", Arial, sans-serif;
-            font-size: 11px;
-            font-weight: 400;
-            padding-top: 4px;
+            font-size: 13px;
         }
-
-        /* =====================================
-           PAGINATION MENYATU
-           SAMA SEPERTI SCREENSHOT RIWAYAT
-        ===================================== */
 
         .dt-container .dt-paging {
             display: flex;
             align-items: center;
-            justify-content: flex-end;
-            gap: 0 !important;
-        }
-
-        .dt-container .dt-paging nav {
-            display: inline-flex;
-            align-items: center;
-            gap: 0 !important;
+            gap: 3px;
         }
 
         .dt-container .dt-paging .dt-paging-button {
-            position: relative;
-            min-width: 35px;
-            min-height: 35px;
-            display: inline-flex !important;
-            align-items: center;
-            justify-content: center;
-
-            margin: 0 !important;
-            margin-left: -1px !important;
-
-            padding: 6px 11px !important;
-
-            border: 1px solid #dee2e6 !important;
-            border-radius: 0 !important;
-
-            background: #e9ecef !important;
-            color: #526b86 !important;
-
-            font-family: "Segoe UI", Arial, sans-serif;
-            font-size: 12px !important;
-            font-weight: 400 !important;
-
-            box-shadow: none !important;
-            transition: .15s ease;
-        }
-
-        .dt-container .dt-paging .dt-paging-button:first-child {
-            margin-left: 0 !important;
-            border-top-left-radius: 5px !important;
-            border-bottom-left-radius: 5px !important;
-        }
-
-        .dt-container .dt-paging .dt-paging-button:last-child {
-            border-top-right-radius: 5px !important;
-            border-bottom-right-radius: 5px !important;
+            border-radius: 5px !important;
+            font-size: 13px;
         }
 
         .dt-container .dt-paging .dt-paging-button.current {
-            position: relative;
-            z-index: 2;
-            background: #0d6efd !important;
-            border-color: #0d6efd !important;
-            color: #ffffff !important;
-            font-weight: 400 !important;
+            background: var(--blue) !important;
+            border-color: var(--blue) !important;
+            color: #fff !important;
         }
 
-        .dt-container .dt-paging .dt-paging-button:hover:not(.disabled):not(.current) {
-            background: #dfe6ee !important;
-            border-color: #ced6df !important;
-            color: #344b63 !important;
-        }
-
-        .dt-container .dt-paging .dt-paging-button.disabled {
-            background: #e9ecef !important;
-            color: #8996a5 !important;
-            cursor: default !important;
-            opacity: 1 !important;
-        }
-
-        /* =====================================
-           DATA KOSONG DAN PESAN
-        ===================================== */
+        /* DATA KOSONG */
 
         .empty-state {
-            padding: 30px 15px;
-            text-align: center;
+            padding: 35px 15px;
             color: var(--muted);
+            text-align: center;
+            background: #f8fbff;
+            border: 1px dashed var(--line);
+            border-radius: 9px;
         }
 
         .empty-state h5 {
-            color: var(--blue-dark);
+            color: #234e78;
             font-size: 16px;
             font-weight: 600;
-            margin-bottom: 8px;
         }
 
         .empty-state p {
-            font-size: 12px;
-            margin-bottom: 0;
+            margin: 5px 0 0;
+            font-size: 13px;
         }
 
         .alert {
-            padding: 13px 16px;
             border-radius: 8px;
-            font-family: "Segoe UI", Arial, sans-serif;
-            font-size: 12px;
+            font-size: 13px;
         }
 
         .footer-note {
             color: var(--muted);
-            font-family: "Segoe UI", Arial, sans-serif;
-            font-size: 11px;
+            font-size: 12px;
             margin-top: 17px;
         }
 
-        /* =====================================
-           RESPONSIVE
-        ===================================== */
+        /* RESPONSIVE */
 
         @media (max-width: 1100px) {
-
             .main {
-                padding-left: 19px;
-                padding-right: 19px;
+                padding-left: 20px;
+                padding-right: 20px;
             }
 
             .summary-grid {
-                gap: 11px;
+                gap: 12px;
             }
-
-            .summary-card {
-                padding: 17px;
-            }
-
         }
 
         @media (max-width: 900px) {
-
             .sidebar {
                 position: relative;
                 width: 100%;
@@ -730,19 +575,21 @@ foreach ($daftar_rekap as $data) {
             .main {
                 width: 100%;
                 margin-left: 0;
-                padding: 20px 16px 30px;
+                padding: 20px 18px 30px;
             }
-
         }
 
         @media (max-width: 650px) {
-
             .main {
                 padding: 16px 12px 25px;
             }
 
+            .card-body {
+                padding: 16px;
+            }
+
             .judul {
-                font-size: 23px;
+                font-size: 25px;
             }
 
             .summary-grid {
@@ -759,185 +606,153 @@ foreach ($daftar_rekap as $data) {
                 font-size: 27px;
             }
 
-            .content-card {
-                padding: 15px;
+            #tabelRekap {
+                font-size: 13px;
+            }
+
+            .dt-container .dt-layout-row {
+                flex-wrap: wrap;
             }
 
             .dt-container .dt-layout-cell {
                 width: 100%;
             }
 
+            .dt-container .dt-search {
+                justify-content: flex-start;
+            }
+
             .dt-container .dt-search input {
                 width: 150px;
             }
-
         }
-
     </style>
-
 </head>
 
 <body>
 
-    <!-- =====================================
-         SIDEBAR GURU
-    ===================================== -->
+<!-- SIDEBAR GURU -->
 
-    <aside class="sidebar">
+<aside class="sidebar">
 
-        <div class="brand">
+    <div class="brand">
+        <div class="brand-title">Sistem Pelanggaran</div>
+        <div class="brand-subtitle">SMK Muhammadiyah</div>
+    </div>
 
-            <div class="brand-title">
-                Sistem Pelanggaran
-            </div>
+    <div class="menu-title">Menu Utama</div>
 
-            <div class="brand-subtitle">
-                SMK Muhammadiyah
-            </div>
+    <nav class="menu">
 
-        </div>
+        <a href="../dashboard.php"
+           class="menu-link <?= $halamanAktifSidebar === 'dashboard.php' ? 'active' : ''; ?>">
+            Dashboard
+        </a>
 
-        <div class="menu-title">
-            Menu Utama
-        </div>
+        <a href="catat_pelanggaran.php"
+           class="menu-link <?= $halamanAktifSidebar === 'catat_pelanggaran.php' ? 'active' : ''; ?>">
+            Catat Pelanggaran
+        </a>
 
-        <nav class="menu">
+        <a href="tindakan.php"
+           class="menu-link <?= $halamanAktifSidebar === 'tindakan.php' ? 'active' : ''; ?>">
+            Tindakan
+        </a>
 
-            <a href="../dashboard.php" class="menu-link">
-                Dashboard
-            </a>
+        <a href="riwayat.php"
+           class="menu-link <?= $halamanAktifSidebar === 'riwayat.php' ? 'active' : ''; ?>">
+            Riwayat
+        </a>
 
-            <a href="catat_pelanggaran.php" class="menu-link">
-                Catat Pelanggaran
-            </a>
+        <a href="rekap_poin.php"
+           class="menu-link <?= $halamanAktifSidebar === 'rekap_poin.php' ? 'active' : ''; ?>">
+            Rekap Poin
+        </a>
 
-            <a href="tindakan.php" class="menu-link">
-                Tindakan
-            </a>
+        <a href="../about.php"
+           class="menu-link <?= $halamanAktifSidebar === 'about.php' ? 'active' : ''; ?>">
+            About Me
+        </a>
 
-            <a href="riwayat.php" class="menu-link">
-                Riwayat
-            </a>
+    </nav>
 
-            <a
-                href="rekap_poin.php"
-                class="menu-link active"
-                aria-current="page"
-            >
-                Rekap Poin
-            </a>
+    <div class="logout">
+        <a href="../logout.php" class="menu-link">
+            Logout
+        </a>
+    </div>
 
-            <a href="../about.php" class="menu-link">
-                About Me
-            </a>
+</aside>
 
-        </nav>
+<!-- KONTEN UTAMA -->
 
-        <div class="logout">
+<main class="main">
 
-            <a href="../logout.php" class="menu-link">
-                Logout
-            </a>
+    <div class="page-container">
 
-        </div>
+        <section class="card mb-4">
+            <div class="card-body">
 
-    </aside>
-
-    <!-- =====================================
-         KONTEN UTAMA
-    ===================================== -->
-
-    <main class="main">
-
-        <div class="page-container">
-
-            <!-- KOTAK JUDUL -->
-
-            <div class="page-header">
-
-                <h1 class="judul">
+                <h1 class="judul mb-1">
                     Rekap Poin Siswa
                 </h1>
 
-                <p class="subjudul">
+                <p class="subjudul mb-0">
                     Ringkasan jumlah pelanggaran dan total poin siswa.
                 </p>
 
             </div>
+        </section>
 
-            <!-- =====================================
-                 TIGA KOTAK STATISTIK
-            ===================================== -->
+        <?php if ($pesan_error === ''): ?>
 
-            <?php if ($pesan_error === ''): ?>
+            <div class="summary-grid">
 
-                <div class="summary-grid">
-
-                    <div class="summary-card">
-
-                        <div class="summary-label">
-                            Jumlah Siswa
-                        </div>
-
-                        <div class="summary-value">
-                            <?= number_format($total_siswa, 0, ',', '.'); ?>
-                        </div>
-
-                        <div class="summary-description">
-                            Siswa dengan catatan pelanggaran
-                        </div>
-
+                <div class="summary-card">
+                    <div class="summary-label">Jumlah Siswa</div>
+                    <div class="summary-value">
+                        <?= number_format($total_siswa, 0, ',', '.'); ?>
                     </div>
-
-                    <div class="summary-card">
-
-                        <div class="summary-label">
-                            Jumlah Pelanggaran
-                        </div>
-
-                        <div class="summary-value">
-                            <?= number_format($total_pelanggaran, 0, ',', '.'); ?>
-                        </div>
-
-                        <div class="summary-description">
-                            Pelanggaran yang sudah ditindaklanjuti
-                        </div>
-
+                    <div class="summary-description">
+                        Siswa dengan catatan pelanggaran
                     </div>
-
-                    <div class="summary-card">
-
-                        <div class="summary-label">
-                            Total Poin
-                        </div>
-
-                        <div class="summary-value">
-                            <?= number_format($total_poin, 0, ',', '.'); ?>
-                        </div>
-
-                        <div class="summary-description">
-                            Akumulasi poin seluruh siswa
-                        </div>
-
-                    </div>
-
                 </div>
 
-            <?php endif; ?>
-
-            <!-- PESAN ERROR -->
-
-            <?php if ($pesan_error !== ''): ?>
-
-                <div class="alert alert-warning mb-4">
-                    <?= e($pesan_error); ?>
+                <div class="summary-card">
+                    <div class="summary-label">Jumlah Pelanggaran</div>
+                    <div class="summary-value">
+                        <?= number_format($total_pelanggaran, 0, ',', '.'); ?>
+                    </div>
+                    <div class="summary-description">
+                        Pelanggaran yang sudah ditindaklanjuti
+                    </div>
                 </div>
 
-            <?php else: ?>
+                <div class="summary-card">
+                    <div class="summary-label">Total Poin</div>
+                    <div class="summary-value">
+                        <?= number_format($total_poin, 0, ',', '.'); ?>
+                    </div>
+                    <div class="summary-description">
+                        Akumulasi poin seluruh siswa
+                    </div>
+                </div>
 
-                <!-- KOTAK DATA REKAP -->
+            </div>
 
-                <section class="content-card">
+        <?php endif; ?>
+
+        <?php if ($pesan_error !== ''): ?>
+
+            <div class="alert alert-warning mb-4">
+                <?= e($pesan_error); ?>
+            </div>
+
+        <?php else: ?>
+
+            <section class="card">
+
+                <div class="card-body">
 
                     <h2 class="section-title">
                         Data Rekap Poin
@@ -947,177 +762,154 @@ foreach ($daftar_rekap as $data) {
                         Daftar akumulasi poin pelanggaran siswa berdasarkan catatan Anda.
                     </p>
 
-                    <div class="table-responsive">
+                    <?php if (!empty($daftar_rekap)): ?>
 
-                        <table
-                            id="tabelRekap"
-                            class="table table-bordered table-hover align-middle"
-                        >
+                        <div class="table-responsive">
 
-                            <thead>
+                            <table id="tabelRekap"
+                                   class="table table-bordered table-hover align-middle">
 
-                                <tr>
-
-                                    <th>No.</th>
-
-                                    <th>Nama Siswa</th>
-
-                                    <th>Kelas</th>
-
-                                    <th>Jumlah Pelanggaran</th>
-
-                                    <th>Total Poin</th>
-
-                                    <th>Riwayat</th>
-
-                                </tr>
-
-                            </thead>
-
-                            <tbody>
-
-                                <?php foreach ($daftar_rekap as $index => $data): ?>
-
+                                <thead>
                                     <tr>
+                                        <th>No.</th>
+                                        <th>Nama Siswa</th>
+                                        <th>Kelas</th>
+                                        <th>Jumlah Pelanggaran</th>
+                                        <th>Total Poin</th>
+                                        <th>Riwayat</th>
+                                    </tr>
+                                </thead>
 
-                                        <td>
-                                            <?= $index + 1; ?>
-                                        </td>
+                                <tbody>
 
-                                        <td class="nama-siswa">
-                                            <?= e($data['nama_siswa']); ?>
-                                        </td>
+                                    <?php foreach ($daftar_rekap as $index => $data): ?>
 
-                                        <td class="nama-kelas">
-                                            <?= e($data['nama_kelas'] ?: '-'); ?>
-                                        </td>
+                                        <tr>
 
-                                        <td class="text-center">
-                                            <?= number_format(
-                                                (int)$data['jumlah_pelanggaran'],
-                                                0,
-                                                ',',
-                                                '.'
-                                            ); ?>
-                                        </td>
+                                            <td><?= $index + 1; ?></td>
 
-                                        <td class="text-center">
+                                            <td class="nama-siswa">
+                                                <?= e($data['nama_siswa']); ?>
+                                            </td>
 
-                                            <span class="badge-poin">
+                                            <td class="nama-kelas">
+                                                <?= e($data['nama_kelas'] ?: '-'); ?>
+                                            </td>
+
+                                            <td>
                                                 <?= number_format(
-                                                    (int)$data['total_poin'],
+                                                    (int)$data['jumlah_pelanggaran'],
                                                     0,
                                                     ',',
                                                     '.'
                                                 ); ?>
-                                            </span>
+                                            </td>
 
-                                        </td>
+                                            <td>
+                                                <span class="badge-poin">
+                                                    <?= number_format(
+                                                        (int)$data['total_poin'],
+                                                        0,
+                                                        ',',
+                                                        '.'
+                                                    ); ?>
+                                                </span>
+                                            </td>
 
-                                        <td>
-
-                                            <a
-                                                href="riwayat.php?<?= e(http_build_query([
+                                            <td>
+                                                <a href="riwayat.php?<?= e(http_build_query([
                                                     'nama_siswa' => $data['nama_siswa'],
                                                     'nama_kelas' => $data['nama_kelas']
                                                 ])); ?>"
-                                                class="btn-riwayat"
-                                            >
-                                                Lihat Riwayat
-                                            </a>
+                                                   class="btn-riwayat">
+                                                    Lihat Riwayat
+                                                </a>
+                                            </td>
 
-                                        </td>
+                                        </tr>
 
-                                    </tr>
+                                    <?php endforeach; ?>
 
-                                <?php endforeach; ?>
+                                </tbody>
 
-                            </tbody>
+                            </table>
 
-                        </table>
+                        </div>
 
-                    </div>
+                    <?php else: ?>
 
-                </section>
+                        <div class="empty-state">
 
-            <?php endif; ?>
+                            <h5>Belum Ada Data Rekap Poin</h5>
 
-            <!-- FOOTER -->
+                            <p>
+                                Data pelanggaran yang sudah ditindaklanjuti akan ditampilkan di sini.
+                            </p>
 
-            <p class="footer-note">
-                SIKET — Sistem Informasi Ketertiban Siswa
-            </p>
+                        </div>
 
-        </div>
+                    <?php endif; ?>
 
-    </main>
+                </div>
 
-    <!-- =====================================
-         JAVASCRIPT
-    ===================================== -->
+            </section>
 
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+        <?php endif; ?>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+        <p class="footer-note">
+            SIKET — Sistem Informasi Ketertiban Siswa
+        </p>
 
-    <script src="https://cdn.datatables.net/2.3.4/js/dataTables.min.js"></script>
+    </div>
 
-    <script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.min.js"></script>
+</main>
 
-    <script>
+<!-- JAVASCRIPT -->
 
-        $(document).ready(function () {
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.min.js"></script>
 
-            $('#tabelRekap').DataTable({
+<script>
+$(document).ready(function () {
 
-                pageLength: 10,
+    const tabel = $('#tabelRekap');
 
-                lengthMenu: [10, 25, 50, 100],
+    if (tabel.length) {
 
-                order: [],
+        tabel.DataTable({
 
-                autoWidth: false,
+            pageLength: 10,
 
-                scrollX: true,
+            lengthMenu: [10, 25, 50, 100],
 
-                language: {
+            order: [],
 
-                    search: "Cari:",
+            autoWidth: false,
 
-                    searchPlaceholder: "",
+            language: {
+                search: 'Cari:',
+                searchPlaceholder: '',
+                lengthMenu: 'Tampilkan _MENU_ data',
+                info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
+                infoEmpty: 'Tidak ada data rekap poin',
+                infoFiltered: '(disaring dari _MAX_ data)',
+                zeroRecords: 'Data rekap poin tidak ditemukan',
+                emptyTable: 'Belum ada data rekap poin.',
 
-                    lengthMenu: "Tampilkan _MENU_ data",
-
-                    info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
-
-                    infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
-
-                    infoFiltered: "(disaring dari _MAX_ data)",
-
-                    zeroRecords: "Data yang dicari tidak ditemukan",
-
-                    emptyTable: "Belum ada data rekap poin",
-
-                    paginate: {
-
-                        first: "«",
-
-                        last: "»",
-
-                        previous: "Sebelumnya",
-
-                        next: "Berikutnya"
-
-                    }
-
+                paginate: {
+                    previous: 'Sebelumnya',
+                    next: 'Berikutnya'
                 }
-
-            });
+            }
 
         });
 
-    </script>
+    }
+
+});
+</script>
 
 </body>
-
 </html>

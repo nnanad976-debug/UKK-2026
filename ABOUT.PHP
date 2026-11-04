@@ -1,20 +1,61 @@
-```php
 <?php
-include "middleware/auth.php";
+// Autentikasi dan session
+require_once __DIR__ . '/middleware/auth.php';
 
-$role = strtolower($_SESSION['role'] ?? 'admin');
+$role = strtolower(trim((string)($_SESSION['role'] ?? 'guru')));
 $namaPengguna = $_SESSION['nama'] ?? $_SESSION['name'] ?? 'Pengguna';
 
-$fotoFile = __DIR__ . '/assets/foto-nadia.png.png';
-$fotoUrl = 'assets/foto-nadia.png.png';
-
-if (file_exists($fotoFile)) {
-    $fotoUrl .= '?v=' . filemtime($fotoFile);
+// Deteksi otomatis folder aplikasi dari lokasi about.php.
+$scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/'));
+$appBase = rtrim($scriptDir, '/');
+if ($appBase === '.' || $appBase === '/') {
+    $appBase = '';
 }
 
 function e($value) {
     return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
 }
+
+function appUrl($path) {
+    global $appBase;
+    return $appBase . '/' . ltrim($path, '/');
+}
+
+// Hanya gunakan halaman yang benar-benar ada di dalam folder proyek.
+function findPage(array $candidates) {
+    foreach ($candidates as $candidate) {
+        $candidate = ltrim($candidate, '/');
+        if (is_file(__DIR__ . '/' . $candidate)) {
+            return appUrl($candidate);
+        }
+    }
+    return null;
+}
+
+function menuPageLink($url, $label, $active = false) {
+    $classes = 'menu-link' . ($active ? ' active' : '');
+    if ($url === null) {
+        return '<a href="#" class="' . $classes . ' disabled" aria-disabled="true" title="File halaman belum ditemukan">' . e($label) . '</a>';
+    }
+    return '<a href="' . e($url) . '" class="' . $classes . '"' . ($active ? ' aria-current="page"' : '') . '>' . e($label) . '</a>';
+}
+
+$fotoFile = __DIR__ . '/assets/foto-nadia.png.png';
+$fotoUrl = appUrl('assets/foto-nadia.png.png');
+if (is_file($fotoFile)) {
+    $fotoUrl .= '?v=' . filemtime($fotoFile);
+}
+
+// Rute Guru: beberapa nama alternatif diperiksa agar sesuai file yang tersedia.
+$guruDashboard = findPage(['guru/dashboard.php', 'guru/index.php', 'guru/beranda.php', 'dashboard.php']);
+$guruCatat = findPage(['guru/catat_pelanggaran.php']);
+$guruTindakan = findPage(['guru/tindakan.php']);
+$guruRiwayat = findPage(['guru/riwayat.php']);
+$guruRekap = findPage(['guru/rekap_poin.php', 'guru/rekap.php', 'guru/rekap-point.php']);
+
+// Rute Admin.
+$adminDashboard = findPage(['admin/dashboard.php', 'dashboard.php', 'admin/index.php']);
+$logoutUrl = findPage(['logout.php']);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -126,6 +167,12 @@ function e($value) {
             color: var(--blue);
             font-weight: 600;
             box-shadow: inset 4px 0 0 var(--blue);
+        }
+
+        .menu-link.disabled {
+            opacity: .45;
+            cursor: not-allowed;
+            pointer-events: none;
         }
 
         .logout {
@@ -561,21 +608,21 @@ function e($value) {
     <div class="menu-title">Menu Utama</div>
 
     <nav class="menu">
-        <a href="dashboard.php" class="menu-link">Dashboard</a>
-        <a href="admin/guru.php" class="menu-link">Kelola Guru</a>
-        <a href="admin/siswa.php" class="menu-link">Kelola Siswa</a>
-        <a href="admin/kelas.php" class="menu-link">Kelola Kelas</a>
-        <a href="admin/tahun_ajaran.php" class="menu-link">Tahun Ajaran</a>
-        <a href="admin/penempatan_siswa.php" class="menu-link">Penempatan Siswa</a>
-        <a href="admin/wali_kelas.php" class="menu-link">Wali Kelas</a>
-        <a href="admin/kategori_pelanggaran.php" class="menu-link">Kategori Pelanggaran</a>
-        <a href="admin/jenis_pelanggaran.php" class="menu-link">Jenis Pelanggaran</a>
-        <a href="admin/cetak_export.php" class="menu-link">Laporan</a>
-        <a href="about.php" class="menu-link active">About Me</a>
+        <?= menuPageLink($adminDashboard, 'Dashboard') ?>
+        <?= menuPageLink(findPage(['admin/guru.php']), 'Kelola Guru') ?>
+        <?= menuPageLink(findPage(['admin/siswa.php']), 'Kelola Siswa') ?>
+        <?= menuPageLink(findPage(['admin/kelas.php']), 'Kelola Kelas') ?>
+        <?= menuPageLink(findPage(['admin/tahun_ajaran.php']), 'Tahun Ajaran') ?>
+        <?= menuPageLink(findPage(['admin/penempatan_siswa.php']), 'Penempatan Siswa') ?>
+        <?= menuPageLink(findPage(['admin/wali_kelas.php']), 'Wali Kelas') ?>
+        <?= menuPageLink(findPage(['admin/kategori_pelanggaran.php']), 'Kategori Pelanggaran') ?>
+        <?= menuPageLink(findPage(['admin/jenis_pelanggaran.php']), 'Jenis Pelanggaran') ?>
+        <?= menuPageLink(findPage(['admin/cetak_export.php']), 'Laporan') ?>
+        <?= menuPageLink(appUrl('about.php'), 'About Me', true) ?>
     </nav>
 
     <div class="logout">
-        <a href="logout.php" class="menu-link">Logout</a>
+        <?= menuPageLink($logoutUrl, 'Logout') ?>
     </div>
 </aside>
 <?php else: ?>
@@ -588,16 +635,16 @@ function e($value) {
     <div class="menu-title">Menu Utama</div>
 
     <nav class="menu">
-        <a href="guru/dashboard.php" class="menu-link">Dashboard</a>
-        <a href="guru/catat_pelanggaran.php" class="menu-link">Catat Pelanggaran</a>
-        <a href="guru/tindakan.php" class="menu-link">Tindakan</a>
-        <a href="guru/laporan.php" class="menu-link">Laporan</a>
-        <a href="guru/riwayat.php" class="menu-link">Riwayat Pelanggaran</a>
-        <a href="about.php" class="menu-link active">About Me</a>
+        <?= menuPageLink($guruDashboard, 'Dashboard') ?>
+        <?= menuPageLink($guruCatat, 'Catat Pelanggaran') ?>
+        <?= menuPageLink($guruTindakan, 'Tindakan') ?>
+        <?= menuPageLink($guruRiwayat, 'Riwayat') ?>
+        <?= menuPageLink($guruRekap, 'Rekap Poin') ?>
+        <?= menuPageLink(appUrl('about.php'), 'About Me', true) ?>
     </nav>
 
     <div class="logout">
-        <a href="logout.php" class="menu-link">Logout</a>
+        <?= menuPageLink($logoutUrl, 'Logout') ?>
     </div>
 </aside>
 <?php endif; ?>
@@ -724,6 +771,11 @@ function e($value) {
 
        
 
+        <button type="button" class="detail-button" id="detailButton"
+                aria-expanded="false" aria-controls="techDetail">
+            Lihat penjelasan teknologi
+        </button>
+
         <div class="tech-detail" id="techDetail">
             <strong>HTML</strong> membentuk struktur halaman.<br>
             <strong>CSS</strong> mengatur warna, ukuran, dan tata letak.<br>
@@ -750,5 +802,52 @@ document.addEventListener('DOMContentLoaded', function () {
     const profilePhoto = document.getElementById('profilePhoto');
     const photoStatus = document.getElementById('photoStatus');
 
-    // Tandai menu aktif berdasarkan alamat halaman saat ini.
-    const currentPage
+    // Buka/tutup sidebar pada tampilan mobile.
+    function closeSidebar() {
+        if (!sidebar || !overlay || !menuToggle) return;
+        sidebar.classList.remove('open');
+        overlay.classList.remove('show');
+        menuToggle.setAttribute('aria-expanded', 'false');
+    }
+
+    if (sidebar && overlay && menuToggle) {
+        menuToggle.addEventListener('click', function () {
+            const isOpen = sidebar.classList.toggle('open');
+            overlay.classList.toggle('show', isOpen);
+            menuToggle.setAttribute('aria-expanded', String(isOpen));
+        });
+
+        overlay.addEventListener('click', closeSidebar);
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') closeSidebar();
+        });
+
+        sidebar.querySelectorAll('.menu-link').forEach(function (link) {
+            link.addEventListener('click', closeSidebar);
+        });
+    }
+
+    // Tampilkan/sembunyikan penjelasan teknologi.
+    if (detailButton && techDetail) {
+        detailButton.addEventListener('click', function () {
+            const isVisible = techDetail.classList.toggle('show');
+            detailButton.setAttribute('aria-expanded', String(isVisible));
+            detailButton.textContent = isVisible
+                ? 'Sembunyikan penjelasan teknologi'
+                : 'Lihat penjelasan teknologi';
+        });
+    }
+
+    // Beri keterangan jika foto profil gagal dimuat.
+    if (profilePhoto && photoStatus) {
+        profilePhoto.addEventListener('error', function () {
+            photoStatus.textContent = 'Foto profil tidak ditemukan';
+            profilePhoto.style.display = 'none';
+        });
+    }
+});
+</script>
+
+</body>
+</html>
