@@ -2,8 +2,23 @@
 <?php
 include __DIR__ . "/middleware/auth.php";
 
-$role = $_SESSION['role'] ?? '';
+$role = strtolower(trim($_SESSION['role'] ?? ''));
 $nama = $_SESSION['nama'] ?? 'User';
+
+// Deteksi Wali Kelas dari penugasan saat login
+$isWaliKelas = (
+    $role !== 'admin' &&
+    !empty($_SESSION['is_wali_kelas'])
+);
+
+// Tentukan jenis dashboard
+if ($role === 'admin') {
+    $jenisDashboard = 'admin';
+} elseif ($isWaliKelas) {
+    $jenisDashboard = 'wali_kelas';
+} else {
+    $jenisDashboard = 'guru';
+}
 ?>
 
 <!DOCTYPE html>
@@ -42,18 +57,11 @@ $nama = $_SESSION['nama'] ?? 'User';
             text-decoration: none;
         }
 
-        /* =========================
-           LAYOUT
-        ========================= */
-
         .layout {
             min-height: 100vh;
         }
 
-        /* =========================
-           SIDEBAR
-           Disamakan dengan halaman Tindakan Guru
-        ========================= */
+        /* SIDEBAR */
 
         .sidebar {
             position: fixed;
@@ -140,9 +148,7 @@ $nama = $_SESSION['nama'] ?? 'User';
             background: #fff0ef;
         }
 
-        /* =========================
-           MAIN
-        ========================= */
+        /* MAIN */
 
         .main {
             width: calc(100% - 282px);
@@ -151,9 +157,7 @@ $nama = $_SESSION['nama'] ?? 'User';
             padding: 24px 28px 40px;
         }
 
-        /* =========================
-           TOPBAR
-        ========================= */
+        /* TOPBAR */
 
         .topbar {
             background: linear-gradient(
@@ -199,9 +203,7 @@ $nama = $_SESSION['nama'] ?? 'User';
             white-space: nowrap;
         }
 
-        /* =========================
-           PAGE HEADER
-        ========================= */
+        /* PAGE HEADER */
 
         .page-head {
             margin: 4px 6px 18px;
@@ -218,9 +220,7 @@ $nama = $_SESSION['nama'] ?? 'User';
             font-size: 13px;
         }
 
-        /* =========================
-           DASHBOARD CARD
-        ========================= */
+        /* DASHBOARD CARD */
 
         .dashboard-grid {
             display: grid;
@@ -278,9 +278,7 @@ $nama = $_SESSION['nama'] ?? 'User';
             color: white;
         }
 
-        /* =========================
-           FOOTER
-        ========================= */
+        /* FOOTER */
 
         .footer {
             text-align: center;
@@ -289,9 +287,7 @@ $nama = $_SESSION['nama'] ?? 'User';
             font-size: 10px;
         }
 
-        /* =========================
-           RESPONSIVE
-        ========================= */
+        /* RESPONSIVE */
 
         @media (max-width: 1100px) {
             .dashboard-grid {
@@ -341,9 +337,7 @@ $nama = $_SESSION['nama'] ?? 'User';
 
 <div class="layout">
 
-    <!-- =========================
-         SIDEBAR
-    ========================= -->
+    <!-- SIDEBAR -->
 
     <aside class="sidebar">
 
@@ -367,7 +361,7 @@ $nama = $_SESSION['nama'] ?? 'User';
                 Dashboard
             </a>
 
-            <?php if ($role === 'admin'): ?>
+            <?php if ($jenisDashboard === 'admin'): ?>
 
                 <!-- MENU ADMIN -->
 
@@ -407,6 +401,22 @@ $nama = $_SESSION['nama'] ?? 'User';
                     Laporan
                 </a>
 
+            <?php elseif ($jenisDashboard === 'wali_kelas'): ?>
+
+                <!-- MENU WALI KELAS -->
+
+                <a href="walikelas/data_siswa.php" class="menu-link">
+                    Data Siswa
+                </a>
+
+                <a href="walikelas/rekap_pelanggaran.php" class="menu-link">
+                    Rekap Pelanggaran
+                </a>
+
+                <a href="walikelas/cetak_rekap.php" class="menu-link">
+                    Cetak Rekap
+                </a>
+
             <?php else: ?>
 
                 <!-- MENU GURU -->
@@ -444,9 +454,7 @@ $nama = $_SESSION['nama'] ?? 'User';
     </aside>
 
 
-    <!-- =========================
-         MAIN CONTENT
-    ========================= -->
+    <!-- MAIN CONTENT -->
 
     <main class="main">
 
@@ -457,17 +465,23 @@ $nama = $_SESSION['nama'] ?? 'User';
             <div class="welcome">
                 <h2>
                     Selamat datang,
-                    <?= htmlspecialchars($nama); ?>
+                    <?= htmlspecialchars($nama, ENT_QUOTES, 'UTF-8'); ?>
                 </h2>
 
                 <p>
-                    Kelola data sekolah dengan mudah dan terstruktur.
+                    <?php if ($jenisDashboard === 'admin'): ?>
+                        Kelola data sekolah dengan mudah dan terstruktur.
+                    <?php elseif ($jenisDashboard === 'wali_kelas'): ?>
+                        Pantau data siswa dan perkembangan pelanggaran kelas Anda.
+                    <?php else: ?>
+                        Kelola pencatatan dan tindakan pelanggaran siswa.
+                    <?php endif; ?>
                 </p>
             </div>
 
             <div class="user-box">
                 <span class="user-name">
-                    <?= htmlspecialchars($nama); ?>
+                    <?= htmlspecialchars($nama, ENT_QUOTES, 'UTF-8'); ?>
                 </span>
             </div>
 
@@ -478,32 +492,30 @@ $nama = $_SESSION['nama'] ?? 'User';
 
         <div class="page-head">
 
-            <h3>
-                Dashboard
-            </h3>
+            <h3>Dashboard</h3>
 
             <p>
-                Akses fitur sesuai dengan hak akses akun Anda.
+                <?php if ($jenisDashboard === 'admin'): ?>
+                    Akses pengelolaan seluruh data sistem pelanggaran sekolah.
+                <?php elseif ($jenisDashboard === 'wali_kelas'): ?>
+                    Informasi dan pengelolaan data siswa sesuai kelas yang ditugaskan.
+                <?php else: ?>
+                    Akses fitur pencatatan dan pengelolaan pelanggaran siswa.
+                <?php endif; ?>
             </p>
 
         </div>
 
 
-        <!-- =========================
-             DASHBOARD ADMIN
-        ========================= -->
+        <!-- DASHBOARD ADMIN -->
 
-        <?php if ($role === 'admin'): ?>
+        <?php if ($jenisDashboard === 'admin'): ?>
 
             <section class="dashboard-grid">
 
                 <div class="card">
-
                     <div class="card-content">
-                        <h4>
-                            Kelola Data
-                        </h4>
-
+                        <h4>Kelola Data</h4>
                         <p>
                             Kelola data guru, siswa, kelas,
                             tahun ajaran, penempatan siswa,
@@ -514,17 +526,11 @@ $nama = $_SESSION['nama'] ?? 'User';
                     <a href="admin/guru.php" class="card-button">
                         Buka
                     </a>
-
                 </div>
 
-
                 <div class="card">
-
                     <div class="card-content">
-                        <h4>
-                            Data Pelanggaran
-                        </h4>
-
+                        <h4>Data Pelanggaran</h4>
                         <p>
                             Kelola kategori dan jenis
                             pelanggaran siswa.
@@ -534,17 +540,11 @@ $nama = $_SESSION['nama'] ?? 'User';
                     <a href="admin/kategori_pelanggaran.php" class="card-button">
                         Buka
                     </a>
-
                 </div>
 
-
                 <div class="card">
-
                     <div class="card-content">
-                        <h4>
-                            Cetak / Export
-                        </h4>
-
+                        <h4>Cetak / Export</h4>
                         <p>
                             Cetak dan export data
                             pelanggaran sekolah.
@@ -554,29 +554,71 @@ $nama = $_SESSION['nama'] ?? 'User';
                     <a href="admin/cetak_export.php" class="card-button">
                         Buka
                     </a>
-
                 </div>
 
             </section>
 
 
-        <!-- =========================
-             DASHBOARD GURU
-        ========================= -->
+        <!-- DASHBOARD WALI KELAS -->
+
+        <?php elseif ($jenisDashboard === 'wali_kelas'): ?>
+
+            <section class="dashboard-grid">
+
+                <div class="card">
+                    <div class="card-content">
+                        <h4>Data Siswa</h4>
+                        <p>
+                            Lihat daftar siswa yang berada
+                            di kelas tanggung jawab Anda.
+                        </p>
+                    </div>
+
+                    <a href="walikelas/data_siswa.php" class="card-button">
+                        Buka
+                    </a>
+                </div>
+
+                <div class="card">
+                    <div class="card-content">
+                        <h4>Rekap Pelanggaran</h4>
+                        <p>
+                            Pantau jumlah pelanggaran
+                            dan total poin setiap siswa.
+                        </p>
+                    </div>
+
+                    <a href="walikelas/rekap_pelanggaran.php" class="card-button">
+                        Buka
+                    </a>
+                </div>
+
+                <div class="card">
+                    <div class="card-content">
+                        <h4>Cetak Rekap</h4>
+                        <p>
+                            Cetak laporan pelanggaran
+                            siswa berdasarkan kelas.
+                        </p>
+                    </div>
+
+                    <a href="walikelas/cetak_rekap.php" class="card-button">
+                        Buka
+                    </a>
+                </div>
+
+            </section>
+
+
+        <!-- DASHBOARD GURU -->
 
         <?php else: ?>
 
             <section class="dashboard-grid">
 
-                <!-- KOTAK 1 -->
-
                 <div class="card">
-
                     <div class="card-content">
-                        <h4>
-                            Catat Pelanggaran
-                        </h4>
-
+                        <h4>Catat Pelanggaran</h4>
                         <p>
                             Catat pelanggaran siswa
                             dengan mudah dan terstruktur.
@@ -586,19 +628,11 @@ $nama = $_SESSION['nama'] ?? 'User';
                     <a href="guru/catat_pelanggaran.php" class="card-button">
                         Buka
                     </a>
-
                 </div>
 
-
-                <!-- KOTAK 2 -->
-
                 <div class="card">
-
                     <div class="card-content">
-                        <h4>
-                            Tindakan
-                        </h4>
-
+                        <h4>Tindakan</h4>
                         <p>
                             Kelola tindakan yang diberikan
                             terhadap pelanggaran siswa.
@@ -608,19 +642,11 @@ $nama = $_SESSION['nama'] ?? 'User';
                     <a href="guru/tindakan.php" class="card-button">
                         Buka
                     </a>
-
                 </div>
 
-
-                <!-- KOTAK 3 -->
-
                 <div class="card">
-
                     <div class="card-content">
-                        <h4>
-                            Riwayat
-                        </h4>
-
+                        <h4>Riwayat</h4>
                         <p>
                             Lihat riwayat pencatatan
                             pelanggaran siswa yang telah dilakukan.
@@ -630,7 +656,6 @@ $nama = $_SESSION['nama'] ?? 'User';
                     <a href="guru/riwayat.php" class="card-button">
                         Buka
                     </a>
-
                 </div>
 
             </section>
