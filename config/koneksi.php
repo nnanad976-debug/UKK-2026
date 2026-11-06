@@ -4,7 +4,7 @@ $koneksi = mysqli_connect(
     "localhost",
     "root",
     "",
-    "db_ukk_2026_pulih"
+    "db_ukk_2026"
 );
 
 if (!$koneksi) {

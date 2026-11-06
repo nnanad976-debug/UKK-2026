@@ -5,6 +5,12 @@ require_once __DIR__ . '/middleware/auth.php';
 $role = strtolower(trim((string)($_SESSION['role'] ?? 'guru')));
 $namaPengguna = $_SESSION['nama'] ?? $_SESSION['name'] ?? 'Pengguna';
 
+// Deteksi Wali Kelas berdasarkan role atau penugasan yang disimpan saat login.
+$isWaliKelas = (
+    in_array($role, ['wali_kelas', 'wali kelas', 'walikelas'], true) ||
+    ($role !== 'admin' && !empty($_SESSION['is_wali_kelas']))
+);
+
 // Deteksi otomatis folder aplikasi dari lokasi about.php.
 $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/'));
 $appBase = rtrim($scriptDir, '/');
@@ -52,6 +58,12 @@ $guruCatat = findPage(['guru/catat_pelanggaran.php']);
 $guruTindakan = findPage(['guru/tindakan.php']);
 $guruRiwayat = findPage(['guru/riwayat.php']);
 $guruRekap = findPage(['guru/rekap_poin.php', 'guru/rekap.php', 'guru/rekap-point.php']);
+
+// Rute Wali Kelas.
+$waliDashboard = findPage(['dashboard.php']);
+$waliDataSiswa = findPage(['walikelas/data_siswa.php']);
+$waliRekap = findPage(['walikelas/rekap_pelanggaran.php']);
+$waliCetak = findPage(['walikelas/cetak_rekap.php']);
 
 // Rute Admin.
 $adminDashboard = findPage(['admin/dashboard.php', 'dashboard.php', 'admin/index.php']);
@@ -625,6 +637,27 @@ $logoutUrl = findPage(['logout.php']);
         <?= menuPageLink($logoutUrl, 'Logout') ?>
     </div>
 </aside>
+<?php elseif ($isWaliKelas): ?>
+<aside class="sidebar" id="sidebar">
+    <div class="brand">
+        <div class="brand-title">Sistem Pelanggaran</div>
+        <div class="brand-subtitle">SMK Muhammadiyah</div>
+    </div>
+
+    <div class="menu-title">Menu Utama</div>
+
+    <nav class="menu">
+        <?= menuPageLink($waliDashboard, 'Dashboard') ?>
+        <?= menuPageLink($waliDataSiswa, 'Data Siswa') ?>
+        <?= menuPageLink($waliRekap, 'Rekap Pelanggaran') ?>
+        <?= menuPageLink($waliCetak, 'Cetak Rekap') ?>
+        <?= menuPageLink(appUrl('about.php'), 'About Me', true) ?>
+    </nav>
+
+    <div class="logout">
+        <?= menuPageLink($logoutUrl, 'Logout') ?>
+    </div>
+</aside>
 <?php else: ?>
 <aside class="sidebar" id="sidebar">
     <div class="brand">
@@ -722,7 +755,7 @@ $logoutUrl = findPage(['logout.php']);
 
                 <div>
                     <div class="detail-label">Pengguna</div>
-                    <div class="detail-value">Admin dan Guru</div>
+                    <div class="detail-value">Admin, Guru, dan Wali Kelas</div>
                 </div>
 
                 <div>
