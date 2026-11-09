@@ -1,4 +1,4 @@
-
+```php
 <?php
 include __DIR__ . "/../middleware/auth.php";
 include __DIR__ . "/../config/koneksi.php";
@@ -66,14 +66,27 @@ if (!$penugasan) {
 
     $namaKelas = $dataKelas['nama_kelas'] ?? "Kelas ID " . $kelasId;
 
-    // Ambil semua siswa yang terdaftar di kelas dan tahun ajaran tersebut.
+    // Ambil semua pelanggaran siswa dari seluruh guru.
     $stmt = $koneksi->prepare("
         SELECT
             s.id AS siswa_id,
             s.nis,
             s.nama,
             COUNT(ps.id) AS jumlah_pelanggaran,
-            COALESCE(SUM(ps.poin), 0) AS total_poin
+            COALESCE(SUM(ps.poin), 0) AS total_poin,
+            GROUP_CONCAT(
+                CONCAT(
+                    COALESCE(NULLIF(TRIM(ps.nama_pelanggaran), ''), 'Pelanggaran'),
+                    '\nGuru: ',
+                    COALESCE(NULLIF(TRIM(ps.nama_guru), ''), 'Tidak diketahui'),
+                    '\nTanggal: ',
+                    COALESCE(DATE_FORMAT(ps.tanggal, '%d-%m-%Y'), '-'),
+                    '\nKeterangan: ',
+                    COALESCE(NULLIF(TRIM(ps.keterangan), ''), '-')
+                )
+                ORDER BY ps.tanggal DESC, ps.id DESC
+                SEPARATOR '\n\n'
+            ) AS keterangan_pelanggaran
         FROM t_kelas_siswa ks
         INNER JOIN t_siswa s
             ON s.id = ks.siswa_id
@@ -315,6 +328,18 @@ if (!$penugasan) {
             font-weight: 600;
         }
 
+        .detail-pelanggaran {
+            min-width: 240px;
+            max-width: 440px;
+            white-space: pre-line;
+            line-height: 1.7;
+            color: #405875;
+        }
+
+        .text-tidak-ada {
+            color: #91a2b9;
+        }
+
         .empty-state {
             padding: 35px 15px;
             text-align: center;
@@ -431,6 +456,7 @@ if (!$penugasan) {
                             <th width="55">No</th>
                             <th>NIS</th>
                             <th>Nama Siswa</th>
+                            <th>Keterangan Pelanggaran</th>
                             <th class="text-center">Jumlah Pelanggaran</th>
                             <th class="text-center">Total Poin</th>
                         </tr>
@@ -444,6 +470,13 @@ if (!$penugasan) {
                                 <td><?= $index + 1 ?></td>
                                 <td><?= e($siswa['nis']) ?></td>
                                 <td><?= e($siswa['nama']) ?></td>
+                                <td>
+                                    <?php if (!empty($siswa['keterangan_pelanggaran'])): ?>
+                                        <div class="detail-pelanggaran"><?= e($siswa['keterangan_pelanggaran']) ?></div>
+                                    <?php else: ?>
+                                        <span class="text-tidak-ada">Tidak ada</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="text-center">
                                     <?= number_format((int) $siswa['jumlah_pelanggaran']) ?>
                                 </td>
@@ -458,7 +491,7 @@ if (!$penugasan) {
                     <?php else: ?>
 
                         <tr>
-                            <td colspan="5" class="empty-state">
+                            <td colspan="6" class="empty-state">
                                 Belum ada data siswa pada kelas dan tahun ajaran ini.
                             </td>
                         </tr>
@@ -475,3 +508,4 @@ if (!$penugasan) {
 
 </body>
 </html>
+```
