@@ -405,6 +405,10 @@ if ($role === 'admin') {
 
                 <!-- MENU WALI KELAS -->
 
+                <a href="walikelas/catat_pelanggaran.php" class="menu-link">
+                    Catat Pelanggaran
+                </a>
+
                 <a href="walikelas/data_siswa.php" class="menu-link">
                     Data Siswa
                 </a>
@@ -564,6 +568,20 @@ if ($role === 'admin') {
         <?php elseif ($jenisDashboard === 'wali_kelas'): ?>
 
             <section class="dashboard-grid">
+
+                <div class="card">
+                    <div class="card-content">
+                        <h4>Catat Pelanggaran</h4>
+                        <p>
+                            Catat pelanggaran siswa di kelas
+                            yang menjadi tanggung jawab Anda.
+                        </p>
+                    </div>
+
+                    <a href="walikelas/catat_pelanggaran.php" class="card-button">
+                        Buka
+                    </a>
+                </div>
 
                 <div class="card">
                     <div class="card-content">

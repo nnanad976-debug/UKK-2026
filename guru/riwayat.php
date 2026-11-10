@@ -26,7 +26,7 @@ mysqli_stmt_close($stmt);
 
 $guru_id = (int)($data_guru['id'] ?? 0);
 
-// Ambil riwayat pelanggaran berdasarkan guru
+// Ambil hanya pelanggaran yang sudah selesai
 $daftar_riwayat = [];
 
 if ($guru_id > 0) {
@@ -37,6 +37,7 @@ if ($guru_id > 0) {
                 tindakan, status
          FROM t_pelanggaran_siswa
          WHERE guru_id = ?
+         AND status = 'Selesai'
          ORDER BY tanggal DESC, id DESC"
     );
 
@@ -96,7 +97,7 @@ if ($guru_id > 0) {
             text-decoration: none;
         }
 
-        /* SIDEBAR - SAMA DENGAN HALAMAN TINDAKAN */
+        /* SIDEBAR */
         .sidebar {
             position: fixed;
             top: 0;
@@ -547,7 +548,7 @@ if ($guru_id > 0) {
                 </h1>
 
                 <p class="subjudul mb-0">
-                    Lihat riwayat pelanggaran siswa yang telah Anda catat.
+                    Lihat riwayat pelanggaran siswa yang telah selesai ditindaklanjuti.
                 </p>
             </div>
         </section>
@@ -560,7 +561,7 @@ if ($guru_id > 0) {
                 </h2>
 
                 <p class="section-description">
-                    Daftar seluruh pelanggaran yang telah dicatat oleh Anda.
+                    Daftar pelanggaran siswa yang telah selesai ditindaklanjuti.
                 </p>
 
                 <?php if (!empty($daftar_riwayat)): ?>
@@ -588,15 +589,7 @@ if ($guru_id > 0) {
 
                                     <?php
                                     $status = trim($data['status'] ?? '');
-                                    $status_class = 'status-belum';
-
-                                    if ($status === 'Diproses') {
-                                        $status_class = 'status-diproses';
-                                    } elseif ($status === 'Ditindaklanjuti') {
-                                        $status_class = 'status-ditindaklanjuti';
-                                    } elseif ($status === 'Selesai') {
-                                        $status_class = 'status-selesai';
-                                    }
+                                    $status_class = 'status-selesai';
 
                                     $tanggal = !empty($data['tanggal'])
                                         ? date('d-m-Y', strtotime($data['tanggal']))
@@ -630,7 +623,7 @@ if ($guru_id > 0) {
 
                                         <td>
                                             <span class="status-badge <?= e($status_class); ?>">
-                                                <?= e($status ?: 'Belum diproses'); ?>
+                                                Selesai
                                             </span>
                                         </td>
                                     </tr>
@@ -646,7 +639,7 @@ if ($guru_id > 0) {
                     <div class="empty-state">
                         <h5>Belum Ada Riwayat Pelanggaran</h5>
                         <p>
-                            Data pelanggaran yang Anda catat akan ditampilkan di sini.
+                            Pelanggaran yang sudah berstatus Selesai akan ditampilkan di sini.
                         </p>
                     </div>
 

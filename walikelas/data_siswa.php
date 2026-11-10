@@ -1,7 +1,6 @@
-
 <?php
-include "../middleware/auth.php";
-include "../config/koneksi.php";
+include __DIR__ . "/../middleware/auth.php";
+include __DIR__ . "/../config/koneksi.php";
 
 $role = strtolower(trim($_SESSION['role'] ?? ''));
 
@@ -21,7 +20,9 @@ function e($value) {
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 }
 
-/* AMBIL KELAS WALI KELAS */
+/* =====================================
+   AMBIL PENUGASAN KELAS WALI KELAS
+===================================== */
 
 $sql_kelas = "
     SELECT DISTINCT
@@ -29,7 +30,8 @@ $sql_kelas = "
         wk.tahun_ajaran_id,
         k.nama AS nama_kelas
     FROM t_wali_kelas wk
-    JOIN t_kelas k ON k.id = wk.kelas_id
+    INNER JOIN t_kelas k
+        ON k.id = wk.kelas_id
     WHERE wk.guru_id = ?
       AND wk.status_aktif = 1
       AND k.status_aktif = 1
@@ -38,50 +40,84 @@ $sql_kelas = "
           wk.tanggal_selesai IS NULL
           OR wk.tanggal_selesai >= CURDATE()
       )
-    ORDER BY k.nama
+    ORDER BY k.nama ASC
 ";
 
-$stmt = mysqli_prepare($koneksi, $sql_kelas);
+$stmt = $koneksi->prepare($sql_kelas);
 
 if (!$stmt) {
-    exit("Query kelas gagal: " . e(mysqli_error($koneksi)));
+    exit("Query kelas gagal: " . e($koneksi->error));
 }
 
-mysqli_stmt_bind_param($stmt, "i", $guru_id);
-mysqli_stmt_execute($stmt);
+$stmt->bind_param("i", $guru_id);
+$stmt->execute();
 
-$result_kelas = mysqli_stmt_get_result($stmt);
+$result_kelas = $stmt->get_result();
+
 $daftar_kelas = [];
 
-while ($row = mysqli_fetch_assoc($result_kelas)) {
+while ($row = $result_kelas->fetch_assoc()) {
     $daftar_kelas[] = $row;
 }
 
-mysqli_stmt_close($stmt);
+$stmt->close();
 
-/* PILIH KELAS */
+/* =====================================
+   PILIH KELAS
+===================================== */
 
-$kelas_id = (int) ($_GET['kelas_id'] ?? 0);
-$tahun_ajaran_id = (int) ($_GET['tahun_ajaran_id'] ?? 0);
+$kelas_id = 0;
+$tahun_ajaran_id = 0;
+$nama_kelas_aktif = '';
+
+$pilihan_kelas = trim($_GET['penugasan'] ?? '');
 
 $kelas_valid = false;
 
-foreach ($daftar_kelas as $kelas) {
-    if (
-        (int) $kelas['kelas_id'] === $kelas_id &&
-        (int) $kelas['tahun_ajaran_id'] === $tahun_ajaran_id
-    ) {
-        $kelas_valid = true;
-        break;
+if ($pilihan_kelas !== '') {
+
+    $bagian = explode('|', $pilihan_kelas);
+
+    if (count($bagian) === 2) {
+
+        $pilih_kelas_id = (int) $bagian[0];
+        $pilih_tahun_id = (int) $bagian[1];
+
+        foreach ($daftar_kelas as $kelas) {
+
+            if (
+                (int) $kelas['kelas_id'] === $pilih_kelas_id &&
+                (int) $kelas['tahun_ajaran_id'] === $pilih_tahun_id
+            ) {
+
+                $kelas_id = $pilih_kelas_id;
+                $tahun_ajaran_id = $pilih_tahun_id;
+                $nama_kelas_aktif = $kelas['nama_kelas'];
+
+                $kelas_valid = true;
+                break;
+            }
+        }
     }
 }
 
+/* =====================================
+   JIKA BELUM MEMILIH KELAS
+   GUNAKAN PENUGASAN PERTAMA
+===================================== */
+
 if (!$kelas_valid && !empty($daftar_kelas)) {
+
     $kelas_id = (int) $daftar_kelas[0]['kelas_id'];
+
     $tahun_ajaran_id = (int) $daftar_kelas[0]['tahun_ajaran_id'];
+
+    $nama_kelas_aktif = $daftar_kelas[0]['nama_kelas'];
 }
 
-/* AMBIL DATA SISWA */
+/* =====================================
+   AMBIL DATA SISWA
+===================================== */
 
 $siswa = [];
 
@@ -96,8 +132,12 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
             s.jenis_kelamin,
             s.tanggal_lahir,
             s.alamat
+
         FROM t_kelas_siswa ks
-        JOIN t_siswa s ON s.id = ks.siswa_id
+
+        INNER JOIN t_siswa s
+            ON s.id = ks.siswa_id
+
         WHERE ks.kelas_id = ?
           AND ks.tahun_ajaran_id = ?
           AND ks.status_aktif = 1
@@ -107,56 +147,50 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
               ks.tanggal_selesai IS NULL
               OR ks.tanggal_selesai >= CURDATE()
           )
+
         ORDER BY s.nama ASC
     ";
 
-    $stmt_siswa = mysqli_prepare($koneksi, $sql_siswa);
+    $stmt_siswa = $koneksi->prepare($sql_siswa);
 
     if (!$stmt_siswa) {
-        exit("Query siswa gagal: " . e(mysqli_error($koneksi)));
+        exit("Query siswa gagal: " . e($koneksi->error));
     }
 
-    mysqli_stmt_bind_param(
-        $stmt_siswa,
+    $stmt_siswa->bind_param(
         "ii",
         $kelas_id,
         $tahun_ajaran_id
     );
 
-    mysqli_stmt_execute($stmt_siswa);
+    $stmt_siswa->execute();
 
-    $result_siswa = mysqli_stmt_get_result($stmt_siswa);
+    $result_siswa = $stmt_siswa->get_result();
 
-    while ($row = mysqli_fetch_assoc($result_siswa)) {
+    while ($row = $result_siswa->fetch_assoc()) {
         $siswa[] = $row;
     }
 
-    mysqli_stmt_close($stmt_siswa);
-}
-
-/* NAMA KELAS AKTIF */
-
-$nama_kelas_aktif = '';
-
-foreach ($daftar_kelas as $kelas) {
-    if (
-        (int) $kelas['kelas_id'] === $kelas_id &&
-        (int) $kelas['tahun_ajaran_id'] === $tahun_ajaran_id
-    ) {
-        $nama_kelas_aktif = $kelas['nama_kelas'];
-        break;
-    }
+    $stmt_siswa->close();
 }
 ?>
 
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
     <title>Data Siswa - Sistem Pelanggaran</title>
 
     <style>
+
         :root {
             --blue: #2878cf;
             --blue-dark: #203e68;
@@ -189,7 +223,9 @@ foreach ($daftar_kelas as $kelas) {
             min-height: 100vh;
         }
 
-        /* SIDEBAR - SAMA DENGAN DASHBOARD */
+        /* =================================
+           SIDEBAR
+        ================================= */
 
         .sidebar {
             position: fixed;
@@ -247,6 +283,7 @@ foreach ($daftar_kelas as $kelas) {
             border-radius: 9px;
             color: #5e7695;
             font-size: 13px;
+            font-weight: 500;
             transition: .2s;
         }
 
@@ -276,7 +313,9 @@ foreach ($daftar_kelas as $kelas) {
             background: #fff0ef;
         }
 
-        /* MAIN */
+        /* =================================
+           MAIN CONTENT
+        ================================= */
 
         .main {
             width: calc(100% - 282px);
@@ -285,7 +324,9 @@ foreach ($daftar_kelas as $kelas) {
             padding: 24px 28px 40px;
         }
 
-        /* TOPBAR */
+        /* =================================
+           TOPBAR
+        ================================= */
 
         .topbar {
             background: linear-gradient(
@@ -321,7 +362,7 @@ foreach ($daftar_kelas as $kelas) {
             color: var(--blue-dark);
             font-size: 13px;
             font-weight: 600;
-            background: rgba(255,255,255,.65);
+            background: rgba(255, 255, 255, .65);
             border: 1px solid var(--line);
             border-radius: 30px;
             padding: 8px 15px;
@@ -331,7 +372,9 @@ foreach ($daftar_kelas as $kelas) {
             white-space: nowrap;
         }
 
-        /* PAGE HEADER */
+        /* =================================
+           PAGE HEADER
+        ================================= */
 
         .page-head {
             margin: 4px 6px 18px;
@@ -348,7 +391,9 @@ foreach ($daftar_kelas as $kelas) {
             font-size: 13px;
         }
 
-        /* DATA SISWA */
+        /* =================================
+           PANEL DATA SISWA
+        ================================= */
 
         .panel {
             background: var(--white);
@@ -384,12 +429,13 @@ foreach ($daftar_kelas as $kelas) {
             max-width: 300px;
             border: 1px solid var(--line);
             border-radius: 9px;
-            background: white;
+            background: #fff;
             padding: 10px 13px;
             color: var(--text);
             font-family: inherit;
             font-size: 13px;
             outline: none;
+            cursor: pointer;
         }
 
         .form-select:focus {
@@ -440,6 +486,33 @@ foreach ($daftar_kelas as $kelas) {
             white-space: nowrap;
         }
 
+        /* =================================
+           TOMBOL CATAT PELANGGARAN
+        ================================= */
+
+        .btn-catat {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 9px 13px;
+            background: var(--blue);
+            color: #fff;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: .2s;
+        }
+
+        .btn-catat:hover {
+            background: var(--blue-dark);
+            color: #fff;
+        }
+
+        /* =================================
+           EMPTY STATE & FOOTER
+        ================================= */
+
         .empty {
             text-align: center;
             padding: 35px;
@@ -464,19 +537,26 @@ foreach ($daftar_kelas as $kelas) {
             font-size: 10px;
         }
 
-        /* RESPONSIVE */
+        /* =================================
+           RESPONSIVE
+        ================================= */
 
         @media (max-width: 1100px) {
             .table {
-                min-width: 850px;
+                min-width: 1050px;
             }
         }
 
         @media (max-width: 900px) {
+
             .sidebar {
                 position: static;
                 width: 100%;
                 height: auto;
+            }
+
+            .logout {
+                margin-top: 15px;
             }
 
             .main {
@@ -486,6 +566,7 @@ foreach ($daftar_kelas as $kelas) {
         }
 
         @media (max-width: 650px) {
+
             .main {
                 padding: 18px 14px 30px;
             }
@@ -513,18 +594,23 @@ foreach ($daftar_kelas as $kelas) {
                 width: 100%;
             }
         }
+
     </style>
+
 </head>
 
 <body>
 
 <div class="layout">
 
-    <!-- SIDEBAR -->
+    <!-- =================================
+         SIDEBAR WALI KELAS
+    ================================= -->
 
     <aside class="sidebar">
 
         <div class="brand">
+
             <div class="brand-title">
                 Sistem Pelanggaran
             </div>
@@ -532,6 +618,7 @@ foreach ($daftar_kelas as $kelas) {
             <div class="brand-subtitle">
                 SMK Muhammadiyah
             </div>
+
         </div>
 
         <div class="menu-title">
@@ -540,63 +627,100 @@ foreach ($daftar_kelas as $kelas) {
 
         <nav class="menu">
 
-            <a href="../dashboard.php" class="menu-link">
+            <a
+                href="../dashboard.php"
+                class="menu-link"
+            >
                 Dashboard
             </a>
 
-            <a href="data_siswa.php" class="menu-link active">
+            <a
+                href="catat_pelanggaran.php"
+                class="menu-link"
+            >
+                Catat Pelanggaran
+            </a>
+
+            <a
+                href="data_siswa.php"
+                class="menu-link active"
+                aria-current="page"
+            >
                 Data Siswa
             </a>
 
-            <a href="rekap_pelanggaran.php" class="menu-link">
+            <a
+                href="rekap_pelanggaran.php"
+                class="menu-link"
+            >
                 Rekap Pelanggaran
             </a>
 
-            <a href="cetak_rekap.php" class="menu-link">
-                Cetak Rekap
+            <a
+                href="cetak_rekap.php"
+                class="menu-link"
+            >
+              laporan
             </a>
 
-            <a href="../about.php" class="menu-link">
+            <a
+                href="../about.php"
+                class="menu-link"
+            >
                 About Me
             </a>
 
         </nav>
 
         <div class="logout">
-            <a href="../logout.php" class="menu-link">
+
+            <a
+                href="../logout.php"
+                class="menu-link"
+            >
                 Logout
             </a>
+
         </div>
 
     </aside>
 
-    <!-- MAIN CONTENT -->
+    <!-- =================================
+         KONTEN UTAMA
+    ================================= -->
 
     <main class="main">
 
         <section class="topbar">
 
             <div class="welcome">
+
                 <h2>Data Siswa</h2>
 
                 <p>
                     Lihat data siswa sesuai kelas yang menjadi tanggung jawab Anda.
                 </p>
+
             </div>
 
             <div class="user-box">
+
                 <span class="user-name">
                     <?= e($nama) ?>
                 </span>
+
             </div>
 
         </section>
 
         <div class="page-head">
+
             <h3>Data Siswa</h3>
+
             <p>
                 Informasi siswa pada kelas yang Anda ampu.
             </p>
+
         </div>
 
         <section class="panel">
@@ -604,10 +728,13 @@ foreach ($daftar_kelas as $kelas) {
             <div class="panel-header">
 
                 <div>
+
                     <h4>Daftar Siswa</h4>
+
                     <p>
                         Data siswa berdasarkan kelas yang menjadi tanggung jawab Anda.
                     </p>
+
                 </div>
 
                 <?php if (!empty($daftar_kelas)): ?>
@@ -615,30 +742,33 @@ foreach ($daftar_kelas as $kelas) {
                     <form method="GET">
 
                         <select
-                            name="kelas_id"
+                            name="penugasan"
                             class="form-select"
                             onchange="this.form.submit()"
                         >
+
                             <?php foreach ($daftar_kelas as $kelas): ?>
 
+                                <?php
+                                $value_kelas =
+                                    (int) $kelas['kelas_id'] . '|' .
+                                    (int) $kelas['tahun_ajaran_id'];
+
+                                $value_aktif =
+                                    $kelas_id . '|' .
+                                    $tahun_ajaran_id;
+                                ?>
+
                                 <option
-                                    value="<?= (int) $kelas['kelas_id'] ?>"
-                                    <?= (
-                                        (int) $kelas['kelas_id'] === $kelas_id &&
-                                        (int) $kelas['tahun_ajaran_id'] === $tahun_ajaran_id
-                                    ) ? 'selected' : '' ?>
+                                    value="<?= e($value_kelas) ?>"
+                                    <?= $value_kelas === $value_aktif ? 'selected' : '' ?>
                                 >
                                     <?= e($kelas['nama_kelas']) ?>
                                 </option>
 
                             <?php endforeach; ?>
-                        </select>
 
-                        <input
-                            type="hidden"
-                            name="tahun_ajaran_id"
-                            value="<?= $tahun_ajaran_id ?>"
-                        >
+                        </select>
 
                     </form>
 
@@ -659,6 +789,7 @@ foreach ($daftar_kelas as $kelas) {
                     <table class="table">
 
                         <thead>
+
                             <tr>
                                 <th>No</th>
                                 <th>NIS</th>
@@ -667,7 +798,9 @@ foreach ($daftar_kelas as $kelas) {
                                 <th>Jenis Kelamin</th>
                                 <th>Tanggal Lahir</th>
                                 <th>Alamat</th>
+                                <th>Aksi</th>
                             </tr>
+
                         </thead>
 
                         <tbody>
@@ -675,9 +808,11 @@ foreach ($daftar_kelas as $kelas) {
                             <?php if (empty($siswa)): ?>
 
                                 <tr>
-                                    <td colspan="7" class="empty">
+
+                                    <td colspan="8" class="empty">
                                         Belum ada siswa aktif di kelas ini.
                                     </td>
+
                                 </tr>
 
                             <?php else: ?>
@@ -685,27 +820,56 @@ foreach ($daftar_kelas as $kelas) {
                                 <?php foreach ($siswa as $index => $row): ?>
 
                                     <tr>
-                                        <td><?= $index + 1 ?></td>
-
-                                        <td><?= e($row['nis']) ?></td>
-
-                                        <td><?= e($row['nisn']) ?></td>
 
                                         <td>
-                                            <strong><?= e($row['nama']) ?></strong>
+                                            <?= $index + 1 ?>
                                         </td>
 
                                         <td>
+                                            <?= e($row['nis'] ?: '-') ?>
+                                        </td>
+
+                                        <td>
+                                            <?= e($row['nisn'] ?: '-') ?>
+                                        </td>
+
+                                        <td>
+                                            <strong>
+                                                <?= e($row['nama']) ?>
+                                            </strong>
+                                        </td>
+
+                                        <td>
+
                                             <span class="badge-gender">
+
                                                 <?= $row['jenis_kelamin'] === 'L'
                                                     ? 'Laki-laki'
                                                     : 'Perempuan' ?>
+
                                             </span>
+
                                         </td>
 
-                                        <td><?= e($row['tanggal_lahir']) ?></td>
+                                        <td>
+                                            <?= e($row['tanggal_lahir'] ?: '-') ?>
+                                        </td>
 
-                                        <td><?= e($row['alamat']) ?></td>
+                                        <td>
+                                            <?= e($row['alamat'] ?: '-') ?>
+                                        </td>
+
+                                        <td>
+
+                                            <a
+                                                href="catat_pelanggaran.php?siswa_id=<?= (int) $row['id'] ?>&kelas_id=<?= $kelas_id ?>&tahun_ajaran_id=<?= $tahun_ajaran_id ?>"
+                                                class="btn-catat"
+                                            >
+                                                Catat Pelanggaran
+                                            </a>
+
+                                        </td>
+
                                     </tr>
 
                                 <?php endforeach; ?>
@@ -719,14 +883,15 @@ foreach ($daftar_kelas as $kelas) {
                 </div>
 
                 <div class="total-info">
-                    Total siswa:
-                    <strong><?= count($siswa) ?></strong>
 
-                    <?php if ($nama_kelas_aktif !== ''): ?>
-                        &nbsp; | &nbsp;
-                        Kelas:
-                        <strong><?= e($nama_kelas_aktif) ?></strong>
-                    <?php endif; ?>
+                    Total siswa:
+                    <strong><?= number_format(count($siswa)) ?></strong>
+
+                    &nbsp; | &nbsp;
+
+                    Kelas:
+                    <strong><?= e($nama_kelas_aktif) ?></strong>
+
                 </div>
 
             <?php endif; ?>

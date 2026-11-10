@@ -1,4 +1,4 @@
-
+```php
 <?php
 include __DIR__ . "/../middleware/auth.php";
 include __DIR__ . "/../config/koneksi.php";
@@ -8,93 +8,163 @@ $isWaliKelas = !empty($_SESSION['is_wali_kelas']);
 $guruId = (int) ($_SESSION['guru_id'] ?? 0);
 
 if ($role !== 'guru' || !$isWaliKelas || $guruId <= 0) {
-    die("Anda tidak memiliki akses ke halaman ini.");
+    http_response_code(403);
+    exit("Anda tidak memiliki akses ke halaman ini.");
 }
 
 function e($value) {
-    return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+    return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
 $pesan = '';
+$kelasId = 0;
 $namaKelas = '';
 $tahunAjaranId = 0;
+
 $daftarSiswa = [];
 
 $totalSiswa = 0;
 $totalPelanggaran = 0;
 $totalPoin = 0;
 
-// Ambil penugasan Wali Kelas yang masih aktif.
+/* =========================================
+   AMBIL PENUGASAN WALI KELAS AKTIF
+========================================= */
+
 $stmt = $koneksi->prepare("
-    SELECT tahun_ajaran_id, kelas_id
-    FROM t_wali_kelas
-    WHERE guru_id = ?
-      AND status_aktif = 1
-      AND tanggal_mulai <= CURDATE()
-      AND (tanggal_selesai IS NULL OR tanggal_selesai >= CURDATE())
-    ORDER BY id DESC
+    SELECT
+        wk.tahun_ajaran_id,
+        wk.kelas_id,
+        k.nama AS nama_kelas
+
+    FROM t_wali_kelas wk
+
+    INNER JOIN t_kelas k
+        ON k.id = wk.kelas_id
+
+    WHERE wk.guru_id = ?
+      AND wk.status_aktif = 1
+      AND k.status_aktif = 1
+      AND wk.tanggal_mulai <= CURDATE()
+      AND (
+          wk.tanggal_selesai IS NULL
+          OR wk.tanggal_selesai >= CURDATE()
+      )
+
+    ORDER BY wk.id DESC
     LIMIT 1
 ");
 
+if (!$stmt) {
+    die("Query penugasan gagal: " . e($koneksi->error));
+}
+
 $stmt->bind_param("i", $guruId);
 $stmt->execute();
+
 $penugasan = $stmt->get_result()->fetch_assoc();
+
 $stmt->close();
 
+/* =========================================
+   PROSES DATA REKAP
+========================================= */
+
 if (!$penugasan) {
-    $pesan = "Penugasan Wali Kelas aktif tidak ditemukan. Periksa data pada tabel t_wali_kelas.";
+
+    $pesan = "Penugasan Wali Kelas aktif tidak ditemukan. Periksa kembali data penugasan pada tabel t_wali_kelas.";
+
 } else {
+
     $kelasId = (int) $penugasan['kelas_id'];
     $tahunAjaranId = (int) $penugasan['tahun_ajaran_id'];
+    $namaKelas = $penugasan['nama_kelas'];
 
-    // Ambil nama kelas.
-    $stmt = $koneksi->prepare("
-        SELECT nama_kelas
-        FROM t_pelanggaran_siswa
-        WHERE kelas_id = ?
-          AND tahun_ajaran_id = ?
-          AND nama_kelas IS NOT NULL
-          AND nama_kelas <> ''
-        LIMIT 1
-    ");
+    /* =====================================
+       AMBIL REKAP SISWA
 
-    $stmt->bind_param("ii", $kelasId, $tahunAjaranId);
-    $stmt->execute();
-    $dataKelas = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
+       Menampilkan:
+       - Siswa aktif pada kelas wali kelas.
+       - Seluruh pelanggaran dari semua guru.
+       - Siswa yang belum memiliki pelanggaran.
+    ===================================== */
 
-    $namaKelas = $dataKelas['nama_kelas'] ?? "Kelas ID " . $kelasId;
-
-    // Ambil rekap seluruh siswa, termasuk siswa tanpa pelanggaran.
-    $stmt = $koneksi->prepare("
+    $sql = "
         SELECT
             s.id AS siswa_id,
-            s.nis,
+            s.nisn,
             s.nama,
+
             COUNT(ps.id) AS jumlah_pelanggaran,
-            COALESCE(SUM(ps.poin), 0) AS total_poin
+
+            COALESCE(SUM(ps.poin), 0) AS total_poin,
+
+            GROUP_CONCAT(
+                CONCAT(
+                    COALESCE(
+                        NULLIF(TRIM(ps.nama_pelanggaran), ''),
+                        'Pelanggaran'
+                    ),
+                    ' (',
+                    COALESCE(ps.poin, 0),
+                    ' poin)'
+                )
+                ORDER BY ps.tanggal DESC, ps.id DESC
+                SEPARATOR '; '
+            ) AS rincian_pelanggaran
+
         FROM t_kelas_siswa ks
+
         INNER JOIN t_siswa s
             ON s.id = ks.siswa_id
+
         LEFT JOIN t_pelanggaran_siswa ps
             ON ps.siswa_id = ks.siswa_id
             AND ps.kelas_id = ks.kelas_id
             AND ps.tahun_ajaran_id = ks.tahun_ajaran_id
+
         WHERE ks.kelas_id = ?
           AND ks.tahun_ajaran_id = ?
           AND ks.status_aktif = 1
-        GROUP BY s.id, s.nis, s.nama
-        ORDER BY s.nama ASC
-    ");
+          AND s.status_aktif = 1
+          AND ks.tanggal_mulai <= CURDATE()
+          AND (
+              ks.tanggal_selesai IS NULL
+              OR ks.tanggal_selesai >= CURDATE()
+          )
 
-    $stmt->bind_param("ii", $kelasId, $tahunAjaranId);
+        GROUP BY
+            s.id,
+            s.nisn,
+            s.nama
+
+        ORDER BY s.nama ASC
+    ";
+
+    $stmt = $koneksi->prepare($sql);
+
+    if (!$stmt) {
+        die("Query rekap gagal: " . e($koneksi->error));
+    }
+
+    $stmt->bind_param(
+        "ii",
+        $kelasId,
+        $tahunAjaranId
+    );
+
     $stmt->execute();
+
     $hasil = $stmt->get_result();
 
     while ($row = $hasil->fetch_assoc()) {
+
         $daftarSiswa[] = $row;
+
         $totalSiswa++;
+
         $totalPelanggaran += (int) $row['jumlah_pelanggaran'];
+
         $totalPoin += (int) $row['total_poin'];
     }
 
@@ -104,64 +174,97 @@ if (!$penugasan) {
 
 <!DOCTYPE html>
 <html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cetak Rekap Pelanggaran - Wali Kelas</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Cetak Rekap - Sistem Pelanggaran</title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
 
     <style>
+
+        :root {
+            --blue: #2878cf;
+            --blue-dark: #203e68;
+            --blue-soft: #eaf3ff;
+            --page: #f6f9fd;
+            --white: #ffffff;
+            --text: #263f63;
+            --muted: #7890ad;
+            --line: #dce9f8;
+        }
+
         * {
+            margin: 0;
+            padding: 0;
             box-sizing: border-box;
         }
 
         body {
-            margin: 0;
             font-family: "Segoe UI", Arial, sans-serif;
-            background: #f5f8fc;
-            color: #263f63;
+            background: var(--page);
+            color: var(--text);
         }
 
+        a {
+            text-decoration: none;
+        }
+
+        /* =================================
+           SIDEBAR
+           SAMA DENGAN DATA SISWA DAN REKAP
+        ================================= */
+
         .sidebar {
-            width: 282px;
-            height: 100vh;
             position: fixed;
             top: 0;
             left: 0;
-            background: #fff;
+            width: 282px;
+            height: 100vh;
             padding: 25px 14px 16px;
-            border-right: 1px solid #dce9f8;
             display: flex;
             flex-direction: column;
-            z-index: 10;
+            background: #fff;
+            border-right: 1px solid #dce9f8;
+            z-index: 1000;
+            overflow-y: auto;
         }
 
         .brand {
             padding: 0 14px 20px;
             margin-bottom: 22px;
-            border-bottom: 1px solid #e5edf7;
+            border-bottom: 1px solid #dce9f8;
         }
 
-        .brand h5 {
-            font-size: 17px;
-            font-weight: 700;
+        .brand-title {
             color: #203e68;
-            margin: 0 0 5px;
+            font-size: 19px;
+            font-weight: 700;
+            margin-bottom: 5px;
         }
 
-        .brand p {
-            font-size: 12px;
+        .brand-subtitle {
             color: #7890ad;
-            margin: 0;
+            font-size: 12px;
         }
 
         .menu-title {
             margin: 0 14px 11px;
+            color: #91a5bd;
             font-size: 10px;
             font-weight: 700;
             letter-spacing: 1px;
-            color: #91a2b9;
+            text-transform: uppercase;
         }
 
         .menu {
@@ -175,16 +278,15 @@ if (!$penugasan) {
             align-items: center;
             min-height: 42px;
             padding: 11px 14px;
-            border-radius: 8px;
-            color: #617895;
-            text-decoration: none;
+            border-radius: 9px;
+            color: #5e7695;
             font-size: 13px;
             font-weight: 500;
             transition: .2s;
         }
 
         .menu-link:hover {
-            background: #f0f6ff;
+            background: #f2f7fd;
             color: #2878cf;
         }
 
@@ -192,20 +294,30 @@ if (!$penugasan) {
             background: #eaf3ff;
             color: #2878cf;
             font-weight: 600;
+            box-shadow: inset 3px 0 0 #2878cf;
         }
 
         .logout {
             margin-top: auto;
             padding-top: 14px;
-            border-top: 1px solid #e5edf7;
+            border-top: 1px solid #dce9f8;
         }
 
         .logout .menu-link {
-            color: #d65b63;
+            color: #d9534f;
         }
+
+        .logout .menu-link:hover {
+            background: #fff0ef;
+        }
+
+        /* =================================
+           KONTEN UTAMA
+        ================================= */
 
         .main {
             width: calc(100% - 282px);
+            min-height: 100vh;
             margin-left: 282px;
             padding: 24px 28px 40px;
         }
@@ -214,14 +326,18 @@ if (!$penugasan) {
             font-size: 23px;
             font-weight: 700;
             color: #203e68;
-            margin-bottom: 5px;
+            margin: 4px 6px 5px;
         }
 
         .page-subtitle {
             font-size: 13px;
             color: #7890ad;
-            margin-bottom: 25px;
+            margin: 0 6px 25px;
         }
+
+        /* =================================
+           KARTU LAPORAN
+        ================================= */
 
         .content-card {
             background: #fff;
@@ -229,6 +345,10 @@ if (!$penugasan) {
             border-radius: 12px;
             padding: 24px;
         }
+
+        /* =================================
+           JUDUL LAPORAN
+        ================================= */
 
         .report-heading {
             text-align: center;
@@ -250,10 +370,23 @@ if (!$penugasan) {
             color: #617895;
         }
 
+        /* =================================
+           INFORMASI LAPORAN
+        ================================= */
+
         .report-info {
             margin-bottom: 18px;
             font-size: 13px;
             line-height: 1.9;
+        }
+
+        /* =================================
+           TABEL LAPORAN
+        ================================= */
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
         }
 
         .report-table {
@@ -266,6 +399,7 @@ if (!$penugasan) {
             border: 1px solid #cbd8e8;
             padding: 10px;
             font-size: 12px;
+            vertical-align: middle;
         }
 
         .report-table th {
@@ -283,6 +417,10 @@ if (!$penugasan) {
             font-weight: 700;
         }
 
+        /* =================================
+           TOMBOL CETAK
+        ================================= */
+
         .print-button {
             background: #2878cf;
             border: none;
@@ -292,11 +430,17 @@ if (!$penugasan) {
             font-size: 13px;
             font-weight: 600;
             margin-bottom: 18px;
+            cursor: pointer;
+            transition: .2s;
         }
 
         .print-button:hover {
             background: #203e68;
         }
+
+        /* =================================
+           TANDA TANGAN
+        ================================= */
 
         .signature {
             display: flex;
@@ -310,15 +454,27 @@ if (!$penugasan) {
             width: 230px;
         }
 
-        @media print {
-            @page {
-                size: A4 portrait;
-                margin: 15mm;
-            }
+        /* =================================
+           CETAK A4 LANDSCAPE
+        ================================= */
 
+        @page {
+            size: A4 landscape;
+            margin: 12mm;
+        }
+
+        @media print {
+
+            html,
             body {
-                background: white;
-                color: #000;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #fff !important;
+                color: #000 !important;
+                font-family: Arial, sans-serif;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
 
             .sidebar,
@@ -330,43 +486,117 @@ if (!$penugasan) {
             }
 
             .main {
-                width: 100%;
-                margin: 0;
-                padding: 0;
+                width: 100% !important;
+                min-height: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
 
             .content-card {
-                border: none;
-                padding: 0;
-                border-radius: 0;
+                width: 100% !important;
+                padding: 0 !important;
+                border: none !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
             }
 
-            .report-heading h2,
+            .report-heading {
+                margin-bottom: 15px !important;
+                padding-bottom: 12px !important;
+            }
+
+            .report-heading h2 {
+                color: #000 !important;
+                font-size: 16pt !important;
+            }
+
             .report-heading p,
             .report-info {
-                color: #000;
+                color: #000 !important;
+            }
+
+            .report-info {
+                font-size: 10pt !important;
+            }
+
+            .table-responsive {
+                overflow: visible !important;
+            }
+
+            .report-table {
+                width: 100% !important;
+                table-layout: fixed !important;
+                border-collapse: collapse !important;
+            }
+
+            .report-table th,
+            .report-table td {
+                border: 1px solid #777 !important;
+                padding: 8px 7px !important;
+                font-size: 9pt !important;
+                color: #000 !important;
+                overflow-wrap: break-word;
             }
 
             .report-table th {
                 background: #eaf3ff !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+            }
+
+            .report-table th:nth-child(1),
+            .report-table td:nth-child(1) {
+                width: 5%;
+                text-align: center;
+            }
+
+            .report-table th:nth-child(2),
+            .report-table td:nth-child(2) {
+                width: 15%;
+            }
+
+            .report-table th:nth-child(3),
+            .report-table td:nth-child(3) {
+                width: 21%;
+            }
+
+            .report-table th:nth-child(4),
+            .report-table td:nth-child(4) {
+                width: 37%;
+            }
+
+            .report-table th:nth-child(5),
+            .report-table td:nth-child(5) {
+                width: 11%;
+                text-align: center;
+            }
+
+            .report-table th:nth-child(6),
+            .report-table td:nth-child(6) {
+                width: 11%;
+                text-align: center;
+            }
+
+            .report-table tr {
+                break-inside: avoid;
+            }
+
+            .report-total {
+                background: #f3f7fc !important;
+            }
+
+            .signature {
+                color: #000 !important;
+                font-size: 10pt !important;
+                break-inside: avoid;
             }
         }
+
+        /* =================================
+           RESPONSIVE
+           SAMA DENGAN HALAMAN LAIN
+        ================================= */
 
         @media (max-width: 900px) {
-            .sidebar {
-                width: 230px;
-            }
 
-            .main {
-                width: calc(100% - 230px);
-                margin-left: 230px;
-                padding: 22px 18px;
-            }
-        }
-
-        @media (max-width: 650px) {
             .sidebar {
                 position: relative;
                 width: 100%;
@@ -380,43 +610,128 @@ if (!$penugasan) {
             .main {
                 width: 100%;
                 margin-left: 0;
-                padding: 20px 14px;
+                padding: 22px 18px;
             }
         }
+
+        @media (max-width: 650px) {
+
+            .main {
+                padding: 20px 14px;
+            }
+
+            .content-card {
+                padding: 16px;
+            }
+
+            .report-table th,
+            .report-table td {
+                padding: 8px;
+            }
+        }
+
     </style>
+
 </head>
 
 <body>
 
+<!-- =====================================
+     SIDEBAR WALI KELAS
+===================================== -->
+
 <aside class="sidebar">
+
     <div class="brand">
-        <h5>Sistem Pelanggaran</h5>
-        <p>SMK Muhammadiyah</p>
+
+        <div class="brand-title">
+            Sistem Pelanggaran
+        </div>
+
+        <div class="brand-subtitle">
+            SMK Muhammadiyah
+        </div>
+
     </div>
 
-    <div class="menu-title">MENU WALI KELAS</div>
+    <div class="menu-title">
+        MENU UTAMA
+    </div>
 
     <nav class="menu">
-        <a href="../dashboard.php" class="menu-link">Dashboard</a>
-        <a href="data_siswa.php" class="menu-link">Data Siswa</a>
-        <a href="rekap_pelanggaran.php" class="menu-link">Rekap Pelanggaran</a>
-        <a href="cetak_rekap.php" class="menu-link active">Cetak Rekap</a>
-        <a href="../about.php" class="menu-link">About Me</a>
+
+        <a
+            href="../dashboard.php"
+            class="menu-link"
+        >
+            Dashboard
+        </a>
+
+        <a
+            href="catat_pelanggaran.php"
+            class="menu-link"
+        >
+            Catat Pelanggaran
+        </a>
+
+        <a
+            href="data_siswa.php"
+            class="menu-link"
+        >
+            Data Siswa
+        </a>
+
+        <a
+            href="rekap_pelanggaran.php"
+            class="menu-link"
+        >
+            Rekap Pelanggaran
+        </a>
+
+        <a
+            href="cetak_rekap.php"
+            class="menu-link active"
+        >
+            laporan
+        </a>
+
+        <a
+            href="../about.php"
+            class="menu-link"
+        >
+            About Me
+        </a>
+
     </nav>
 
     <div class="logout">
-        <a href="../logout.php" class="menu-link">Logout</a>
+
+        <a
+            href="../logout.php"
+            class="menu-link"
+        >
+            Logout
+        </a>
+
     </div>
+
 </aside>
+
+<!-- =====================================
+     KONTEN UTAMA
+===================================== -->
 
 <main class="main">
 
-    <h1 class="page-title">Cetak Rekap</h1>
+    <h1 class="page-title">
+        Cetak Rekap
+    </h1>
+
     <p class="page-subtitle">
         Cetak laporan rekap pelanggaran siswa pada kelas yang Anda ampu.
     </p>
 
-    <?php if ($pesan): ?>
+    <?php if ($pesan !== ''): ?>
 
         <div class="alert alert-warning">
             <?= e($pesan) ?>
@@ -424,78 +739,173 @@ if (!$penugasan) {
 
     <?php else: ?>
 
-        <button type="button" class="print-button" onclick="window.print()">
-            Cetak Rekap
+        <!-- TOMBOL CETAK -->
+
+        <button
+            type="button"
+            class="print-button"
+            onclick="window.print()"
+        >
+            Cetak / Simpan PDF
         </button>
+
+        <!-- LAPORAN -->
 
         <section class="content-card">
 
             <div class="report-heading">
-                <h2>REKAPITULASI PELANGGARAN SISWA</h2>
-                <p>SMK Muhammadiyah</p>
+
+                <h2>
+                    REKAPITULASI PELANGGARAN SISWA
+                </h2>
+
+                <p>
+                    SMK Muhammadiyah Kota Tasikmalaya
+                </p>
+
             </div>
+
+            <!-- INFORMASI KELAS -->
 
             <div class="report-info">
-                <div><strong>Kelas:</strong> <?= e($namaKelas) ?></div>
-                <div><strong>Tahun Ajaran ID:</strong> <?= e($tahunAjaranId) ?></div>
-                <div><strong>Jumlah Siswa:</strong> <?= number_format($totalSiswa) ?></div>
+
+                <div>
+                    <strong>Kelas:</strong>
+                    <?= e($namaKelas) ?>
+                </div>
+
+                <div>
+                    <strong>Tahun Ajaran ID:</strong>
+                    <?= e($tahunAjaranId) ?>
+                </div>
+
+                <div>
+                    <strong>Jumlah Siswa:</strong>
+                    <?= number_format($totalSiswa) ?>
+                </div>
+
             </div>
 
+            <!-- TABEL REKAP -->
+
             <div class="table-responsive">
+
                 <table class="report-table">
+
                     <thead>
+
                         <tr>
-                            <th width="45">No</th>
-                            <th>NIS</th>
+                            <th>No</th>
+                            <th>NISN</th>
                             <th>Nama Siswa</th>
-                            <th>Jumlah Pelanggaran</th>
+                            <th>Rincian Pelanggaran</th>
+                            <th>Jumlah</th>
                             <th>Total Poin</th>
                         </tr>
+
                     </thead>
 
                     <tbody>
-                    <?php if (count($daftarSiswa) > 0): ?>
+
+                    <?php if (!empty($daftarSiswa)): ?>
 
                         <?php foreach ($daftarSiswa as $index => $siswa): ?>
+
                             <tr>
-                                <td class="center"><?= $index + 1 ?></td>
-                                <td><?= e($siswa['nis']) ?></td>
-                                <td><?= e($siswa['nama']) ?></td>
+
                                 <td class="center">
-                                    <?= number_format((int) $siswa['jumlah_pelanggaran']) ?>
+                                    <?= $index + 1 ?>
                                 </td>
+
+                                <td>
+                                    <?= e($siswa['nisn'] ?: '-') ?>
+                                </td>
+
+                                <td>
+                                    <?= e($siswa['nama']) ?>
+                                </td>
+
+                                <td>
+                                    <?= e(
+                                        $siswa['rincian_pelanggaran']
+                                        ?: 'Tidak ada pelanggaran'
+                                    ) ?>
+                                </td>
+
                                 <td class="center">
-                                    <?= number_format((int) $siswa['total_poin']) ?>
+                                    <?= number_format(
+                                        (int) $siswa['jumlah_pelanggaran']
+                                    ) ?>
                                 </td>
+
+                                <td class="center">
+                                    <?= number_format(
+                                        (int) $siswa['total_poin']
+                                    ) ?>
+                                </td>
+
                             </tr>
+
                         <?php endforeach; ?>
 
                         <tr class="report-total">
-                            <td colspan="3" class="center">TOTAL</td>
-                            <td class="center"><?= number_format($totalPelanggaran) ?></td>
-                            <td class="center"><?= number_format($totalPoin) ?></td>
+
+                            <td colspan="4" class="center">
+                                TOTAL
+                            </td>
+
+                            <td class="center">
+                                <?= number_format($totalPelanggaran) ?>
+                            </td>
+
+                            <td class="center">
+                                <?= number_format($totalPoin) ?>
+                            </td>
+
                         </tr>
 
                     <?php else: ?>
 
                         <tr>
-                            <td colspan="5" class="center">
+
+                            <td colspan="6" class="center">
                                 Belum ada data siswa untuk dicetak.
                             </td>
+
                         </tr>
 
                     <?php endif; ?>
+
                     </tbody>
+
                 </table>
+
             </div>
 
+            <!-- TANDA TANGAN -->
+
             <div class="signature">
+
                 <div>
-                    <p>Tasikmalaya, <?= date('d-m-Y') ?></p>
-                    <p>Wali Kelas,</p>
+
+                    <p>
+                        Tasikmalaya, <?= date('d-m-Y') ?>
+                    </p>
+
+                    <p>
+                        Wali Kelas,
+                    </p>
+
                     <br><br><br>
-                    <p><strong>(....................................)</strong></p>
+
+                    <p>
+                        <strong>
+                            (....................................)
+                        </strong>
+                    </p>
+
                 </div>
+
             </div>
 
         </section>
@@ -506,3 +916,4 @@ if (!$penugasan) {
 
 </body>
 </html>
+```
