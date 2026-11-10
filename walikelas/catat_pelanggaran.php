@@ -1,14 +1,11 @@
-```php
+
 <?php
 include "../middleware/auth.php";
 include "../config/koneksi.php";
 
 $role = strtolower(trim($_SESSION['role'] ?? ''));
 
-if (
-    $role !== 'guru' ||
-    empty($_SESSION['is_wali_kelas'])
-) {
+if ($role !== 'guru' || empty($_SESSION['is_wali_kelas'])) {
     http_response_code(403);
     exit("Anda tidak memiliki akses.");
 }
@@ -24,11 +21,7 @@ $user_id = (int)($_SESSION['user_id'] ?? 0);
 ========================================= */
 
 function e($value) {
-    return htmlspecialchars(
-        (string)($value ?? ''),
-        ENT_QUOTES,
-        'UTF-8'
-    );
+    return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
 function labelKelas($nama, $tingkat, $jurusan) {
@@ -48,10 +41,7 @@ function labelKelas($nama, $tingkat, $jurusan) {
         return trim("$tingkat $jurusan $nama");
     }
 
-    if (
-        $nama === '' ||
-        strcasecmp($nama, $jurusan) === 0
-    ) {
+    if ($nama === '' || strcasecmp($nama, $jurusan) === 0) {
         return trim("$tingkat $jurusan");
     }
 
@@ -64,56 +54,36 @@ function labelKelas($nama, $tingkat, $jurusan) {
 
 $data_guru = null;
 
-/* Ambil berdasarkan guru_id dari session */
-
 if ($guru_id > 0) {
     $stmt = mysqli_prepare(
         $koneksi,
-        "SELECT id, nama
-         FROM t_guru
-         WHERE id = ?
-         LIMIT 1"
+        "SELECT id, nama FROM t_guru WHERE id = ? LIMIT 1"
     );
 
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, "i", $guru_id);
         mysqli_stmt_execute($stmt);
-
-        $data_guru = mysqli_fetch_assoc(
-            mysqli_stmt_get_result($stmt)
-        );
-
+        $data_guru = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
         mysqli_stmt_close($stmt);
     }
 }
 
-/* Fallback berdasarkan user_id */
-
 if (!$data_guru && $user_id > 0) {
     $stmt = mysqli_prepare(
         $koneksi,
-        "SELECT id, nama
-         FROM t_guru
-         WHERE user_id = ?
-         LIMIT 1"
+        "SELECT id, nama FROM t_guru WHERE user_id = ? LIMIT 1"
     );
 
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, "i", $user_id);
         mysqli_stmt_execute($stmt);
-
-        $data_guru = mysqli_fetch_assoc(
-            mysqli_stmt_get_result($stmt)
-        );
-
+        $data_guru = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
         mysqli_stmt_close($stmt);
     }
 }
 
 $guru_id = (int)($data_guru['id'] ?? 0);
-
-$nama_guru = $data_guru['nama']
-    ?? ($_SESSION['nama'] ?? 'Wali Kelas');
+$nama_guru = $data_guru['nama'] ?? ($_SESSION['nama'] ?? 'Wali Kelas');
 
 if ($guru_id <= 0) {
     $pesan = 'Data guru tidak ditemukan. Silakan hubungi administrator.';
@@ -133,11 +103,87 @@ $query_tahun = mysqli_query(
      LIMIT 1"
 );
 
-$data_tahun = $query_tahun
-    ? mysqli_fetch_assoc($query_tahun)
-    : null;
-
+$data_tahun = $query_tahun ? mysqli_fetch_assoc($query_tahun) : null;
 $tahun_ajaran_id = (int)($data_tahun['id'] ?? 0);
+
+/* =========================================
+   PROSES SIMPAN TINDAKAN
+========================================= */
+
+if (isset($_POST['simpan_tindakan'])) {
+
+    $pelanggaran_siswa_id = (int)($_POST['pelanggaran_siswa_id'] ?? 0);
+    $tindakan_baru = trim($_POST['tindakan_baru'] ?? '');
+    $status_baru = trim($_POST['status_baru'] ?? '');
+
+    $status_diizinkan = [
+        'Diproses',
+        'Ditindaklanjuti',
+        'Selesai'
+    ];
+
+    if ($guru_id <= 0 || $tahun_ajaran_id <= 0) {
+
+        $pesan = 'Data akun atau tahun ajaran tidak valid.';
+        $jenis_pesan = 'danger';
+
+    } elseif (
+        $pelanggaran_siswa_id <= 0 ||
+        $tindakan_baru === '' ||
+        !in_array($status_baru, $status_diizinkan, true)
+    ) {
+
+        $pesan = 'Lengkapi tindakan dan pilih status yang tersedia.';
+        $jenis_pesan = 'danger';
+
+    } else {
+
+        /*
+         * Hanya catatan milik Wali Kelas yang sedang login
+         * dan belum berstatus Selesai yang boleh diubah.
+         */
+
+        $stmt = mysqli_prepare(
+            $koneksi,
+            "UPDATE t_pelanggaran_siswa
+             SET tindakan = ?, status = ?
+             WHERE id = ?
+               AND guru_id = ?
+               AND tahun_ajaran_id = ?
+               AND COALESCE(status, '') <> 'Selesai'"
+        );
+
+        if ($stmt) {
+
+            mysqli_stmt_bind_param(
+                $stmt,
+                "ssiii",
+                $tindakan_baru,
+                $status_baru,
+                $pelanggaran_siswa_id,
+                $guru_id,
+                $tahun_ajaran_id
+            );
+
+            $berhasil = mysqli_stmt_execute($stmt);
+            $jumlah_diubah = mysqli_stmt_affected_rows($stmt);
+
+            mysqli_stmt_close($stmt);
+
+            if ($berhasil && $jumlah_diubah > 0) {
+                header("Location: catat_pelanggaran.php?tindakan_berhasil=1");
+                exit;
+            } else {
+                $pesan = 'Catatan tidak dapat diperbarui. Pastikan catatan masih bisa diubah.';
+                $jenis_pesan = 'warning';
+            }
+
+        } else {
+            $pesan = 'Terjadi kesalahan saat menyiapkan perubahan tindakan.';
+            $jenis_pesan = 'danger';
+        }
+    }
+}
 
 /* =========================================
    VALIDASI TAHUN AJARAN DARI DATA SISWA
@@ -145,17 +191,13 @@ $tahun_ajaran_id = (int)($data_tahun['id'] ?? 0);
 
 $tahun_get = (int)($_GET['tahun_ajaran_id'] ?? 0);
 
-if (
-    $tahun_get > 0 &&
-    $tahun_get !== $tahun_ajaran_id
-) {
+if ($tahun_get > 0 && $tahun_get !== $tahun_ajaran_id) {
     $pesan = 'Tahun ajaran pada data siswa sudah tidak aktif. Silakan pilih data siswa kembali.';
     $jenis_pesan = 'warning';
 }
 
 /* =========================================
    SELURUH KELAS AKTIF
-   UNTUK PENCATATAN SELURUH SEKOLAH
 ========================================= */
 
 $daftar_kelas = [];
@@ -163,17 +205,10 @@ $daftar_kelas = [];
 if ($tahun_ajaran_id > 0) {
     $query_kelas = mysqli_query(
         $koneksi,
-        "SELECT
-            id,
-            nama,
-            tingkat,
-            jurusan
+        "SELECT id, nama, tingkat, jurusan
          FROM t_kelas
          WHERE status_aktif = 1
-         ORDER BY
-            FIELD(tingkat, 'X', 'XI', 'XII'),
-            jurusan ASC,
-            nama ASC"
+         ORDER BY FIELD(tingkat, 'X', 'XI', 'XII'), jurusan ASC, nama ASC"
     );
 
     if ($query_kelas) {
@@ -185,13 +220,6 @@ if ($tahun_ajaran_id > 0) {
 
 /* =========================================
    SELURUH SISWA AKTIF
-   BERDASARKAN PENEMPATAN TAHUN AJARAN AKTIF
-
-   Wali Kelas boleh mencatat siswa dari
-   seluruh kelas, bukan hanya kelas binaannya.
-
-   Hanya penempatan yang masih berlaku
-   yang akan ditampilkan.
 ========================================= */
 
 $daftar_siswa = [];
@@ -205,10 +233,8 @@ if ($tahun_ajaran_id > 0) {
             s.nama,
             ks.kelas_id
          FROM t_siswa s
-         INNER JOIN t_kelas_siswa ks
-            ON ks.siswa_id = s.id
-         INNER JOIN t_kelas k
-            ON k.id = ks.kelas_id
+         INNER JOIN t_kelas_siswa ks ON ks.siswa_id = s.id
+         INNER JOIN t_kelas k ON k.id = ks.kelas_id
          WHERE ks.tahun_ajaran_id = ?
            AND ks.status_aktif = 1
            AND ks.tanggal_mulai <= CURDATE()
@@ -218,18 +244,11 @@ if ($tahun_ajaran_id > 0) {
            )
            AND s.status_aktif = 1
            AND k.status_aktif = 1
-         ORDER BY
-            s.nama ASC,
-            ks.kelas_id ASC"
+         ORDER BY s.nama ASC, ks.kelas_id ASC"
     );
 
     if ($stmt) {
-        mysqli_stmt_bind_param(
-            $stmt,
-            "i",
-            $tahun_ajaran_id
-        );
-
+        mysqli_stmt_bind_param($stmt, "i", $tahun_ajaran_id);
         mysqli_stmt_execute($stmt);
 
         $result = mysqli_stmt_get_result($stmt);
@@ -250,13 +269,7 @@ $daftar_jenis = [];
 
 $query_jenis = mysqli_query(
     $koneksi,
-    "SELECT
-        id,
-        kode,
-        nama,
-        poin,
-        tingkat,
-        pelanggaran_kategori_id
+    "SELECT id, kode, nama, poin, tingkat, pelanggaran_kategori_id
      FROM t_pelanggaran
      WHERE status_aktif = 1
      ORDER BY id ASC"
@@ -270,25 +283,11 @@ if ($query_jenis) {
 
 /* =========================================
    DATA FORM AWAL
-   MENDUKUNG LINK DARI DATA SISWA
 ========================================= */
 
-$kelas_awal = (int)(
-    $_POST['kelas_id']
-    ?? $_GET['kelas_id']
-    ?? 0
-);
-
-$siswa_awal = (int)(
-    $_POST['siswa_id']
-    ?? $_GET['siswa_id']
-    ?? 0
-);
-
-$jenis_awal = (int)(
-    $_POST['pelanggaran_id']
-    ?? 0
-);
+$kelas_awal = (int)($_POST['kelas_id'] ?? $_GET['kelas_id'] ?? 0);
+$siswa_awal = (int)($_POST['siswa_id'] ?? $_GET['siswa_id'] ?? 0);
+$jenis_awal = (int)($_POST['pelanggaran_id'] ?? 0);
 
 /* =========================================
    PROSES SIMPAN PELANGGARAN
@@ -303,10 +302,7 @@ if (isset($_POST['simpan'])) {
     $tanggal = trim($_POST['tanggal'] ?? '');
     $keterangan = trim($_POST['keterangan'] ?? '');
 
-    $tanggal_obj = DateTime::createFromFormat(
-        '!Y-m-d',
-        $tanggal
-    );
+    $tanggal_obj = DateTime::createFromFormat('!Y-m-d', $tanggal);
 
     $tanggal_valid = (
         $tanggal_obj !== false &&
@@ -331,39 +327,27 @@ if (isset($_POST['simpan'])) {
         $keterangan === ''
     ) {
 
-        $pesan = 'Lengkapi semua data sebelum menyimpan.';
+        $pesan = 'Lengkapi semua data pelanggaran terlebih dahulu.';
         $jenis_pesan = 'danger';
 
     } else {
 
-        /* =====================================
-           VALIDASI KELAS AKTIF
-        ===================================== */
+        /* VALIDASI KELAS */
 
         $stmt = mysqli_prepare(
             $koneksi,
             "SELECT id
              FROM t_kelas
-             WHERE id = ?
-               AND status_aktif = 1
+             WHERE id = ? AND status_aktif = 1
              LIMIT 1"
         );
 
         $kelas_valid = false;
 
         if ($stmt) {
-            mysqli_stmt_bind_param(
-                $stmt,
-                "i",
-                $kelas_id
-            );
-
+            mysqli_stmt_bind_param($stmt, "i", $kelas_id);
             mysqli_stmt_execute($stmt);
-
-            $kelas_valid = (bool)mysqli_fetch_assoc(
-                mysqli_stmt_get_result($stmt)
-            );
-
+            $kelas_valid = (bool)mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
             mysqli_stmt_close($stmt);
         }
 
@@ -374,11 +358,7 @@ if (isset($_POST['simpan'])) {
 
         } else {
 
-            /* =================================
-               VALIDASI SISWA
-               HARUS TERDAFTAR DI KELAS TERSEBUT
-               DAN PENEMPATANNYA MASIH AKTIF
-            ================================= */
+            /* VALIDASI SISWA */
 
             $stmt = mysqli_prepare(
                 $koneksi,
@@ -391,10 +371,8 @@ if (isset($_POST['simpan'])) {
                     k.tingkat,
                     k.jurusan
                  FROM t_siswa s
-                 INNER JOIN t_kelas_siswa ks
-                    ON ks.siswa_id = s.id
-                 INNER JOIN t_kelas k
-                    ON k.id = ks.kelas_id
+                 INNER JOIN t_kelas_siswa ks ON ks.siswa_id = s.id
+                 INNER JOIN t_kelas k ON k.id = ks.kelas_id
                  WHERE s.id = ?
                    AND ks.kelas_id = ?
                    AND ks.tahun_ajaran_id = ?
@@ -422,11 +400,7 @@ if (isset($_POST['simpan'])) {
                 );
 
                 mysqli_stmt_execute($stmt);
-
-                $data_siswa = mysqli_fetch_assoc(
-                    mysqli_stmt_get_result($stmt)
-                );
-
+                $data_siswa = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
                 mysqli_stmt_close($stmt);
             }
 
@@ -437,38 +411,22 @@ if (isset($_POST['simpan'])) {
 
             } else {
 
-                /* =================================
-                   VALIDASI JENIS PELANGGARAN
-                ================================= */
+                /* VALIDASI JENIS PELANGGARAN */
 
                 $stmt = mysqli_prepare(
                     $koneksi,
-                    "SELECT
-                        id,
-                        nama,
-                        poin,
-                        pelanggaran_kategori_id
+                    "SELECT id, nama, poin, pelanggaran_kategori_id
                      FROM t_pelanggaran
-                     WHERE id = ?
-                       AND status_aktif = 1
+                     WHERE id = ? AND status_aktif = 1
                      LIMIT 1"
                 );
 
                 $data_pelanggaran = null;
 
                 if ($stmt) {
-                    mysqli_stmt_bind_param(
-                        $stmt,
-                        "i",
-                        $pelanggaran_id
-                    );
-
+                    mysqli_stmt_bind_param($stmt, "i", $pelanggaran_id);
                     mysqli_stmt_execute($stmt);
-
-                    $data_pelanggaran = mysqli_fetch_assoc(
-                        mysqli_stmt_get_result($stmt)
-                    );
-
+                    $data_pelanggaran = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
                     mysqli_stmt_close($stmt);
                 }
 
@@ -479,17 +437,9 @@ if (isset($_POST['simpan'])) {
 
                 } else {
 
-                    /* =================================
-                       SIAPKAN DATA PELANGGARAN
-                    ================================= */
-
                     $nama_siswa = $data_siswa['nama'];
                     $nama_pelanggaran = $data_pelanggaran['nama'];
-
-                    $kategori_id = (int)(
-                        $data_pelanggaran['pelanggaran_kategori_id'] ?? 0
-                    );
-
+                    $kategori_id = (int)($data_pelanggaran['pelanggaran_kategori_id'] ?? 0);
                     $poin = (int)$data_pelanggaran['poin'];
 
                     $nama_kelas = labelKelas(
@@ -500,12 +450,9 @@ if (isset($_POST['simpan'])) {
 
                     $nama_guru_simpan = $nama_guru;
 
+                    // Tindakan akan diisi melalui tombol pada tabel.
                     $tindakan = '';
                     $status = 'Diproses';
-
-                    /* =================================
-                       SIMPAN KE DATABASE
-                    ================================= */
 
                     $stmt = mysqli_prepare(
                         $koneksi,
@@ -525,9 +472,7 @@ if (isset($_POST['simpan'])) {
                             status,
                             kelas_id,
                             nama_kelas
-                        ) VALUES (
-                            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-                        )"
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
                     );
 
                     if ($stmt) {
@@ -553,13 +498,10 @@ if (isset($_POST['simpan'])) {
                         );
 
                         $berhasil = mysqli_stmt_execute($stmt);
-
                         mysqli_stmt_close($stmt);
 
                         if ($berhasil) {
-                            header(
-                                "Location: catat_pelanggaran.php?berhasil=1"
-                            );
+                            header("Location: catat_pelanggaran.php?berhasil=1");
                             exit;
                         }
                     }
@@ -577,17 +519,17 @@ if (isset($_POST['simpan'])) {
 ========================================= */
 
 if (($_GET['berhasil'] ?? '') === '1') {
-    $pesan = 'Pelanggaran berhasil dicatat!';
+    $pesan = 'Pelanggaran berhasil dicatat! Silakan klik tombol Tindakan pada tabel untuk mengisi tindak lanjut.';
+    $jenis_pesan = 'success';
+}
+
+if (($_GET['tindakan_berhasil'] ?? '') === '1') {
+    $pesan = 'Tindakan dan status pelanggaran berhasil diperbarui!';
     $jenis_pesan = 'success';
 }
 
 /* =========================================
    RIWAYAT PENCATATAN WALI KELAS
-
-   HANYA MENAMPILKAN CATATAN YANG DIBUAT
-   OLEH AKUN WALI KELAS YANG LOGIN.
-
-   BUKAN REKAP SELURUH KELAS.
 ========================================= */
 
 $daftar_riwayat = [];
@@ -602,21 +544,14 @@ if ($guru_id > 0 && $tahun_ajaran_id > 0) {
             k.tingkat,
             k.jurusan
          FROM t_pelanggaran_siswa ps
-         LEFT JOIN t_kelas k
-            ON k.id = ps.kelas_id
+         LEFT JOIN t_kelas k ON k.id = ps.kelas_id
          WHERE ps.guru_id = ?
            AND ps.tahun_ajaran_id = ?
          ORDER BY ps.tanggal DESC, ps.id DESC"
     );
 
     if ($stmt) {
-        mysqli_stmt_bind_param(
-            $stmt,
-            "ii",
-            $guru_id,
-            $tahun_ajaran_id
-        );
-
+        mysqli_stmt_bind_param($stmt, "ii", $guru_id, $tahun_ajaran_id);
         mysqli_stmt_execute($stmt);
 
         $result = mysqli_stmt_get_result($stmt);
@@ -628,7 +563,6 @@ if ($guru_id > 0 && $tahun_ajaran_id > 0) {
         mysqli_stmt_close($stmt);
     }
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -669,9 +603,7 @@ a {
     text-decoration:none;
 }
 
-/* =========================================
-   SIDEBAR - SAMA DENGAN DASHBOARD
-========================================= */
+/* SIDEBAR */
 
 .sidebar {
     position:fixed;
@@ -759,9 +691,7 @@ a {
     background:#fff0ef;
 }
 
-/* =========================================
-   KONTEN UTAMA
-========================================= */
+/* KONTEN UTAMA */
 
 .main {
     width:calc(100% - 282px);
@@ -844,6 +774,33 @@ textarea.form-control {
     padding:8px 15px;
 }
 
+.btn-tindakan {
+    background:#eaf3ff;
+    color:#2878cf;
+    border:1px solid #d3e5f8;
+    border-radius:7px;
+    padding:7px 11px;
+    font-size:12px;
+    font-weight:600;
+    white-space:nowrap;
+}
+
+.btn-tindakan:hover {
+    background:#dcecff;
+    color:#1e62a8;
+}
+
+.btn-terkunci {
+    display:inline-block;
+    background:#e4f3e9;
+    color:#34734b;
+    border-radius:7px;
+    padding:7px 11px;
+    font-size:12px;
+    font-weight:600;
+    white-space:nowrap;
+}
+
 .table {
     color:#344b63;
     vertical-align:middle;
@@ -878,6 +835,11 @@ textarea.form-control {
     color:#946b17;
 }
 
+.status-ditindaklanjuti {
+    background:#eaf0ff;
+    color:#4265a5;
+}
+
 .status-selesai {
     background:#e4f3e9;
     color:#34734b;
@@ -891,6 +853,13 @@ textarea.form-control {
 .keterangan {
     color:#71849a;
     font-size:14px;
+}
+
+.tindakan-text {
+    min-width:150px;
+    max-width:260px;
+    white-space:normal;
+    overflow-wrap:anywhere;
 }
 
 /* DATATABLES */
@@ -957,6 +926,19 @@ textarea.form-control {
     border-radius:7px;
 }
 
+.modal-content {
+    border:1px solid #e1eaf4;
+    border-radius:12px;
+}
+
+.modal-header {
+    border-bottom:1px solid #e5edf5;
+}
+
+.modal-footer {
+    border-top:1px solid #e5edf5;
+}
+
 /* RESPONSIVE */
 
 @media(max-width:900px) {
@@ -992,10 +974,7 @@ textarea.form-control {
 
 <body>
 
-<!-- =========================================
-     SIDEBAR WALI KELAS
-     URUTAN SAMA DENGAN DASHBOARD
-========================================= -->
+<!-- SIDEBAR WALI KELAS -->
 
 <aside class="sidebar">
 
@@ -1012,12 +991,12 @@ textarea.form-control {
             Dashboard
         </a>
 
-        <a href="data_siswa.php" class="menu-link">
-            Data Siswa
-        </a>
-
         <a href="catat_pelanggaran.php" class="menu-link active">
             Catat Pelanggaran
+        </a>
+
+        <a href="data_siswa.php" class="menu-link">
+            Data Siswa
         </a>
 
         <a href="rekap_pelanggaran.php" class="menu-link">
@@ -1042,9 +1021,7 @@ textarea.form-control {
 
 </aside>
 
-<!-- =========================================
-     KONTEN UTAMA
-========================================= -->
+<!-- KONTEN UTAMA -->
 
 <main class="main">
 
@@ -1060,10 +1037,7 @@ textarea.form-control {
 
     <div class="card mb-4">
         <div class="card-body">
-            <h2 class="judul mb-1">
-                Catat Pelanggaran
-            </h2>
-
+            <h2 class="judul mb-1">Catat Pelanggaran</h2>
             <p class="text-muted mb-0">
                 Catat pelanggaran seluruh siswa di sekolah dengan mudah dan terstruktur.
             </p>
@@ -1079,18 +1053,23 @@ textarea.form-control {
     <?php endif; ?>
 
     <?php if ($tahun_ajaran_id <= 0): ?>
+
         <div class="alert alert-warning">
             Tahun ajaran aktif belum ditemukan.
         </div>
+
     <?php elseif (count($daftar_kelas) === 0): ?>
+
         <div class="alert alert-warning">
-            Belum ada kelas aktif yang tersedia.
-            Silakan hubungi administrator.
+            Belum ada kelas aktif yang tersedia. Silakan hubungi administrator.
         </div>
+
     <?php elseif (count($daftar_siswa) === 0): ?>
+
         <div class="alert alert-warning">
             Belum ada siswa dengan penempatan aktif pada tahun ajaran ini.
         </div>
+
     <?php endif; ?>
 
     <!-- FORM PELANGGARAN -->
@@ -1098,17 +1077,14 @@ textarea.form-control {
     <div class="card mb-4">
         <div class="card-body">
 
-            <h4 class="mb-1">
-                Tambah Pelanggaran
-            </h4>
+            <h4 class="mb-1">Tambah Pelanggaran</h4>
 
             <p class="keterangan mb-4">
-                Pilih kelas dan siswa dari seluruh sekolah, lalu masukkan data pelanggaran.
+                Pilih kelas dan siswa, lalu masukkan jenis pelanggaran beserta keterangannya.
+                Tindakan dapat ditambahkan melalui tombol pada tabel riwayat.
             </p>
 
             <form method="POST" action="catat_pelanggaran.php">
-
-                <!-- WALI KELAS -->
 
                 <div class="mb-3">
                     <label for="nama_guru" class="form-label">
@@ -1128,12 +1104,8 @@ textarea.form-control {
                     </small>
                 </div>
 
-                <!-- KELAS -->
-
                 <div class="mb-3">
-                    <label for="kelas_id" class="form-label">
-                        Kelas
-                    </label>
+                    <label for="kelas_id" class="form-label">Kelas</label>
 
                     <select
                         id="kelas_id"
@@ -1146,13 +1118,9 @@ textarea.form-control {
                             $tahun_ajaran_id <= 0
                         ) ? 'disabled' : ''; ?>
                     >
-
-                        <option value="">
-                            -- Pilih Kelas --
-                        </option>
+                        <option value="">-- Pilih Kelas --</option>
 
                         <?php foreach ($daftar_kelas as $k): ?>
-
                             <?php
                             $label = labelKelas(
                                 $k['nama'],
@@ -1167,18 +1135,13 @@ textarea.form-control {
                             >
                                 <?= e($label); ?>
                             </option>
-
                         <?php endforeach; ?>
 
                     </select>
                 </div>
 
-                <!-- SISWA -->
-
                 <div class="mb-3">
-                    <label for="siswa_id" class="form-label">
-                        Nama Siswa
-                    </label>
+                    <label for="siswa_id" class="form-label">Nama Siswa</label>
 
                     <select
                         id="siswa_id"
@@ -1187,25 +1150,19 @@ textarea.form-control {
                         required
                         disabled
                     >
-                        <option value="">
-                            -- Pilih kelas terlebih dahulu --
-                        </option>
+                        <option value="">-- Pilih kelas terlebih dahulu --</option>
 
                         <?php foreach ($daftar_siswa as $s): ?>
-
                             <option
                                 value="<?= (int)$s['id']; ?>"
                                 data-kelas="<?= (int)$s['kelas_id']; ?>"
                             >
                                 <?= e($s['nis'] . ' - ' . $s['nama']); ?>
                             </option>
-
                         <?php endforeach; ?>
 
                     </select>
                 </div>
-
-                <!-- JENIS PELANGGARAN -->
 
                 <div class="mb-3">
                     <label for="pelanggaran_id" class="form-label">
@@ -1218,13 +1175,9 @@ textarea.form-control {
                         class="form-select"
                         required
                     >
-
-                        <option value="">
-                            -- Pilih Pelanggaran --
-                        </option>
+                        <option value="">-- Pilih Pelanggaran --</option>
 
                         <?php foreach ($daftar_jenis as $p): ?>
-
                             <option
                                 value="<?= (int)$p['id']; ?>"
                                 <?= $jenis_awal === (int)$p['id'] ? 'selected' : ''; ?>
@@ -1232,18 +1185,13 @@ textarea.form-control {
                                 <?= e($p['kode'] . ' - ' . $p['nama']); ?>
                                 (<?= e($p['tingkat']); ?>, <?= (int)$p['poin']; ?> poin)
                             </option>
-
                         <?php endforeach; ?>
 
                     </select>
                 </div>
 
-                <!-- TANGGAL -->
-
                 <div class="mb-3">
-                    <label for="tanggal" class="form-label">
-                        Tanggal
-                    </label>
+                    <label for="tanggal" class="form-label">Tanggal</label>
 
                     <input
                         type="date"
@@ -1255,19 +1203,15 @@ textarea.form-control {
                     >
                 </div>
 
-                <!-- KETERANGAN -->
-
                 <div class="mb-4">
-                    <label for="keterangan" class="form-label">
-                        Keterangan
-                    </label>
+                    <label for="keterangan" class="form-label">Keterangan</label>
 
                     <textarea
                         id="keterangan"
                         name="keterangan"
                         class="form-control"
                         rows="4"
-                        placeholder="Masukkan keterangan pelanggaran"
+                        placeholder="Contoh: Siswa membolos pada saat jam pelajaran."
                         required
                     ><?= e($_POST['keterangan'] ?? ''); ?></textarea>
                 </div>
@@ -1297,12 +1241,11 @@ textarea.form-control {
 
         <div class="card-body">
 
-            <h4 class="mb-1">
-                Riwayat Pelanggaran
-            </h4>
+            <h4 class="mb-1">Riwayat Pelanggaran</h4>
 
             <p class="keterangan mb-3">
                 Daftar pelanggaran yang telah dicatat oleh Anda pada tahun ajaran aktif.
+                Klik tombol Tindakan untuk mengisi atau memperbarui tindak lanjut.
             </p>
 
             <div class="table-responsive">
@@ -1321,8 +1264,10 @@ textarea.form-control {
                             <th>Jenis Pelanggaran</th>
                             <th>Wali Kelas yang Mencatat</th>
                             <th>Keterangan</th>
+                            <th>Tindakan</th>
                             <th>Poin</th>
                             <th>Status</th>
+                            <th>Aksi</th>
                         </tr>
                     </thead>
 
@@ -1331,7 +1276,6 @@ textarea.form-control {
                     <?php foreach ($daftar_riwayat as $i => $data): ?>
 
                         <?php
-
                         $kelas_tampil = $data['nama_kelas'] ?? '-';
 
                         if (!empty($data['nama_kelas_asli'])) {
@@ -1342,21 +1286,19 @@ textarea.form-control {
                             );
                         }
 
-                        $status = trim(
-                            (string)($data['status'] ?? 'Diproses')
-                        );
+                        $status = trim((string)($data['status'] ?? 'Diproses'));
 
                         $status_class = 'status-lain';
 
                         if (strcasecmp($status, 'Diproses') === 0) {
                             $status_class = 'status-diproses';
-                        } elseif (
-                            strcasecmp($status, 'Selesai') === 0 ||
-                            strcasecmp($status, 'Ditindaklanjuti') === 0
-                        ) {
+                        } elseif (strcasecmp($status, 'Ditindaklanjuti') === 0) {
+                            $status_class = 'status-ditindaklanjuti';
+                        } elseif (strcasecmp($status, 'Selesai') === 0) {
                             $status_class = 'status-selesai';
                         }
 
+                        $tindakan_tampil = trim((string)($data['tindakan'] ?? ''));
                         ?>
 
                         <tr>
@@ -1374,12 +1316,46 @@ textarea.form-control {
 
                             <td><?= e($data['keterangan']); ?></td>
 
+                            <td>
+                                <div class="tindakan-text">
+                                    <?= $tindakan_tampil !== ''
+                                        ? nl2br(e($tindakan_tampil))
+                                        : '<span class="text-muted">Belum ada tindakan</span>'; ?>
+                                </div>
+                            </td>
+
                             <td><?= (int)$data['poin']; ?></td>
 
                             <td>
                                 <span class="status-badge <?= e($status_class); ?>">
                                     <?= e($status); ?>
                                 </span>
+                            </td>
+
+                            <td>
+                                <?php if (strcasecmp($status, 'Selesai') === 0): ?>
+
+                                    <span class="btn-terkunci">
+                                        Selesai
+                                    </span>
+
+                                <?php else: ?>
+
+                                    <button
+                                        type="button"
+                                        class="btn-tindakan btn-buka-tindakan"
+                                        data-id="<?= (int)$data['id']; ?>"
+                                        data-siswa="<?= e($data['nama_siswa']); ?>"
+                                        data-pelanggaran="<?= e($data['nama_pelanggaran']); ?>"
+                                        data-tindakan="<?= e($tindakan_tampil); ?>"
+                                        data-status="<?= e($status); ?>"
+                                    >
+                                        <?= $tindakan_tampil !== ''
+                                            ? 'Ubah Tindakan'
+                                            : 'Tambah Tindakan'; ?>
+                                    </button>
+
+                                <?php endif; ?>
                             </td>
                         </tr>
 
@@ -1404,6 +1380,111 @@ textarea.form-control {
 </div>
 
 </main>
+
+<!-- MODAL TINDAKAN -->
+
+<div
+    class="modal fade"
+    id="modalTindakan"
+    tabindex="-1"
+    aria-labelledby="judulModalTindakan"
+    aria-hidden="true"
+>
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <form method="POST" action="catat_pelanggaran.php">
+
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title" id="judulModalTindakan">
+                            Tindakan Pelanggaran
+                        </h5>
+
+                        <small class="text-muted" id="infoPelanggaran">
+                            Isi tindakan untuk siswa.
+                        </small>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Tutup"
+                    ></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <input
+                        type="hidden"
+                        name="pelanggaran_siswa_id"
+                        id="pelanggaran_siswa_id"
+                    >
+
+                    <div class="mb-3">
+                        <label for="tindakan_baru" class="form-label">
+                            Tindakan yang Diberikan
+                        </label>
+
+                        <textarea
+                            name="tindakan_baru"
+                            id="tindakan_baru"
+                            class="form-control"
+                            rows="4"
+                            placeholder="Contoh: Siswa diberikan teguran dan diminta membuat surat pernyataan."
+                            required
+                        ></textarea>
+                    </div>
+
+                    <div class="mb-2">
+                        <label for="status_baru" class="form-label">
+                            Status Pelanggaran
+                        </label>
+
+                        <select
+                            name="status_baru"
+                            id="status_baru"
+                            class="form-select"
+                            required
+                        >
+                            <option value="Diproses">Diproses</option>
+                            <option value="Ditindaklanjuti">Ditindaklanjuti</option>
+                            <option value="Selesai">Selesai</option>
+                        </select>
+                    </div>
+
+                    <small class="text-muted">
+                        Jika status diubah menjadi Selesai, catatan tindakan tidak dapat diubah kembali.
+                    </small>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Batal
+                    </button>
+
+                    <button
+                        type="submit"
+                        name="simpan_tindakan"
+                        class="btn btn-primary"
+                    >
+                        Simpan Tindakan
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+</div>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
@@ -1457,7 +1538,6 @@ function filterSiswa(idSiswa = 0) {
             }
 
             pilihSiswa.appendChild(salinan);
-
             jumlahSiswa++;
         }
 
@@ -1474,9 +1554,42 @@ pilihKelas.addEventListener('change', function() {
     filterSiswa(0);
 });
 
-/* Filter awal untuk mendukung link dari halaman Data Siswa */
-
 filterSiswa(siswaAwal);
+
+/* =========================================
+   MODAL TINDAKAN
+========================================= */
+
+const modalTindakanElement = document.getElementById('modalTindakan');
+
+const modalTindakan = new bootstrap.Modal(modalTindakanElement);
+
+const inputId = document.getElementById('pelanggaran_siswa_id');
+const inputTindakan = document.getElementById('tindakan_baru');
+const inputStatus = document.getElementById('status_baru');
+const infoPelanggaran = document.getElementById('infoPelanggaran');
+
+document.querySelectorAll('.btn-buka-tindakan').forEach(function(button) {
+
+    button.addEventListener('click', function() {
+
+        const id = this.dataset.id || '';
+        const siswa = this.dataset.siswa || '';
+        const pelanggaran = this.dataset.pelanggaran || '';
+        const tindakan = this.dataset.tindakan || '';
+        const status = this.dataset.status || 'Diproses';
+
+        inputId.value = id;
+        inputTindakan.value = tindakan;
+        inputStatus.value = status;
+
+        infoPelanggaran.textContent =
+            siswa + ' - ' + pelanggaran;
+
+        modalTindakan.show();
+    });
+
+});
 
 /* =========================================
    DATATABLES
@@ -1533,4 +1646,3 @@ $(document).ready(function() {
 
 </body>
 </html>
-```

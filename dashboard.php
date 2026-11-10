@@ -62,7 +62,6 @@ if ($role === 'admin') {
         }
 
         /* SIDEBAR */
-
         .sidebar {
             position: fixed;
             top: 0;
@@ -149,7 +148,6 @@ if ($role === 'admin') {
         }
 
         /* MAIN */
-
         .main {
             width: calc(100% - 282px);
             min-height: 100vh;
@@ -158,7 +156,6 @@ if ($role === 'admin') {
         }
 
         /* TOPBAR */
-
         .topbar {
             background: linear-gradient(
                 135deg,
@@ -204,7 +201,6 @@ if ($role === 'admin') {
         }
 
         /* PAGE HEADER */
-
         .page-head {
             margin: 4px 6px 18px;
         }
@@ -221,7 +217,6 @@ if ($role === 'admin') {
         }
 
         /* DASHBOARD CARD */
-
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -279,7 +274,6 @@ if ($role === 'admin') {
         }
 
         /* FOOTER */
-
         .footer {
             text-align: center;
             margin-top: 28px;
@@ -288,7 +282,6 @@ if ($role === 'admin') {
         }
 
         /* RESPONSIVE */
-
         @media (max-width: 1100px) {
             .dashboard-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -338,7 +331,6 @@ if ($role === 'admin') {
 <div class="layout">
 
     <!-- SIDEBAR -->
-
     <aside class="sidebar">
 
         <div class="brand">
@@ -403,7 +395,7 @@ if ($role === 'admin') {
 
             <?php elseif ($jenisDashboard === 'wali_kelas'): ?>
 
-                <!-- MENU WALI KELAS -->
+                <!-- MENU WALI KELAS: URUTAN SUDAH DIPERBAIKI -->
 
                 <a href="walikelas/catat_pelanggaran.php" class="menu-link">
                     Catat Pelanggaran
@@ -418,7 +410,7 @@ if ($role === 'admin') {
                 </a>
 
                 <a href="walikelas/cetak_rekap.php" class="menu-link">
-                    Cetak Rekap
+                  Laporan
                 </a>
 
             <?php else: ?>
@@ -457,13 +449,10 @@ if ($role === 'admin') {
 
     </aside>
 
-
     <!-- MAIN CONTENT -->
-
     <main class="main">
 
         <!-- TOPBAR -->
-
         <section class="topbar">
 
             <div class="welcome">
@@ -491,9 +480,7 @@ if ($role === 'admin') {
 
         </section>
 
-
         <!-- PAGE HEADER -->
-
         <div class="page-head">
 
             <h3>Dashboard</h3>
@@ -510,9 +497,7 @@ if ($role === 'admin') {
 
         </div>
 
-
         <!-- DASHBOARD ADMIN -->
-
         <?php if ($jenisDashboard === 'admin'): ?>
 
             <section class="dashboard-grid">
@@ -562,9 +547,7 @@ if ($role === 'admin') {
 
             </section>
 
-
         <!-- DASHBOARD WALI KELAS -->
-
         <?php elseif ($jenisDashboard === 'wali_kelas'): ?>
 
             <section class="dashboard-grid">
@@ -573,8 +556,8 @@ if ($role === 'admin') {
                     <div class="card-content">
                         <h4>Catat Pelanggaran</h4>
                         <p>
-                            Catat pelanggaran siswa di kelas
-                            yang menjadi tanggung jawab Anda.
+                            Catat pelanggaran siswa di seluruh sekolah
+                            dengan mudah dan terstruktur.
                         </p>
                     </div>
 
@@ -613,7 +596,7 @@ if ($role === 'admin') {
 
                 <div class="card">
                     <div class="card-content">
-                        <h4>Cetak Rekap</h4>
+                        <h4>Laporan</h4>
                         <p>
                             Cetak laporan pelanggaran
                             siswa berdasarkan kelas.
@@ -627,9 +610,7 @@ if ($role === 'admin') {
 
             </section>
 
-
         <!-- DASHBOARD GURU -->
-
         <?php else: ?>
 
             <section class="dashboard-grid">
@@ -680,9 +661,7 @@ if ($role === 'admin') {
 
         <?php endif; ?>
 
-
         <!-- FOOTER -->
-
         <div class="footer">
             Sistem Pelanggaran Sekolah · Project Rekayasa Perangkat Lunak
         </div>

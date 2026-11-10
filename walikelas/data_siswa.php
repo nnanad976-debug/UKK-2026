@@ -1,3 +1,4 @@
+
 <?php
 include __DIR__ . "/../middleware/auth.php";
 include __DIR__ . "/../config/koneksi.php";
@@ -660,7 +661,7 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
                 href="cetak_rekap.php"
                 class="menu-link"
             >
-              laporan
+                Laporan
             </a>
 
             <a
