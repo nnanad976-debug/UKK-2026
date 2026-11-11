@@ -1,13 +1,12 @@
 
 <?php
-include "../middleware/auth.php";
-include "../config/koneksi.php";
+include __DIR__ . "/../middleware/auth.php";
+include __DIR__ . "/../config/koneksi.php";
 
-/*
-|--------------------------------------------------------------------------
-| PEMERIKSAAN AKSES
-|--------------------------------------------------------------------------
-*/
+/* =========================================
+   PEMERIKSAAN AKSES WALI KELAS
+========================================= */
+
 $role = strtolower(trim($_SESSION['role'] ?? ''));
 
 if ($role !== 'guru' || empty($_SESSION['is_wali_kelas'])) {
@@ -15,17 +14,16 @@ if ($role !== 'guru' || empty($_SESSION['is_wali_kelas'])) {
     exit("Anda tidak memiliki akses.");
 }
 
-/*
-|--------------------------------------------------------------------------
-| FUNGSI BANTU
-|--------------------------------------------------------------------------
-*/
-function e($value)
+/* =========================================
+   FUNGSI BANTU
+========================================= */
+
+function e($value): string
 {
     return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
-function tanggalValid($tanggal)
+function tanggalValid($tanggal): bool
 {
     if ($tanggal === '') {
         return true;
@@ -40,26 +38,30 @@ function tanggalValid($tanggal)
     return checkdate($bulan, $hari, $tahun);
 }
 
-/*
-|--------------------------------------------------------------------------
-| MENGAMBIL ID GURU
-|--------------------------------------------------------------------------
-*/
+/* =========================================
+   IDENTITAS GURU / WALI KELAS
+========================================= */
+
 $user_id = (int)($_SESSION['user_id'] ?? 0);
 $guru_id = (int)($_SESSION['guru_id'] ?? 0);
 
 if ($guru_id <= 0 && $user_id > 0) {
+
     $stmt_guru = mysqli_prepare(
         $koneksi,
-        "SELECT id FROM t_guru WHERE user_id = ? LIMIT 1"
+        "SELECT id
+         FROM t_guru
+         WHERE user_id = ?
+         LIMIT 1"
     );
 
     if ($stmt_guru) {
         mysqli_stmt_bind_param($stmt_guru, "i", $user_id);
         mysqli_stmt_execute($stmt_guru);
 
-        $result_guru = mysqli_stmt_get_result($stmt_guru);
-        $data_guru = mysqli_fetch_assoc($result_guru);
+        $data_guru = mysqli_fetch_assoc(
+            mysqli_stmt_get_result($stmt_guru)
+        );
 
         $guru_id = (int)($data_guru['id'] ?? 0);
 
@@ -72,14 +74,33 @@ if ($guru_id <= 0) {
     exit("Data guru tidak ditemukan. Silakan login kembali.");
 }
 
-/*
-|--------------------------------------------------------------------------
-| MENGAMBIL TAHUN AJARAN AKTIF
-|--------------------------------------------------------------------------
-*/
+$nama_login = $_SESSION['nama'] ?? 'Wali Kelas';
+
+$stmt_nama = mysqli_prepare(
+    $koneksi,
+    "SELECT nama FROM t_guru WHERE id = ? LIMIT 1"
+);
+
+if ($stmt_nama) {
+    mysqli_stmt_bind_param($stmt_nama, "i", $guru_id);
+    mysqli_stmt_execute($stmt_nama);
+
+    $data_nama = mysqli_fetch_assoc(
+        mysqli_stmt_get_result($stmt_nama)
+    );
+
+    $nama_login = $data_nama['nama'] ?? $nama_login;
+
+    mysqli_stmt_close($stmt_nama);
+}
+
+/* =========================================
+   TAHUN AJARAN AKTIF
+========================================= */
+
 $query_tahun = mysqli_query(
     $koneksi,
-    "SELECT id, nama, tanggal_mulai, tanggal_selesai
+    "SELECT id, nama
      FROM t_tahun_ajaran
      WHERE status_aktif = 1
      ORDER BY id DESC
@@ -95,11 +116,10 @@ $tahun_aktif = mysqli_fetch_assoc($query_tahun);
 $tahun_ajaran_id = (int)($tahun_aktif['id'] ?? 0);
 $nama_tahun_ajaran = $tahun_aktif['nama'] ?? '-';
 
-/*
-|--------------------------------------------------------------------------
-| FILTER KELAS DAN TANGGAL
-|--------------------------------------------------------------------------
-*/
+/* =========================================
+   FILTER
+========================================= */
+
 $filter_kelas = max(0, (int)($_GET['kelas_id'] ?? 0));
 
 $tanggal_mulai = trim($_GET['tanggal_mulai'] ?? '');
@@ -107,9 +127,13 @@ $tanggal_selesai = trim($_GET['tanggal_selesai'] ?? '');
 
 $pesan_filter = '';
 
-if (!tanggalValid($tanggal_mulai) || !tanggalValid($tanggal_selesai)) {
+if (
+    !tanggalValid($tanggal_mulai) ||
+    !tanggalValid($tanggal_selesai)
+) {
     $tanggal_mulai = '';
     $tanggal_selesai = '';
+
     $pesan_filter = 'Format tanggal tidak valid. Silakan pilih tanggal kembali.';
 }
 
@@ -120,24 +144,31 @@ if (
 ) {
     $tanggal_mulai = '';
     $tanggal_selesai = '';
+
     $pesan_filter = 'Tanggal mulai tidak boleh melebihi tanggal selesai.';
 }
 
-/*
-|--------------------------------------------------------------------------
-| MENGAMBIL DAFTAR KELAS WALI KELAS
-|--------------------------------------------------------------------------
-*/
+/* =========================================
+   DAFTAR KELAS WALI KELAS
+========================================= */
+
 $daftar_kelas = [];
 
 if ($tahun_ajaran_id > 0) {
+
     $sql_kelas = "
         SELECT DISTINCT
             wk.kelas_id,
-            COALESCE(k.nama, CONCAT('Kelas ID ', wk.kelas_id)) AS nama_kelas
+            COALESCE(
+                k.nama,
+                CONCAT('Kelas ID ', wk.kelas_id)
+            ) AS nama_kelas
+
         FROM t_wali_kelas wk
+
         LEFT JOIN t_kelas k
             ON k.id = wk.kelas_id
+
         WHERE wk.guru_id = ?
           AND wk.tahun_ajaran_id = ?
           AND wk.status_aktif = 1
@@ -146,6 +177,7 @@ if ($tahun_ajaran_id > 0) {
                 wk.tanggal_selesai IS NULL
                 OR wk.tanggal_selesai >= CURDATE()
           )
+
         ORDER BY nama_kelas ASC
     ";
 
@@ -166,18 +198,17 @@ if ($tahun_ajaran_id > 0) {
 
     $result_kelas = mysqli_stmt_get_result($stmt_kelas);
 
-    while ($row_kelas = mysqli_fetch_assoc($result_kelas)) {
-        $daftar_kelas[] = $row_kelas;
+    while ($row = mysqli_fetch_assoc($result_kelas)) {
+        $daftar_kelas[] = $row;
     }
 
     mysqli_stmt_close($stmt_kelas);
 }
 
-/*
-|--------------------------------------------------------------------------
-| MEMASTIKAN FILTER KELAS MILIK WALI KELAS
-|--------------------------------------------------------------------------
-*/
+/* =========================================
+   VALIDASI FILTER KELAS
+========================================= */
+
 $kelas_valid = false;
 
 foreach ($daftar_kelas as $kelas) {
@@ -191,14 +222,16 @@ if ($filter_kelas > 0 && !$kelas_valid) {
     $filter_kelas = 0;
 }
 
-/*
-|--------------------------------------------------------------------------
-| MENGAMBIL DATA REKAP PELANGGARAN
-|--------------------------------------------------------------------------
-*/
+/* =========================================
+   DATA REKAP PELANGGARAN
+========================================= */
+
 $data_rekap = [];
 
-if ($tahun_ajaran_id > 0 && count($daftar_kelas) > 0) {
+if (
+    $tahun_ajaran_id > 0 &&
+    count($daftar_kelas) > 0
+) {
 
     $sql_rekap = "
         SELECT
@@ -207,7 +240,12 @@ if ($tahun_ajaran_id > 0 && count($daftar_kelas) > 0) {
 
             COALESCE(s.nis, '-') AS nis,
             COALESCE(s.nisn, '-') AS nisn,
-            COALESCE(s.nama, ps.nama_siswa, '-') AS nama_siswa,
+
+            COALESCE(
+                s.nama,
+                ps.nama_siswa,
+                '-'
+            ) AS nama_siswa,
 
             COALESCE(
                 k.nama,
@@ -280,9 +318,7 @@ if ($tahun_ajaran_id > 0 && count($daftar_kelas) > 0) {
           )
 
           AND (? = 0 OR ps.kelas_id = ?)
-
           AND (? = '' OR ps.tanggal >= ?)
-
           AND (? = '' OR ps.tanggal <= ?)
 
         GROUP BY
@@ -307,7 +343,7 @@ if ($tahun_ajaran_id > 0 && count($daftar_kelas) > 0) {
 
     mysqli_stmt_bind_param(
         $stmt_rekap,
-        "iiiiisssss",
+        "iiiiiissss",
         $tahun_ajaran_id,
         $guru_id,
         $tahun_ajaran_id,
@@ -331,11 +367,10 @@ if ($tahun_ajaran_id > 0 && count($daftar_kelas) > 0) {
     mysqli_stmt_close($stmt_rekap);
 }
 
-/*
-|--------------------------------------------------------------------------
-| MENGHITUNG RINGKASAN
-|--------------------------------------------------------------------------
-*/
+/* =========================================
+   RINGKASAN
+========================================= */
+
 $total_siswa = count($data_rekap);
 $total_pelanggaran = 0;
 $total_poin = 0;
@@ -345,72 +380,191 @@ foreach ($data_rekap as $data) {
     $total_poin += (int)$data['total_poin'];
 }
 
-/*
-|--------------------------------------------------------------------------
-| PARAMETER FILTER EKSPOR
-|--------------------------------------------------------------------------
-*/
+/* =========================================
+   PARAMETER FILTER
+========================================= */
+
 $parameter_filter = [
     'kelas_id' => $filter_kelas,
     'tanggal_mulai' => $tanggal_mulai,
     'tanggal_selesai' => $tanggal_selesai
 ];
 
-/*
-|--------------------------------------------------------------------------
-| EKSPOR CSV
-|--------------------------------------------------------------------------
-*/
-if (isset($_GET['export']) && $_GET['export'] === 'csv') {
+/* =========================================
+   EKSPOR EXCEL
+========================================= */
 
-    $nama_file = 'rekap-pelanggaran-' . date('Y-m-d') . '.csv';
+if (isset($_GET['export']) && $_GET['export'] === 'excel') {
 
-    header('Content-Type: text/csv; charset=utf-8');
-    header('Content-Disposition: attachment; filename="' . $nama_file . '"');
+    $nama_file = 'rekap-pelanggaran-' . date('Y-m-d') . '.xls';
 
-    $output = fopen('php://output', 'w');
-
-    fwrite($output, "\xEF\xBB\xBF");
-
-    fputcsv($output, [
-        'No',
-        'NIS',
-        'NISN',
-        'Nama Siswa',
-        'Kelas',
-        'Jumlah Pelanggaran',
-        'Total Poin',
-        'Keterangan Pelanggaran dan Nama Pencatat',
-        'Tanggal Pelanggaran Terakhir'
-    ], ';');
-
-    $no = 1;
-
-    foreach ($data_rekap as $data) {
-        fputcsv($output, [
-            $no++,
-            $data['nis'],
-            $data['nisn'],
-            $data['nama_siswa'],
-            $data['nama_kelas'],
-            $data['jumlah_pelanggaran'],
-            $data['total_poin'],
-            $data['daftar_pelanggaran'] ?: '-',
-            $data['tanggal_terakhir'] ?: '-'
-        ], ';');
+    while (ob_get_level() > 0) {
+        ob_end_clean();
     }
 
-    fclose($output);
+    header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $nama_file . '"');
+    header('Cache-Control: max-age=0');
+    header('Pragma: public');
+
+    echo "\xEF\xBB\xBF";
+    ?>
+    <!DOCTYPE html>
+    <html lang="id">
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                font-size: 10pt;
+            }
+
+            h2, p {
+                text-align: center;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+
+            th {
+                background: #dce9f8;
+                color: #203e68;
+                font-weight: bold;
+                text-align: center;
+                vertical-align: middle;
+            }
+
+            th, td {
+                border: 1px solid #9eafc3;
+                padding: 7px;
+                vertical-align: top;
+            }
+
+            .center {
+                text-align: center;
+            }
+
+            .text {
+                mso-number-format: "\@";
+            }
+
+            .keterangan {
+                width: 420px;
+                white-space: normal;
+                mso-wrap-text: yes;
+            }
+
+            .tanggal {
+                width: 110px;
+                text-align: center;
+                mso-number-format: "dd-mm-yyyy";
+            }
+        </style>
+    </head>
+    <body>
+
+        <h2>REKAP PELANGGARAN SISWA</h2>
+        <p>SMK Muhammadiyah Tasikmalaya</p>
+        <p>
+            Tahun Ajaran: <?= e($nama_tahun_ajaran) ?><br>
+            Dicetak: <?= date('d-m-Y') ?>
+        </p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>NIS</th>
+                    <th>NISN</th>
+                    <th>Nama Siswa</th>
+                    <th>Kelas</th>
+                    <th>Jumlah Pelanggaran</th>
+                    <th>Total Poin</th>
+                    <th>Keterangan Pelanggaran dan Nama Pencatat</th>
+                    <th>Tanggal Pelanggaran Terakhir</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <?php if (count($data_rekap) > 0): ?>
+
+                    <?php foreach ($data_rekap as $i => $data): ?>
+                        <tr>
+                            <td class="center"><?= $i + 1 ?></td>
+                            <td class="text"><?= e($data['nis']) ?></td>
+                            <td class="text"><?= e($data['nisn']) ?></td>
+                            <td><?= e($data['nama_siswa']) ?></td>
+                            <td><?= e($data['nama_kelas']) ?></td>
+
+                            <td class="center">
+                                <?= (int)$data['jumlah_pelanggaran'] ?>
+                            </td>
+
+                            <td class="center">
+                                <?= (int)$data['total_poin'] ?>
+                            </td>
+
+                            <td class="keterangan">
+                                <?= nl2br(e($data['daftar_pelanggaran'] ?: '-')) ?>
+                            </td>
+
+                            <td class="tanggal">
+                                <?php
+                                $tanggal = $data['tanggal_terakhir'] ?? '';
+
+                                echo $tanggal && $tanggal !== '0000-00-00'
+                                    ? e(date('d-m-Y', strtotime($tanggal)))
+                                    : '-';
+                                ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+
+                <?php else: ?>
+
+                    <tr>
+                        <td colspan="9" class="center">
+                            Belum ada data pelanggaran.
+                        </td>
+                    </tr>
+
+                <?php endif; ?>
+            </tbody>
+        </table>
+
+    </body>
+    </html>
+    <?php
     exit;
 }
+
+/* =========================================
+   HALAMAN AKTIF
+========================================= */
+
+$halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
 ?>
 
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Rekap Pelanggaran - Sistem Pelanggaran</title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <link
+        href="https://cdn.datatables.net/2.3.4/css/dataTables.bootstrap5.min.css"
+        rel="stylesheet"
+    >
 
     <style>
         :root {
@@ -422,19 +576,19 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
             --text: #263f63;
             --muted: #7890ad;
             --line: #dce9f8;
-            --red: #d9534f;
+            --shadow: 0 8px 22px rgba(32, 62, 104, .07);
         }
 
         * {
+            margin: 0;
+            padding: 0;
             box-sizing: border-box;
         }
 
         body {
-            margin: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
             background: var(--page);
             color: var(--text);
-            font-family: "Segoe UI", Arial, sans-serif;
-            font-size: 14px;
         }
 
         a {
@@ -442,6 +596,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
         }
 
         /* SIDEBAR */
+
         .sidebar {
             position: fixed;
             top: 0;
@@ -465,14 +620,16 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
 
         .brand-title {
             color: var(--blue-dark);
-            font-size: 19px;
+            font-size: 18px;
             font-weight: 700;
+            line-height: 1.4;
             margin-bottom: 5px;
         }
 
         .brand-subtitle {
             color: var(--muted);
             font-size: 12px;
+            line-height: 1.5;
         }
 
         .menu-title {
@@ -498,8 +655,8 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
             border-radius: 9px;
             color: #5e7695;
             font-size: 13px;
-            transition: .2s;
-            text-decoration: none;
+            font-weight: 500;
+            transition: .2s ease;
         }
 
         .menu-link:hover {
@@ -521,14 +678,15 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
         }
 
         .logout .menu-link {
-            color: var(--red);
+            color: #d9534f;
         }
 
         .logout .menu-link:hover {
             background: #fff0ef;
         }
 
-        /* KONTEN UTAMA */
+        /* MAIN */
+
         .main {
             width: calc(100% - 282px);
             min-height: 100vh;
@@ -536,25 +694,29 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
             padding: 24px 28px 40px;
         }
 
-        .page-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 15px;
+        /* PAGE HEADER */
+
+        .page-head {
+            background: #ffffff;
+            border: 1px solid var(--line);
+            border-radius: 11px;
+            padding: 24px 25px;
             margin-bottom: 22px;
+            box-shadow: 0 5px 15px rgba(32, 62, 104, .04);
         }
 
-        .page-title {
-            margin: 0 0 7px;
+        .page-head h3 {
+            font-size: 28px;
+            font-weight: 600;
             color: var(--blue-dark);
-            font-size: 24px;
-            font-weight: 700;
+            margin-bottom: 3px;
         }
 
-        .page-description {
-            margin: 0;
+        .page-head p {
             color: var(--muted);
             font-size: 13px;
+            line-height: 1.6;
+            margin: 0;
         }
 
         .year-label {
@@ -568,40 +730,51 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
             font-weight: 600;
         }
 
-        /* RINGKASAN */
+        /* SUMMARY */
+
         .summary-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 16px;
+            gap: 22px;
             margin-bottom: 22px;
         }
 
         .summary-card {
             background: var(--white);
             border: 1px solid var(--line);
-            border-radius: 12px;
-            padding: 19px 20px;
+            border-radius: 16px;
+            min-height: 145px;
+            padding: 22px;
+            box-shadow: var(--shadow);
+            transition: .2s ease;
+        }
+
+        .summary-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 26px rgba(32, 62, 104, .10);
         }
 
         .summary-label {
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             color: var(--muted);
             font-size: 12px;
         }
 
         .summary-value {
             color: var(--blue-dark);
-            font-size: 25px;
+            font-size: 27px;
             font-weight: 700;
         }
 
         /* PANEL */
+
         .panel {
             background: var(--white);
             border: 1px solid var(--line);
-            border-radius: 12px;
-            padding: 21px;
-            margin-bottom: 20px;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            margin-bottom: 22px;
         }
 
         .panel-heading {
@@ -609,21 +782,23 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            margin-bottom: 18px;
+            margin-bottom: 20px;
         }
 
         .panel-title {
             margin: 0;
             color: var(--blue-dark);
-            font-size: 16px;
+            font-size: 17px;
             font-weight: 700;
         }
+
+        /* FILTER */
 
         .filter-form {
             display: flex;
             flex-wrap: wrap;
             align-items: flex-end;
-            gap: 12px;
+            gap: 14px;
         }
 
         .form-group {
@@ -633,31 +808,31 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
 
         .form-label {
             display: block;
-            margin-bottom: 7px;
-            color: #526d8e;
-            font-size: 12px;
+            color: #405873;
+            font-size: 13px;
             font-weight: 600;
+            margin-bottom: 8px;
         }
 
-        .form-control {
-            width: 100%;
-            height: 41px;
-            padding: 0 12px;
-            background: #fff;
+        .form-control,
+        .form-select {
             border: 1px solid var(--line);
-            border-radius: 8px;
+            border-radius: 9px;
+            padding: 10px 13px;
             color: var(--text);
             font-family: inherit;
             font-size: 13px;
-            outline: none;
+            box-shadow: none;
         }
 
-        .form-control:focus {
+        .form-control:focus,
+        .form-select:focus {
             border-color: var(--blue);
-            box-shadow: 0 0 0 3px rgba(40, 120, 207, .09);
+            box-shadow: 0 0 0 3px rgba(40, 120, 207, .10);
         }
 
-        /* TOMBOL */
+        /* BUTTON */
+
         .button {
             display: inline-flex;
             align-items: center;
@@ -670,25 +845,29 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
             font-family: inherit;
             font-size: 12px;
             font-weight: 600;
-            transition: .2s;
+            transition: .2s ease;
+            white-space: nowrap;
         }
 
         .button-primary {
             background: var(--blue);
-            color: white;
+            color: #fff;
         }
 
         .button-primary:hover {
-            background: #1d68b7;
+            background: var(--blue-dark);
+            color: #fff;
         }
 
         .button-light {
-            background: #f0f5fb;
-            color: #526d8e;
+            background: #edf3fa;
+            border: 1px solid var(--line);
+            color: #526b89;
         }
 
         .button-light:hover {
-            background: #e5eef8;
+            background: #e3edf8;
+            color: var(--blue-dark);
         }
 
         .button-green {
@@ -698,11 +877,17 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
 
         .button-green:hover {
             background: #d9f0e3;
+            color: #176b3b;
         }
 
         .button-dark {
             background: var(--blue-dark);
-            color: white;
+            color: #fff;
+        }
+
+        .button-dark:hover {
+            background: #172f50;
+            color: #fff;
         }
 
         .action-group {
@@ -711,53 +896,41 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
             gap: 8px;
         }
 
-        /* TABEL */
-        .table-tools {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            margin-bottom: 14px;
-        }
+        /* TABLE */
 
-        .table-search {
-            width: 260px;
-            max-width: 100%;
-        }
-
-        .table-wrapper {
+        .table-responsive {
             width: 100%;
             overflow-x: auto;
         }
 
-        table {
+        .table {
             width: 100%;
+            margin-bottom: 0;
             border-collapse: collapse;
-            min-width: 950px;
+            vertical-align: middle;
         }
 
-        thead th {
-            padding: 13px 12px;
-            background: #f3f7fc;
-            color: #607b9c;
-            border-bottom: 1px solid var(--line);
+        .table thead th {
+            background: #f5f8fc;
+            color: #7188a5;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 14px;
             text-align: left;
             white-space: nowrap;
-            font-size: 11px;
-            font-weight: 700;
+            border-bottom: 1px solid var(--line);
         }
 
-        tbody td {
-            padding: 13px 12px;
-            color: #526d8e;
+        .table tbody td {
+            padding: 13px 14px;
+            font-size: 13px;
+            color: #526b89;
+            vertical-align: middle;
             border-bottom: 1px solid #edf2f8;
-            vertical-align: top;
-            font-size: 12px;
-            line-height: 1.6;
         }
 
-        tbody tr:hover {
-            background: #fbfdff;
+        .table tbody tr:hover {
+            background: #fafcff;
         }
 
         .student-name {
@@ -774,14 +947,100 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
             min-width: 250px;
             max-width: 380px;
             white-space: normal;
+            overflow-wrap: anywhere;
             line-height: 1.8;
         }
 
         .empty-state {
-            padding: 35px 15px;
-            color: var(--muted);
             text-align: center;
+            padding: 28px;
+            color: #8498b1;
+            font-size: 13px;
         }
+
+        /* DATATABLES */
+
+        .dt-container {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .dt-container .dt-layout-row {
+            margin: 13px 0;
+            gap: 12px;
+        }
+
+        .dt-container .dt-layout-row:first-child {
+            margin-top: 20px;
+        }
+
+        .dt-container .dt-layout-cell {
+            display: flex;
+            align-items: center;
+        }
+
+        .dt-container .dt-length,
+        .dt-container .dt-search {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dt-container .dt-length label,
+        .dt-container .dt-search label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .dt-container .dt-length select {
+            width: 65px !important;
+            min-width: 65px;
+            height: 36px;
+            padding: 5px 8px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fff;
+            color: var(--text);
+        }
+
+        .dt-container .dt-search input {
+            width: 190px;
+            height: 36px;
+            padding: 7px 11px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            margin-left: 0 !important;
+            color: var(--text);
+        }
+
+        .dt-container .dt-search input:focus,
+        .dt-container .dt-length select:focus {
+            outline: none;
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(40, 120, 207, .10);
+        }
+
+        .dt-container .dt-info {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .dt-container .dt-paging .dt-paging-button {
+            border-radius: 7px !important;
+            font-size: 12px;
+        }
+
+        .dt-container .dt-paging .dt-paging-button.current {
+            background: var(--blue-soft) !important;
+            border-color: var(--line) !important;
+            color: var(--blue) !important;
+        }
+
+        /* NOTICE */
 
         .notice {
             padding: 13px 15px;
@@ -793,18 +1052,20 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
             font-size: 13px;
         }
 
-        .table-count {
-            color: var(--muted);
-            font-size: 12px;
+        /* FOOTER */
+
+        .footer {
+            text-align: center;
+            margin-top: 28px;
+            color: #9aabc0;
+            font-size: 10px;
         }
 
-        @media (max-width: 1100px) {
-            .main {
-                padding: 22px 18px 35px;
-            }
+        /* RESPONSIVE */
 
+        @media (max-width: 1100px) {
             .summary-grid {
-                gap: 10px;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
         }
 
@@ -815,63 +1076,275 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
                 height: auto;
             }
 
+            .logout {
+                margin-top: 15px;
+            }
+
             .main {
                 width: 100%;
                 margin-left: 0;
+            }
+        }
+
+        @media (max-width: 650px) {
+            .main {
                 padding: 18px 14px 30px;
+            }
+
+            .page-head {
+                padding: 20px;
+            }
+
+            .page-head h3 {
+                font-size: 24px;
             }
 
             .summary-grid {
                 grid-template-columns: 1fr;
             }
 
-            .page-header {
+            .panel {
+                padding: 18px;
+            }
+
+            .panel-heading {
+                align-items: flex-start;
                 flex-direction: column;
+            }
+
+            .filter-form .form-group {
+                min-width: 100%;
+            }
+
+            .filter-form button,
+            .filter-form a {
+                flex: 1;
+            }
+
+            .dt-container .dt-search input {
+                width: 140px;
             }
         }
 
+        /* =====================================
+           PRINT - A4 LANDSCAPE
+        ===================================== */
+
+        @page {
+            size: A4 landscape;
+            margin: 10mm;
+        }
+
         @media print {
+
+            html,
             body {
-                background: #fff;
+                width: 100%;
+                min-height: 0;
+                background: #fff !important;
+                color: #222 !important;
+                font-family: Arial, sans-serif !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
 
             .sidebar,
             .filter-panel,
             .action-group,
-            .table-tools,
+            .dt-container .dt-layout-row,
+            .footer,
             .no-print {
                 display: none !important;
             }
 
             .main {
-                width: 100%;
-                margin: 0;
-                padding: 0;
+                width: 100% !important;
+                min-height: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
 
-            .panel,
-            .summary-card {
-                border: 1px solid #ddd;
-                box-shadow: none;
+            .page-head {
+                display: block !important;
+                margin: 0 0 12px !important;
+                padding: 0 0 10px !important;
+                border: 0 !important;
+                border-bottom: 1px solid #777 !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                text-align: center;
+            }
+
+            .page-head h3 {
+                color: #203e68 !important;
+                font-size: 18px !important;
+                font-weight: 700 !important;
+                margin-bottom: 4px !important;
+            }
+
+            .page-head p {
+                color: #444 !important;
+                font-size: 10px !important;
+            }
+
+            .year-label {
+                display: inline-block !important;
+                margin-top: 5px !important;
+                padding: 4px 8px !important;
+                color: #203e68 !important;
+                background: #eaf3ff !important;
+                font-size: 9px !important;
             }
 
             .summary-grid {
-                grid-template-columns: repeat(3, 1fr);
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 8px !important;
+                margin-bottom: 12px !important;
             }
 
-            table {
-                min-width: 0;
+            .summary-card {
+                min-height: 0 !important;
+                padding: 9px 12px !important;
+                border: 1px solid #bbb !important;
+                border-radius: 5px !important;
+                box-shadow: none !important;
+                break-inside: avoid;
             }
 
-            thead th,
-            tbody td {
-                color: #222;
-                font-size: 9px;
-                padding: 7px 5px;
+            .summary-label {
+                margin-bottom: 4px !important;
+                color: #555 !important;
+                font-size: 9px !important;
+            }
+
+            .summary-value {
+                color: #203e68 !important;
+                font-size: 16px !important;
+            }
+
+            .panel {
+                margin: 0 !important;
+                padding: 0 !important;
+                border: 0 !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+            }
+
+            .panel-heading {
+                margin-bottom: 8px !important;
+            }
+
+            .panel-title {
+                color: #203e68 !important;
+                font-size: 12px !important;
+            }
+
+            .table-responsive {
+                width: 100% !important;
+                overflow: visible !important;
+            }
+
+            #tabelRekap {
+                width: 100% !important;
+                min-width: 0 !important;
+                table-layout: fixed !important;
+                border-collapse: collapse !important;
+                font-size: 8px !important;
+            }
+
+            #tabelRekap thead {
+                display: table-header-group;
+            }
+
+            #tabelRekap tr {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            #tabelRekap th,
+            #tabelRekap td {
+                padding: 5px 4px !important;
+                border: 1px solid #aaa !important;
+                color: #222 !important;
+                font-size: 8px !important;
+                line-height: 1.4 !important;
+                vertical-align: top !important;
+                white-space: normal !important;
+                overflow-wrap: anywhere !important;
+            }
+
+            #tabelRekap thead th {
+                background: #eaf0f7 !important;
+                color: #203e68 !important;
+                font-weight: 700 !important;
+                text-align: center !important;
+            }
+
+            #tabelRekap th:nth-child(1),
+            #tabelRekap td:nth-child(1) {
+                width: 3% !important;
+                text-align: center !important;
+            }
+
+            #tabelRekap th:nth-child(2),
+            #tabelRekap td:nth-child(2) {
+                width: 8% !important;
+            }
+
+            #tabelRekap th:nth-child(3),
+            #tabelRekap td:nth-child(3) {
+                width: 9% !important;
+            }
+
+            #tabelRekap th:nth-child(4),
+            #tabelRekap td:nth-child(4) {
+                width: 16% !important;
+            }
+
+            #tabelRekap th:nth-child(5),
+            #tabelRekap td:nth-child(5) {
+                width: 9% !important;
+            }
+
+            #tabelRekap th:nth-child(6),
+            #tabelRekap td:nth-child(6) {
+                width: 8% !important;
+                text-align: center !important;
+            }
+
+            #tabelRekap th:nth-child(7),
+            #tabelRekap td:nth-child(7) {
+                width: 7% !important;
+                text-align: center !important;
+            }
+
+            #tabelRekap th:nth-child(8),
+            #tabelRekap td:nth-child(8) {
+                width: 30% !important;
+            }
+
+            #tabelRekap th:nth-child(9),
+            #tabelRekap td:nth-child(9) {
+                width: 10% !important;
+                text-align: center !important;
             }
 
             .violation-list {
-                max-width: none;
+                min-width: 0 !important;
+                max-width: none !important;
+                white-space: normal !important;
+                overflow-wrap: anywhere !important;
+                line-height: 1.4 !important;
+            }
+
+            .student-name,
+            .point-value {
+                color: #222 !important;
+            }
+
+            .alert {
+                display: none !important;
             }
         }
     </style>
@@ -880,6 +1353,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
 <body>
 
 <!-- SIDEBAR -->
+
 <aside class="sidebar">
 
     <div class="brand">
@@ -899,11 +1373,23 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
             Catat Pelanggaran
         </a>
 
+        <a href="riwayat.php" class="menu-link">
+            Riwayat
+        </a>
+
         <a href="data_siswa.php" class="menu-link">
             Data Siswa
         </a>
 
-        <a href="rekap_pelanggaran.php" class="menu-link active">
+        <a href="rekap_poin.php" class="menu-link">
+            Rekap Poin Siswa
+        </a>
+
+        <a
+            href="rekap_pelanggaran.php"
+            class="menu-link <?= $halamanAktif === 'rekap_pelanggaran.php' ? 'active' : '' ?>"
+            aria-current="page"
+        >
             Rekap Pelanggaran
         </a>
 
@@ -925,33 +1411,37 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
 
 </aside>
 
-<!-- KONTEN UTAMA -->
+<!-- MAIN CONTENT -->
+
 <main class="main">
 
-    <header class="page-header">
-        <div>
-            <h1 class="page-title">Rekap Pelanggaran</h1>
+    <!-- HEADER -->
 
-            <p class="page-description">
-                Ringkasan pelanggaran siswa pada kelas yang menjadi tanggung jawab Anda.
-            </p>
+    <div class="page-head">
 
-            <div class="year-label">
-                Tahun Ajaran: <?= e($nama_tahun_ajaran) ?>
-            </div>
+        <h3>Rekap Pelanggaran</h3>
+
+        <p>
+            Ringkasan pelanggaran siswa pada kelas yang menjadi tanggung jawab Anda.
+        </p>
+
+        <div class="year-label">
+            Tahun Ajaran: <?= e($nama_tahun_ajaran) ?>
         </div>
-    </header>
+
+    </div>
+
+    <!-- PESAN -->
 
     <?php if ($tahun_ajaran_id <= 0): ?>
 
-        <div class="notice">
-            Tahun ajaran aktif belum tersedia. Periksa kembali data pada tabel
-            <strong>t_tahun_ajaran</strong>.
+        <div class="alert alert-warning">
+            Tahun ajaran aktif belum tersedia. Periksa kembali data tahun ajaran.
         </div>
 
     <?php elseif (count($daftar_kelas) === 0): ?>
 
-        <div class="notice">
+        <div class="alert alert-warning">
             Belum ditemukan kelas yang ditugaskan kepada akun Wali Kelas ini
             pada tahun ajaran <?= e($nama_tahun_ajaran) ?>.
         </div>
@@ -960,48 +1450,66 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
 
     <?php if ($pesan_filter !== ''): ?>
 
-        <div class="notice">
+        <div class="alert alert-warning">
             <?= e($pesan_filter) ?>
         </div>
 
     <?php endif; ?>
 
     <!-- RINGKASAN -->
+
     <section class="summary-grid">
 
         <div class="summary-card">
-            <div class="summary-label">Jumlah Siswa dengan Pelanggaran</div>
+
+            <div class="summary-label">
+                Jumlah Siswa dengan Pelanggaran
+            </div>
+
             <div class="summary-value">
                 <?= number_format($total_siswa, 0, ',', '.') ?>
             </div>
+
         </div>
 
         <div class="summary-card">
-            <div class="summary-label">Total Pelanggaran</div>
+
+            <div class="summary-label">
+                Total Pelanggaran
+            </div>
+
             <div class="summary-value">
                 <?= number_format($total_pelanggaran, 0, ',', '.') ?>
             </div>
+
         </div>
 
         <div class="summary-card">
-            <div class="summary-label">Total Poin Pelanggaran</div>
+
+            <div class="summary-label">
+                Total Poin Pelanggaran
+            </div>
+
             <div class="summary-value">
                 <?= number_format($total_poin, 0, ',', '.') ?>
             </div>
+
         </div>
 
     </section>
 
-    <!-- FILTER KELAS DAN TANGGAL -->
+    <!-- FILTER REKAP -->
+
     <section class="panel filter-panel">
 
         <div class="panel-heading">
-            <h2 class="panel-title">Filter Rekap</h2>
+            <h4 class="panel-title">Filter Rekap</h4>
         </div>
 
         <form method="GET" class="filter-form">
 
             <div class="form-group">
+
                 <label for="kelas_id" class="form-label">
                     Pilih Kelas
                 </label>
@@ -1009,9 +1517,12 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
                 <select
                     name="kelas_id"
                     id="kelas_id"
-                    class="form-control"
+                    class="form-select"
                 >
-                    <option value="0">Semua Kelas Wali Kelas</option>
+
+                    <option value="0">
+                        Semua Kelas Wali Kelas
+                    </option>
 
                     <?php foreach ($daftar_kelas as $kelas): ?>
 
@@ -1025,9 +1536,11 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
                     <?php endforeach; ?>
 
                 </select>
+
             </div>
 
             <div class="form-group">
+
                 <label for="tanggal_mulai" class="form-label">
                     Tanggal Mulai
                 </label>
@@ -1039,9 +1552,11 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
                     class="form-control"
                     value="<?= e($tanggal_mulai) ?>"
                 >
+
             </div>
 
             <div class="form-group">
+
                 <label for="tanggal_selesai" class="form-label">
                     Tanggal Selesai
                 </label>
@@ -1053,13 +1568,17 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
                     class="form-control"
                     value="<?= e($tanggal_selesai) ?>"
                 >
+
             </div>
 
             <button type="submit" class="button button-primary">
                 Tampilkan
             </button>
 
-            <a href="rekap_pelanggaran.php" class="button button-light">
+            <a
+                href="rekap_pelanggaran.php"
+                class="button button-light"
+            >
                 Reset
             </a>
 
@@ -1068,51 +1587,42 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     </section>
 
     <!-- TABEL REKAP -->
+
     <section class="panel">
 
         <div class="panel-heading">
 
-            <h2 class="panel-title">Data Rekap Siswa</h2>
+            <h4 class="panel-title">
+                Data Rekap Siswa
+            </h4>
 
             <div class="action-group">
 
                 <a
-                    href="rekap_pelanggaran.php?<?= e(http_build_query(array_merge($parameter_filter, ['export' => 'csv']))) ?>"
+                    href="rekap_pelanggaran.php?<?= e(http_build_query(array_merge($parameter_filter, ['export' => 'excel']))) ?>"
                     class="button button-green"
                 >
-                    Ekspor CSV
+                    Ekspor Excel
                 </a>
 
                 <button
                     type="button"
-                    onclick="window.print()"
+                    onclick="cetakRekap()"
                     class="button button-dark"
                 >
-                    Cetak
+                    Cetak Rekap
                 </button>
 
             </div>
 
         </div>
 
-        <div class="table-tools no-print">
+        <div class="table-responsive">
 
-            <div class="table-count">
-                Menampilkan <?= count($data_rekap) ?> data siswa
-            </div>
-
-            <input
-                type="text"
-                id="searchTable"
-                class="form-control table-search"
-                placeholder="Cari nama, NIS, atau pelanggaran..."
+            <table
+                id="tabelRekap"
+                class="table table-hover align-middle w-100"
             >
-
-        </div>
-
-        <div class="table-wrapper">
-
-            <table id="tabelRekap">
 
                 <thead>
                     <tr>
@@ -1132,13 +1642,11 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
 
                     <?php if (count($data_rekap) > 0): ?>
 
-                        <?php $no = 1; ?>
-
-                        <?php foreach ($data_rekap as $data): ?>
+                        <?php foreach ($data_rekap as $i => $data): ?>
 
                             <tr>
 
-                                <td><?= $no++ ?></td>
+                                <td><?= $i + 1 ?></td>
 
                                 <td><?= e($data['nis']) ?></td>
 
@@ -1150,7 +1658,9 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
                                     </span>
                                 </td>
 
-                                <td><?= e($data['nama_kelas']) ?></td>
+                                <td>
+                                    <?= e($data['nama_kelas']) ?>
+                                </td>
 
                                 <td>
                                     <?= number_format(
@@ -1172,14 +1682,22 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
                                     </span>
                                 </td>
 
-                                <td class="violation-list">
-                                    <?= $data['daftar_pelanggaran']
-                                        ? nl2br(e($data['daftar_pelanggaran']))
-                                        : '-' ?>
+                                <td>
+                                    <div class="violation-list">
+                                        <?= $data['daftar_pelanggaran']
+                                            ? nl2br(e($data['daftar_pelanggaran']))
+                                            : '-' ?>
+                                    </div>
                                 </td>
 
                                 <td>
-                                    <?= e($data['tanggal_terakhir'] ?: '-') ?>
+                                    <?php
+                                    $tanggal = $data['tanggal_terakhir'] ?? '';
+
+                                    echo $tanggal && $tanggal !== '0000-00-00'
+                                        ? e(date('d-m-Y', strtotime($tanggal)))
+                                        : '-';
+                                    ?>
                                 </td>
 
                             </tr>
@@ -1204,29 +1722,111 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
 
     </section>
 
+    <!-- FOOTER -->
+
+    <div class="footer">
+        Sistem Pelanggaran Sekolah · Project Rekayasa Perangkat Lunak
+    </div>
+
 </main>
 
+<!-- JAVASCRIPT -->
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.min.js"></script>
+
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.min.js"></script>
+
 <script>
-    /*
-    |--------------------------------------------------------------------------
-    | PENCARIAN TABEL
-    |--------------------------------------------------------------------------
-    */
-    const searchInput = document.getElementById('searchTable');
-    const table = document.getElementById('tabelRekap');
+let tabelRekap = null;
+let panjangHalamanSebelumnya = 10;
 
-    if (searchInput && table) {
-        searchInput.addEventListener('input', function () {
-            const keyword = this.value.toLowerCase();
-            const rows = table.querySelectorAll('tbody tr');
+$(document).ready(function () {
 
-            rows.forEach(function (row) {
-                const text = row.textContent.toLowerCase();
+    const jumlahData = <?= count($data_rekap) ?>;
 
-                row.style.display = text.includes(keyword) ? '' : 'none';
-            });
+    if (jumlahData > 0) {
+
+        tabelRekap = $('#tabelRekap').DataTable({
+
+            pageLength: 10,
+
+            lengthMenu: [10, 25, 50, 100],
+
+            order: [],
+
+            language: {
+
+                search: "Cari:",
+
+                searchPlaceholder: "Cari nama, NIS, atau pelanggaran...",
+
+                lengthMenu: "Tampilkan _MENU_ data",
+
+                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ siswa",
+
+                infoEmpty: "Tidak ada data rekap",
+
+                infoFiltered: "(disaring dari _MAX_ data)",
+
+                zeroRecords: "Data rekap tidak ditemukan",
+
+                emptyTable: "Belum ada data pelanggaran",
+
+                paginate: {
+                    previous: "Sebelumnya",
+                    next: "Berikutnya"
+                }
+
+            }
+
         });
+
     }
+
+});
+
+/* =========================================
+   CETAK SELURUH DATA
+========================================= */
+
+function cetakRekap() {
+
+    if (tabelRekap) {
+
+        panjangHalamanSebelumnya = tabelRekap.page.len();
+
+        // Tampilkan semua data, bukan hanya halaman aktif.
+        tabelRekap.page.len(-1).draw();
+
+        setTimeout(function () {
+            window.print();
+        }, 300);
+
+    } else {
+
+        window.print();
+
+    }
+
+}
+
+/* =========================================
+   KEMBALIKAN PAGINATION SETELAH CETAK
+========================================= */
+
+window.addEventListener('afterprint', function () {
+
+    if (tabelRekap) {
+
+        tabelRekap.page.len(panjangHalamanSebelumnya).draw();
+
+    }
+
+});
 </script>
 
 </body>

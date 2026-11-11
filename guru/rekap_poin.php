@@ -3,102 +3,165 @@
 include "../middleware/auth.php";
 include "../config/koneksi.php";
 
-if (strtolower($_SESSION['role'] ?? '') !== 'guru') {
+/* =========================================
+   PEMERIKSAAN AKSES
+========================================= */
+
+if (strtolower(trim($_SESSION['role'] ?? '')) !== 'guru') {
     http_response_code(403);
     exit("Anda tidak memiliki akses");
 }
 
+/* =========================================
+   FUNGSI
+========================================= */
+
 function e($value): string
 {
-    return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
+    return htmlspecialchars(
+        (string)($value ?? ''),
+        ENT_QUOTES,
+        'UTF-8'
+    );
 }
 
-/* DATA GURU */
-$user_id = (int)($_SESSION['user_id'] ?? 0);
+/* =========================================
+   TAHUN AJARAN AKTIF
+========================================= */
 
-$stmt_guru = mysqli_prepare(
+$tahun_ajaran_id = 0;
+
+$stmt_tahun = mysqli_prepare(
     $koneksi,
-    "SELECT id, nama FROM t_guru WHERE user_id = ? LIMIT 1"
+    "SELECT id
+     FROM t_tahun_ajaran
+     WHERE status_aktif = 1
+     ORDER BY tanggal_mulai DESC, id DESC
+     LIMIT 1"
 );
 
-if (!$stmt_guru) {
-    exit("Data guru gagal diproses.");
+if (!$stmt_tahun) {
+    exit("Data tahun ajaran gagal diproses.");
 }
 
-mysqli_stmt_bind_param($stmt_guru, "i", $user_id);
-mysqli_stmt_execute($stmt_guru);
-$data_guru = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_guru));
-mysqli_stmt_close($stmt_guru);
+mysqli_stmt_execute($stmt_tahun);
 
-if (!$data_guru) {
-    exit("Data guru tidak ditemukan. Silakan hubungi Admin.");
-}
+$hasil_tahun = mysqli_stmt_get_result($stmt_tahun);
+$data_tahun = mysqli_fetch_assoc($hasil_tahun);
 
-$guru_id = (int)$data_guru['id'];
+$tahun_ajaran_id = (int)($data_tahun['id'] ?? 0);
 
-/* DATA REKAP POIN */
+mysqli_stmt_close($stmt_tahun);
+
+/* =========================================
+   DATA REKAP POIN SELURUH GURU
+   TANPA FILTER GURU_ID
+========================================= */
+
 $daftar_rekap = [];
 $pesan_error = '';
 
-$sql = "
-    SELECT
-        nama_siswa,
-        nama_kelas,
-        COUNT(id) AS jumlah_pelanggaran,
-        COALESCE(SUM(poin), 0) AS total_poin
-    FROM t_pelanggaran_siswa
-    WHERE guru_id = ?
-      AND status IN ('Ditindaklanjuti', 'Selesai')
-    GROUP BY nama_siswa, nama_kelas
-    ORDER BY total_poin DESC, nama_siswa ASC
-";
+if ($tahun_ajaran_id > 0) {
 
-$stmt_rekap = mysqli_prepare($koneksi, $sql);
+    $sql = "
+        SELECT
+            siswa_id,
+            nama_siswa,
+            kelas_id,
+            nama_kelas,
+            COUNT(id) AS jumlah_pelanggaran,
+            COALESCE(SUM(poin), 0) AS total_poin
+        FROM t_pelanggaran_siswa
+        WHERE tahun_ajaran_id = ?
+        GROUP BY
+            siswa_id,
+            nama_siswa,
+            kelas_id,
+            nama_kelas
+        ORDER BY
+            total_poin DESC,
+            jumlah_pelanggaran DESC,
+            nama_siswa ASC
+    ";
 
-if ($stmt_rekap) {
-    mysqli_stmt_bind_param($stmt_rekap, "i", $guru_id);
+    $stmt_rekap = mysqli_prepare($koneksi, $sql);
 
-    if (mysqli_stmt_execute($stmt_rekap)) {
-        $hasil_rekap = mysqli_stmt_get_result($stmt_rekap);
+    if ($stmt_rekap) {
 
-        while ($data = mysqli_fetch_assoc($hasil_rekap)) {
-            $daftar_rekap[] = $data;
+        mysqli_stmt_bind_param(
+            $stmt_rekap,
+            "i",
+            $tahun_ajaran_id
+        );
+
+        if (mysqli_stmt_execute($stmt_rekap)) {
+
+            $hasil_rekap = mysqli_stmt_get_result($stmt_rekap);
+
+            while ($data = mysqli_fetch_assoc($hasil_rekap)) {
+                $daftar_rekap[] = $data;
+            }
+
+        } else {
+
+            $pesan_error = "Data rekap poin gagal dimuat.";
+
         }
+
+        mysqli_stmt_close($stmt_rekap);
+
     } else {
-        $pesan_error = "Data rekap poin gagal dimuat.";
+
+        $pesan_error = "Data rekap poin gagal diproses.";
+
     }
 
-    mysqli_stmt_close($stmt_rekap);
 } else {
-    $pesan_error = "Data rekap poin gagal diproses.";
+
+    $pesan_error = "Belum ada tahun ajaran yang aktif.";
+
 }
 
-/* STATISTIK */
+/* =========================================
+   STATISTIK SELURUH SISWA
+========================================= */
+
 $total_siswa = count($daftar_rekap);
 $total_pelanggaran = 0;
 $total_poin = 0;
 
 foreach ($daftar_rekap as $data) {
+
     $total_pelanggaran += (int)$data['jumlah_pelanggaran'];
+
     $total_poin += (int)$data['total_poin'];
+
 }
 
-/* ACTIVE SIDEBAR */
+/* =========================================
+   ACTIVE SIDEBAR
+========================================= */
+
 $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
+
 ?>
 
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <title>Rekap Poin - Sistem Pelanggaran</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+
     <link href="https://cdn.datatables.net/2.3.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 
     <style>
+
         :root {
             --blue: #2878cf;
             --blue-dark: #203e68;
@@ -260,7 +323,7 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
             line-height: 1.5;
         }
 
-        /* TIGA KOTAK STATISTIK */
+        /* STATISTIK */
 
         .summary-grid {
             display: grid;
@@ -307,7 +370,7 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
             margin-top: 7px;
         }
 
-        /* CARD DATA REKAP */
+        /* DATA REKAP */
 
         .section-title {
             color: #234e78;
@@ -398,31 +461,6 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
             font-size: 13px;
             font-weight: 700;
             text-align: center;
-        }
-
-        /* TOMBOL RIWAYAT */
-
-        .btn-riwayat {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 32px;
-            padding: 6px 11px;
-            border: 1px solid #b9d5f1;
-            border-radius: 6px;
-            background: #f4f9ff;
-            color: #2878cf;
-            font-family: "Segoe UI", Arial, sans-serif;
-            font-size: 12px;
-            font-weight: 400;
-            white-space: nowrap;
-            transition: .2s ease;
-        }
-
-        .btn-riwayat:hover {
-            background: #2878cf;
-            border-color: #2878cf;
-            color: #fff;
         }
 
         /* DATATABLES */
@@ -550,6 +588,7 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
         /* RESPONSIVE */
 
         @media (max-width: 1100px) {
+
             .main {
                 padding-left: 20px;
                 padding-right: 20px;
@@ -558,9 +597,11 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
             .summary-grid {
                 gap: 12px;
             }
+
         }
 
         @media (max-width: 900px) {
+
             .sidebar {
                 position: relative;
                 width: 100%;
@@ -577,9 +618,11 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
                 margin-left: 0;
                 padding: 20px 18px 30px;
             }
+
         }
 
         @media (max-width: 650px) {
+
             .main {
                 padding: 16px 12px 25px;
             }
@@ -625,22 +668,34 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
             .dt-container .dt-search input {
                 width: 150px;
             }
+
         }
+
     </style>
+
 </head>
 
 <body>
 
-<!-- SIDEBAR GURU -->
+<!-- SIDEBAR -->
 
 <aside class="sidebar">
 
     <div class="brand">
-        <div class="brand-title">Sistem Pelanggaran</div>
-        <div class="brand-subtitle">SMK Muhammadiyah</div>
+
+        <div class="brand-title">
+            Sistem Pelanggaran
+        </div>
+
+        <div class="brand-subtitle">
+            SMK Muhammadiyah
+        </div>
+
     </div>
 
-    <div class="menu-title">Menu Utama</div>
+    <div class="menu-title">
+        Menu Utama
+    </div>
 
     <nav class="menu">
 
@@ -677,9 +732,11 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
     </nav>
 
     <div class="logout">
+
         <a href="../logout.php" class="menu-link">
             Logout
         </a>
+
     </div>
 
 </aside>
@@ -690,7 +747,10 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
 
     <div class="page-container">
 
+        <!-- JUDUL HALAMAN -->
+
         <section class="card mb-4">
+
             <div class="card-body">
 
                 <h1 class="judul mb-1">
@@ -698,44 +758,65 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
                 </h1>
 
                 <p class="subjudul mb-0">
-                    Ringkasan jumlah pelanggaran dan total poin siswa.
+                    Ringkasan jumlah pelanggaran dan total poin seluruh siswa berdasarkan catatan semua guru.
                 </p>
 
             </div>
+
         </section>
 
         <?php if ($pesan_error === ''): ?>
 
+            <!-- STATISTIK -->
+
             <div class="summary-grid">
 
                 <div class="summary-card">
-                    <div class="summary-label">Jumlah Siswa</div>
+
+                    <div class="summary-label">
+                        Jumlah Siswa
+                    </div>
+
                     <div class="summary-value">
                         <?= number_format($total_siswa, 0, ',', '.'); ?>
                     </div>
+
                     <div class="summary-description">
                         Siswa dengan catatan pelanggaran
                     </div>
+
                 </div>
 
                 <div class="summary-card">
-                    <div class="summary-label">Jumlah Pelanggaran</div>
+
+                    <div class="summary-label">
+                        Jumlah Pelanggaran
+                    </div>
+
                     <div class="summary-value">
                         <?= number_format($total_pelanggaran, 0, ',', '.'); ?>
                     </div>
+
                     <div class="summary-description">
-                        Pelanggaran yang sudah ditindaklanjuti
+                        Seluruh catatan pelanggaran siswa
                     </div>
+
                 </div>
 
                 <div class="summary-card">
-                    <div class="summary-label">Total Poin</div>
+
+                    <div class="summary-label">
+                        Total Poin
+                    </div>
+
                     <div class="summary-value">
                         <?= number_format($total_poin, 0, ',', '.'); ?>
                     </div>
+
                     <div class="summary-description">
-                        Akumulasi poin seluruh siswa
+                        Akumulasi poin dari seluruh guru
                     </div>
+
                 </div>
 
             </div>
@@ -750,6 +831,8 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
 
         <?php else: ?>
 
+            <!-- TABEL REKAP -->
+
             <section class="card">
 
                 <div class="card-body">
@@ -759,7 +842,7 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
                     </h2>
 
                     <p class="section-description">
-                        Daftar akumulasi poin pelanggaran siswa berdasarkan catatan Anda.
+                        Daftar akumulasi poin pelanggaran setiap siswa dari seluruh guru pada tahun ajaran aktif.
                     </p>
 
                     <?php if (!empty($daftar_rekap)): ?>
@@ -770,14 +853,15 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
                                    class="table table-bordered table-hover align-middle">
 
                                 <thead>
+
                                     <tr>
                                         <th>No.</th>
                                         <th>Nama Siswa</th>
                                         <th>Kelas</th>
                                         <th>Jumlah Pelanggaran</th>
                                         <th>Total Poin</th>
-                                        <th>Riwayat</th>
                                     </tr>
+
                                 </thead>
 
                                 <tbody>
@@ -786,7 +870,9 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
 
                                         <tr>
 
-                                            <td><?= $index + 1; ?></td>
+                                            <td>
+                                                <?= $index + 1; ?>
+                                            </td>
 
                                             <td class="nama-siswa">
                                                 <?= e($data['nama_siswa']); ?>
@@ -806,6 +892,7 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
                                             </td>
 
                                             <td>
+
                                                 <span class="badge-poin">
                                                     <?= number_format(
                                                         (int)$data['total_poin'],
@@ -814,16 +901,7 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
                                                         '.'
                                                     ); ?>
                                                 </span>
-                                            </td>
 
-                                            <td>
-                                                <a href="riwayat.php?<?= e(http_build_query([
-                                                    'nama_siswa' => $data['nama_siswa'],
-                                                    'nama_kelas' => $data['nama_kelas']
-                                                ])); ?>"
-                                                   class="btn-riwayat">
-                                                    Lihat Riwayat
-                                                </a>
                                             </td>
 
                                         </tr>
@@ -843,7 +921,7 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
                             <h5>Belum Ada Data Rekap Poin</h5>
 
                             <p>
-                                Data pelanggaran yang sudah ditindaklanjuti akan ditampilkan di sini.
+                                Data pelanggaran siswa pada tahun ajaran aktif akan ditampilkan di sini.
                             </p>
 
                         </div>
@@ -867,11 +945,15 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
 <!-- JAVASCRIPT -->
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
 <script src="https://cdn.datatables.net/2.3.4/js/dataTables.min.js"></script>
+
 <script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
+
 $(document).ready(function () {
 
     const tabel = $('#tabelRekap');
@@ -889,19 +971,31 @@ $(document).ready(function () {
             autoWidth: false,
 
             language: {
+
                 search: 'Cari:',
+
                 searchPlaceholder: '',
+
                 lengthMenu: 'Tampilkan _MENU_ data',
+
                 info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
+
                 infoEmpty: 'Tidak ada data rekap poin',
+
                 infoFiltered: '(disaring dari _MAX_ data)',
+
                 zeroRecords: 'Data rekap poin tidak ditemukan',
+
                 emptyTable: 'Belum ada data rekap poin.',
 
                 paginate: {
+
                     previous: 'Sebelumnya',
+
                     next: 'Berikutnya'
+
                 }
+
             }
 
         });
@@ -909,6 +1003,7 @@ $(document).ready(function () {
     }
 
 });
+
 </script>
 
 </body>

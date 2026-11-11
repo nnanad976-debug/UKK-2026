@@ -1,72 +1,100 @@
+
 <?php
-// Autentikasi dan session
 require_once __DIR__ . '/middleware/auth.php';
 
 $role = strtolower(trim((string)($_SESSION['role'] ?? 'guru')));
 $namaPengguna = $_SESSION['nama'] ?? $_SESSION['name'] ?? 'Pengguna';
 
-// Deteksi Wali Kelas berdasarkan role atau penugasan yang disimpan saat login.
 $isWaliKelas = (
     in_array($role, ['wali_kelas', 'wali kelas', 'walikelas'], true) ||
     ($role !== 'admin' && !empty($_SESSION['is_wali_kelas']))
 );
 
-// Deteksi otomatis folder aplikasi dari lokasi about.php.
 $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/'));
 $appBase = rtrim($scriptDir, '/');
+
 if ($appBase === '.' || $appBase === '/') {
     $appBase = '';
 }
 
-function e($value) {
+function e($value): string
+{
     return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
-function appUrl($path) {
+function appUrl($path): string
+{
     global $appBase;
     return $appBase . '/' . ltrim($path, '/');
 }
 
-// Hanya gunakan halaman yang benar-benar ada di dalam folder proyek.
-function findPage(array $candidates) {
+function findPage(array $candidates): ?string
+{
     foreach ($candidates as $candidate) {
         $candidate = ltrim($candidate, '/');
+
         if (is_file(__DIR__ . '/' . $candidate)) {
             return appUrl($candidate);
         }
     }
+
     return null;
 }
 
-function menuPageLink($url, $label, $active = false) {
+function menuPageLink($url, $label, $active = false): string
+{
     $classes = 'menu-link' . ($active ? ' active' : '');
+
     if ($url === null) {
-        return '<a href="#" class="' . $classes . ' disabled" aria-disabled="true" title="File halaman belum ditemukan">' . e($label) . '</a>';
+        return '<a href="#" class="' . $classes . ' disabled" aria-disabled="true">' .
+            e($label) . '</a>';
     }
-    return '<a href="' . e($url) . '" class="' . $classes . '"' . ($active ? ' aria-current="page"' : '') . '>' . e($label) . '</a>';
+
+    return '<a href="' . e($url) . '" class="' . $classes . '"' .
+        ($active ? ' aria-current="page"' : '') . '>' .
+        e($label) . '</a>';
 }
 
+/* FOTO PROFIL */
 $fotoFile = __DIR__ . '/assets/foto-nadia.png.png';
 $fotoUrl = appUrl('assets/foto-nadia.png.png');
+
 if (is_file($fotoFile)) {
     $fotoUrl .= '?v=' . filemtime($fotoFile);
 }
 
-// Rute Guru: beberapa nama alternatif diperiksa agar sesuai file yang tersedia.
-$guruDashboard = findPage(['guru/dashboard.php', 'guru/index.php', 'guru/beranda.php', 'dashboard.php']);
+/* MENU GURU */
+$guruDashboard = findPage([
+    'guru/dashboard.php',
+    'guru/index.php',
+    'guru/beranda.php',
+    'dashboard.php'
+]);
+
 $guruCatat = findPage(['guru/catat_pelanggaran.php']);
 $guruTindakan = findPage(['guru/tindakan.php']);
 $guruRiwayat = findPage(['guru/riwayat.php']);
-$guruRekap = findPage(['guru/rekap_poin.php', 'guru/rekap.php', 'guru/rekap-point.php']);
+$guruRekap = findPage([
+    'guru/rekap_poin.php',
+    'guru/rekap.php',
+    'guru/rekap-point.php'
+]);
 
-// Rute Wali Kelas.
+/* MENU WALI KELAS */
 $waliDashboard = findPage(['dashboard.php']);
+$waliCatat = findPage(['walikelas/catat_pelanggaran.php']);
+$waliRiwayat = findPage(['walikelas/riwayat.php']);
 $waliDataSiswa = findPage(['walikelas/data_siswa.php']);
 $waliRekap = findPage(['walikelas/rekap_pelanggaran.php']);
 $waliCetak = findPage(['walikelas/cetak_rekap.php']);
 
-// Rute Admin.
-$adminDashboard = findPage(['admin/dashboard.php', 'dashboard.php', 'admin/index.php']);
+/* MENU ADMIN */
+$adminDashboard = findPage([
+    'admin/dashboard.php',
+    'dashboard.php',
+    'admin/index.php'
+]);
+
 $logoutUrl = findPage(['logout.php']);
 ?>
 <!DOCTYPE html>
@@ -74,20 +102,22 @@ $logoutUrl = findPage(['logout.php']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About Me | Sistem Informasi Pelanggaran Siswa</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>About Me | Sistem Pelanggaran</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <style>
         :root {
             --blue: #2878cf;
             --blue-dark: #203e68;
             --blue-soft: #eaf3ff;
-            --page: #f3f7fc;
+            --page: #f6f9fd;
             --white: #ffffff;
-            --text: #2f435a;
+            --text: #263f63;
             --muted: #7890ad;
             --line: #dce9f8;
+            --shadow: 0 8px 22px rgba(32, 62, 104, .07);
         }
 
         * {
@@ -99,13 +129,14 @@ $logoutUrl = findPage(['logout.php']);
             background: var(--page);
             color: var(--text);
             font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 14px;
         }
 
         a {
             text-decoration: none;
         }
 
-        /* SIDEBAR - MENGIKUTI TAMPILAN HALAMAN GURU */
+        /* SIDEBAR */
         .sidebar {
             position: fixed;
             left: 0;
@@ -157,11 +188,11 @@ $logoutUrl = findPage(['logout.php']);
         }
 
         .menu-link {
-            min-height: 43px;
+            min-height: 42px;
             display: flex;
             align-items: center;
-            padding: 10px 15px;
-            border-radius: 10px;
+            padding: 11px 14px;
+            border-radius: 9px;
             color: #5e7695;
             font-size: 13px;
             transition: background .2s ease, color .2s ease,
@@ -171,7 +202,7 @@ $logoutUrl = findPage(['logout.php']);
         .menu-link:hover {
             background: var(--blue-soft);
             color: var(--blue);
-            padding-left: 19px;
+            padding-left: 18px;
         }
 
         .menu-link.active {
@@ -202,29 +233,32 @@ $logoutUrl = findPage(['logout.php']);
             color: #c03935;
         }
 
-        /* KONTEN */
+        /* KONTEN UTAMA */
         .main {
             margin-left: 282px;
             min-height: 100vh;
-            padding: 30px;
+            padding: 24px 28px 40px;
         }
 
         .mobile-header {
             display: none;
         }
 
+        /* HEADER SAMA DENGAN CATAT PELANGGARAN */
         .page-heading {
-            margin-bottom: 24px;
-            opacity: 0;
-            transform: translateY(12px);
-            animation: muncul .6s ease forwards;
+            background: var(--white);
+            border: 1px solid var(--line);
+            border-radius: 11px;
+            padding: 24px 25px;
+            margin-bottom: 22px;
+            box-shadow: var(--shadow);
         }
 
         .page-heading h1 {
-            font-size: 29px;
+            font-size: 28px;
             font-weight: 700;
-            color: #234e78;
-            margin-bottom: 7px;
+            color: var(--blue-dark);
+            margin: 0 0 7px;
         }
 
         .page-heading p {
@@ -233,33 +267,23 @@ $logoutUrl = findPage(['logout.php']);
             margin: 0;
         }
 
+        /* KARTU PROFIL */
         .profile-card,
         .info-card,
         .technology-card {
             background: var(--white);
-            border: 1px solid #e1eaf4;
-            border-radius: 10px;
-            box-shadow: 0 3px 12px rgba(35, 78, 120, .04);
-            transition: transform .25s ease, box-shadow .25s ease;
-            opacity: 0;
-            animation: muncul .65s ease forwards;
-        }
-
-        .profile-card:hover,
-        .info-card:hover,
-        .technology-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 24px rgba(35, 78, 120, .09);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
         }
 
         .profile-card {
-            padding: 32px 35px;
+            padding: 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 30px;
-            margin-bottom: 18px;
-            animation-delay: .08s;
+            margin-bottom: 22px;
         }
 
         .profile-label {
@@ -268,11 +292,11 @@ $logoutUrl = findPage(['logout.php']);
             font-size: 10px;
             font-weight: 700;
             letter-spacing: 2px;
-            margin-bottom: 15px;
+            margin-bottom: 13px;
         }
 
         .profile-card h2 {
-            font-size: 35px;
+            font-size: 32px;
             font-weight: 700;
             color: var(--blue-dark);
             margin-bottom: 13px;
@@ -283,21 +307,20 @@ $logoutUrl = findPage(['logout.php']);
             font-size: 13px;
             line-height: 1.9;
             max-width: 620px;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
         }
 
         .school-label {
             display: inline-block;
-            background: #edf4fc;
+            background: var(--blue-soft);
             color: #285b91;
             font-size: 11px;
             padding: 9px 12px;
-            border-radius: 4px;
+            border-radius: 6px;
         }
 
         .photo-wrapper {
             flex-shrink: 0;
-            position: relative;
         }
 
         .profile-photo {
@@ -305,14 +328,8 @@ $logoutUrl = findPage(['logout.php']);
             height: 198px;
             object-fit: cover;
             object-position: center top;
-            border-radius: 4px;
+            border-radius: 8px;
             display: block;
-            transition: filter .25s ease, transform .25s ease;
-        }
-
-        .profile-photo:hover {
-            filter: brightness(1.04);
-            transform: scale(1.02);
         }
 
         .photo-status {
@@ -322,33 +339,29 @@ $logoutUrl = findPage(['logout.php']);
             color: var(--muted);
         }
 
+        /* INFORMASI PROYEK */
         .info-grid {
             display: grid;
             grid-template-columns: 1.1fr .8fr;
-            gap: 18px;
-            margin-bottom: 18px;
+            gap: 22px;
+            margin-bottom: 22px;
         }
 
         .info-card {
             padding: 25px;
-            animation-delay: .18s;
-        }
-
-        .info-grid .info-card:nth-child(2) {
-            animation-delay: .25s;
         }
 
         .section-title {
-            font-size: 16px;
+            font-size: 17px;
             font-weight: 700;
-            color: #18385f;
+            color: var(--blue-dark);
             margin-bottom: 7px;
         }
 
         .section-subtitle {
-            font-size: 11px;
-            color: #8592a7;
-            margin-bottom: 24px;
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 23px;
         }
 
         .project-name {
@@ -366,8 +379,8 @@ $logoutUrl = findPage(['logout.php']);
 
         .divider {
             border: 0;
-            border-top: 1px solid #e4eaf2;
-            margin: 17px 0;
+            border-top: 1px solid var(--line);
+            margin: 18px 0;
         }
 
         .details-grid {
@@ -390,14 +403,14 @@ $logoutUrl = findPage(['logout.php']);
         }
 
         .goal-text {
-            border-left: 2px solid #80b5f6;
-            padding: 1px 0 1px 13px;
+            border-left: 3px solid #80b5f6;
+            padding: 2px 0 2px 13px;
             margin-bottom: 16px;
         }
 
+        /* TEKNOLOGI */
         .technology-card {
-            padding: 23px 25px;
-            animation-delay: .32s;
+            padding: 25px;
         }
 
         .technology-heading {
@@ -409,15 +422,15 @@ $logoutUrl = findPage(['logout.php']);
         }
 
         .technology-heading h3 {
-            font-size: 15px;
+            font-size: 17px;
             font-weight: 700;
-            color: #18385f;
+            color: var(--blue-dark);
             margin: 0;
         }
 
         .technology-heading span {
-            font-size: 10px;
-            color: #8592a7;
+            font-size: 11px;
+            color: var(--muted);
         }
 
         .tech-list {
@@ -428,13 +441,12 @@ $logoutUrl = findPage(['logout.php']);
 
         .tech-item {
             padding: 9px 14px;
-            border: 1px solid #dce6f2;
-            border-radius: 4px;
+            border: 1px solid var(--line);
+            border-radius: 7px;
             color: #34577f;
             font-size: 11px;
             background: #fbfcfe;
-            transition: background .2s ease, color .2s ease,
-                        border-color .2s ease, transform .2s ease;
+            transition: .2s ease;
             cursor: default;
         }
 
@@ -442,7 +454,6 @@ $logoutUrl = findPage(['logout.php']);
             background: var(--blue);
             border-color: var(--blue);
             color: white;
-            transform: translateY(-2px);
         }
 
         .tech-detail {
@@ -451,58 +462,49 @@ $logoutUrl = findPage(['logout.php']);
             padding: 14px 16px;
             border-left: 3px solid var(--blue);
             background: #f5f9ff;
-            border-radius: 4px;
+            border-radius: 6px;
             color: #58718e;
             font-size: 12px;
-            line-height: 1.8;
+            line-height: 1.9;
         }
 
         .tech-detail.show {
             display: block;
-            animation: muncul .25s ease;
         }
 
         .detail-button {
             margin-top: 16px;
-            background: #edf4fc;
+            background: var(--blue-soft);
             color: #285b91;
-            border: 1px solid #dce9f8;
-            border-radius: 5px;
-            padding: 9px 13px;
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            padding: 9px 14px;
             font-size: 12px;
+            cursor: pointer;
             transition: .2s ease;
         }
 
         .detail-button:hover {
             background: var(--blue);
             color: #fff;
+            border-color: var(--blue);
         }
 
         .footer-note {
             text-align: right;
             color: #9aa8ba;
             font-size: 10px;
-            margin-top: 17px;
+            margin-top: 18px;
         }
 
-        @keyframes muncul {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
+        /* RESPONSIVE */
         @media (max-width: 1050px) {
-            .main {
-                padding: 24px;
-            }
-
             .info-grid {
                 grid-template-columns: 1fr;
             }
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
             .sidebar {
                 transform: translateX(-100%);
                 box-shadow: none;
@@ -527,14 +529,14 @@ $logoutUrl = findPage(['logout.php']);
 
             .main {
                 margin-left: 0;
-                padding: 18px 15px 28px;
+                padding: 18px 18px 30px;
             }
 
             .mobile-header {
                 display: flex;
                 align-items: center;
                 gap: 12px;
-                margin-bottom: 25px;
+                margin-bottom: 20px;
             }
 
             .menu-toggle {
@@ -543,7 +545,7 @@ $logoutUrl = findPage(['logout.php']);
                 border: 1px solid var(--line);
                 background: white;
                 color: var(--blue-dark);
-                border-radius: 7px;
+                border-radius: 8px;
                 font-size: 20px;
                 cursor: pointer;
             }
@@ -553,26 +555,21 @@ $logoutUrl = findPage(['logout.php']);
                 font-weight: 700;
                 color: var(--blue-dark);
             }
-
-            .profile-card {
-                padding: 23px;
-                gap: 20px;
-            }
-
-            .profile-card h2 {
-                font-size: 28px;
-            }
-
-            .profile-photo {
-                width: 135px;
-                height: 155px;
-            }
         }
 
-        @media (max-width: 500px) {
+        @media (max-width: 600px) {
+            .page-heading {
+                padding: 20px;
+            }
+
+            .page-heading h1 {
+                font-size: 24px;
+            }
+
             .profile-card {
                 flex-direction: column-reverse;
                 align-items: flex-start;
+                padding: 22px;
             }
 
             .profile-card h2 {
@@ -580,8 +577,8 @@ $logoutUrl = findPage(['logout.php']);
             }
 
             .profile-photo {
-                width: 125px;
-                height: 145px;
+                width: 135px;
+                height: 155px;
             }
 
             .info-card,
@@ -594,13 +591,15 @@ $logoutUrl = findPage(['logout.php']);
                 flex-direction: column;
             }
 
-            .page-heading h1 {
-                font-size: 25px;
+            .details-grid {
+                gap: 18px 12px;
             }
         }
 
         @media (prefers-reduced-motion: reduce) {
-            *, *::before, *::after {
+            *,
+            *::before,
+            *::after {
                 animation-duration: .01ms !important;
                 transition-duration: .01ms !important;
             }
@@ -611,75 +610,83 @@ $logoutUrl = findPage(['logout.php']);
 <body>
 
 <?php if ($role === 'admin'): ?>
-<aside class="sidebar" id="sidebar">
-    <div class="brand">
-        <div class="brand-title">Sistem Pelanggaran</div>
-        <div class="brand-subtitle">SMK Muhammadiyah</div>
-    </div>
 
-    <div class="menu-title">Menu Utama</div>
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <div class="brand-title">Sistem Pelanggaran</div>
+            <div class="brand-subtitle">SMK Muhammadiyah</div>
+        </div>
 
-    <nav class="menu">
-        <?= menuPageLink($adminDashboard, 'Dashboard') ?>
-        <?= menuPageLink(findPage(['admin/guru.php']), 'Kelola Guru') ?>
-        <?= menuPageLink(findPage(['admin/siswa.php']), 'Kelola Siswa') ?>
-        <?= menuPageLink(findPage(['admin/kelas.php']), 'Kelola Kelas') ?>
-        <?= menuPageLink(findPage(['admin/tahun_ajaran.php']), 'Tahun Ajaran') ?>
-        <?= menuPageLink(findPage(['admin/penempatan_siswa.php']), 'Penempatan Siswa') ?>
-        <?= menuPageLink(findPage(['admin/wali_kelas.php']), 'Wali Kelas') ?>
-        <?= menuPageLink(findPage(['admin/kategori_pelanggaran.php']), 'Kategori Pelanggaran') ?>
-        <?= menuPageLink(findPage(['admin/jenis_pelanggaran.php']), 'Jenis Pelanggaran') ?>
-        <?= menuPageLink(findPage(['admin/cetak_export.php']), 'Laporan') ?>
-        <?= menuPageLink(appUrl('about.php'), 'About Me', true) ?>
-    </nav>
+        <div class="menu-title">Menu Utama</div>
 
-    <div class="logout">
-        <?= menuPageLink($logoutUrl, 'Logout') ?>
-    </div>
-</aside>
+        <nav class="menu">
+            <?= menuPageLink($adminDashboard, 'Dashboard') ?>
+            <?= menuPageLink(findPage(['admin/guru.php']), 'Kelola Guru') ?>
+            <?= menuPageLink(findPage(['admin/siswa.php']), 'Kelola Siswa') ?>
+            <?= menuPageLink(findPage(['admin/kelas.php']), 'Kelola Kelas') ?>
+            <?= menuPageLink(findPage(['admin/tahun_ajaran.php']), 'Tahun Ajaran') ?>
+            <?= menuPageLink(findPage(['admin/penempatan_siswa.php']), 'Penempatan Siswa') ?>
+            <?= menuPageLink(findPage(['admin/wali_kelas.php']), 'Wali Kelas') ?>
+            <?= menuPageLink(findPage(['admin/kategori_pelanggaran.php']), 'Kategori Pelanggaran') ?>
+            <?= menuPageLink(findPage(['admin/jenis_pelanggaran.php']), 'Jenis Pelanggaran') ?>
+            <?= menuPageLink(findPage(['admin/cetak_export.php']), 'Laporan') ?>
+            <?= menuPageLink(appUrl('about.php'), 'About Me', true) ?>
+        </nav>
+
+        <div class="logout">
+            <?= menuPageLink($logoutUrl, 'Logout') ?>
+        </div>
+    </aside>
+
 <?php elseif ($isWaliKelas): ?>
-<aside class="sidebar" id="sidebar">
-    <div class="brand">
-        <div class="brand-title">Sistem Pelanggaran</div>
-        <div class="brand-subtitle">SMK Muhammadiyah</div>
-    </div>
 
-    <div class="menu-title">Menu Utama</div>
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <div class="brand-title">Sistem Pelanggaran</div>
+            <div class="brand-subtitle">SMK Muhammadiyah</div>
+        </div>
 
-    <nav class="menu">
-        <?= menuPageLink($waliDashboard, 'Dashboard') ?>
-        <?= menuPageLink($waliDataSiswa, 'Data Siswa') ?>
-        <?= menuPageLink($waliRekap, 'Rekap Pelanggaran') ?>
-        <?= menuPageLink($waliCetak, 'Cetak Rekap') ?>
-        <?= menuPageLink(appUrl('about.php'), 'About Me', true) ?>
-    </nav>
+        <div class="menu-title">Menu Utama</div>
 
-    <div class="logout">
-        <?= menuPageLink($logoutUrl, 'Logout') ?>
-    </div>
-</aside>
+        <nav class="menu">
+            <?= menuPageLink($waliDashboard, 'Dashboard') ?>
+            <?= menuPageLink($waliCatat, 'Catat Pelanggaran') ?>
+            <?= menuPageLink($waliRiwayat, 'Riwayat') ?>
+            <?= menuPageLink($waliDataSiswa, 'Data Siswa') ?>
+            <?= menuPageLink($waliRekap, 'Rekap Pelanggaran') ?>
+            <?= menuPageLink($waliCetak, 'Laporan') ?>
+            <?= menuPageLink(appUrl('about.php'), 'About Me', true) ?>
+        </nav>
+
+        <div class="logout">
+            <?= menuPageLink($logoutUrl, 'Logout') ?>
+        </div>
+    </aside>
+
 <?php else: ?>
-<aside class="sidebar" id="sidebar">
-    <div class="brand">
-        <div class="brand-title">Sistem Pelanggaran</div>
-        <div class="brand-subtitle">SMK Muhammadiyah</div>
-    </div>
 
-    <div class="menu-title">Menu Utama</div>
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <div class="brand-title">Sistem Pelanggaran</div>
+            <div class="brand-subtitle">SMK Muhammadiyah</div>
+        </div>
 
-    <nav class="menu">
-        <?= menuPageLink($guruDashboard, 'Dashboard') ?>
-        <?= menuPageLink($guruCatat, 'Catat Pelanggaran') ?>
-        <?= menuPageLink($guruTindakan, 'Tindakan') ?>
-        <?= menuPageLink($guruRiwayat, 'Riwayat') ?>
-        <?= menuPageLink($guruRekap, 'Rekap Poin') ?>
-        <?= menuPageLink(appUrl('about.php'), 'About Me', true) ?>
-    </nav>
+        <div class="menu-title">Menu Utama</div>
 
-    <div class="logout">
-        <?= menuPageLink($logoutUrl, 'Logout') ?>
-    </div>
-</aside>
+        <nav class="menu">
+            <?= menuPageLink($guruDashboard, 'Dashboard') ?>
+            <?= menuPageLink($guruCatat, 'Catat Pelanggaran') ?>
+            <?= menuPageLink($guruTindakan, 'Tindakan') ?>
+            <?= menuPageLink($guruRiwayat, 'Riwayat') ?>
+            <?= menuPageLink($guruRekap, 'Rekap Poin') ?>
+            <?= menuPageLink(appUrl('about.php'), 'About Me', true) ?>
+        </nav>
+
+        <div class="logout">
+            <?= menuPageLink($logoutUrl, 'Logout') ?>
+        </div>
+    </aside>
+
 <?php endif; ?>
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
@@ -687,8 +694,14 @@ $logoutUrl = findPage(['logout.php']);
 <main class="main">
 
     <div class="mobile-header">
-        <button type="button" class="menu-toggle" id="menuToggle"
-                aria-label="Buka menu" aria-expanded="false">☰</button>
+        <button
+            type="button"
+            class="menu-toggle"
+            id="menuToggle"
+            aria-label="Buka menu"
+            aria-expanded="false"
+        >☰</button>
+
         <div class="mobile-brand">Sistem Pelanggaran</div>
     </div>
 
@@ -700,6 +713,7 @@ $logoutUrl = findPage(['logout.php']);
     <section class="profile-card">
         <div class="profile-information">
             <div class="profile-label">Perkenalkan, saya</div>
+
             <h2>Nadia Zulfa Soraya</h2>
 
             <p class="profile-description">
@@ -719,7 +733,10 @@ $logoutUrl = findPage(['logout.php']);
                 class="profile-photo"
                 id="profilePhoto"
             >
-            <div class="photo-status" id="photoStatus">Profil Pengembang</div>
+
+            <div class="photo-status" id="photoStatus">
+                Profil Pengembang
+            </div>
         </div>
     </section>
 
@@ -727,6 +744,7 @@ $logoutUrl = findPage(['logout.php']);
 
         <section class="info-card">
             <h3 class="section-title">Informasi Proyek</h3>
+
             <p class="section-subtitle">
                 Gambaran aplikasi yang dikembangkan.
             </p>
@@ -767,6 +785,7 @@ $logoutUrl = findPage(['logout.php']);
 
         <section class="info-card">
             <h3 class="section-title">Tujuan Proyek</h3>
+
             <p class="section-subtitle">
                 Fungsi utama yang ingin dicapai.
             </p>
@@ -802,10 +821,13 @@ $logoutUrl = findPage(['logout.php']);
             <span class="tech-item" title="Interaksi halaman">JavaScript</span>
         </div>
 
-       
-
-        <button type="button" class="detail-button" id="detailButton"
-                aria-expanded="false" aria-controls="techDetail">
+        <button
+            type="button"
+            class="detail-button"
+            id="detailButton"
+            aria-expanded="false"
+            aria-controls="techDetail"
+        >
             Lihat penjelasan teknologi
         </button>
 
@@ -830,14 +852,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebarOverlay');
     const menuToggle = document.getElementById('menuToggle');
+
     const detailButton = document.getElementById('detailButton');
     const techDetail = document.getElementById('techDetail');
+
     const profilePhoto = document.getElementById('profilePhoto');
     const photoStatus = document.getElementById('photoStatus');
 
-    // Buka/tutup sidebar pada tampilan mobile.
     function closeSidebar() {
         if (!sidebar || !overlay || !menuToggle) return;
+
         sidebar.classList.remove('open');
         overlay.classList.remove('show');
         menuToggle.setAttribute('aria-expanded', 'false');
@@ -846,6 +870,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (sidebar && overlay && menuToggle) {
         menuToggle.addEventListener('click', function () {
             const isOpen = sidebar.classList.toggle('open');
+
             overlay.classList.toggle('show', isOpen);
             menuToggle.setAttribute('aria-expanded', String(isOpen));
         });
@@ -853,7 +878,9 @@ document.addEventListener('DOMContentLoaded', function () {
         overlay.addEventListener('click', closeSidebar);
 
         document.addEventListener('keydown', function (event) {
-            if (event.key === 'Escape') closeSidebar();
+            if (event.key === 'Escape') {
+                closeSidebar();
+            }
         });
 
         sidebar.querySelectorAll('.menu-link').forEach(function (link) {
@@ -861,18 +888,18 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Tampilkan/sembunyikan penjelasan teknologi.
     if (detailButton && techDetail) {
         detailButton.addEventListener('click', function () {
             const isVisible = techDetail.classList.toggle('show');
+
             detailButton.setAttribute('aria-expanded', String(isVisible));
+
             detailButton.textContent = isVisible
                 ? 'Sembunyikan penjelasan teknologi'
                 : 'Lihat penjelasan teknologi';
         });
     }
 
-    // Beri keterangan jika foto profil gagal dimuat.
     if (profilePhoto && photoStatus) {
         profilePhoto.addEventListener('error', function () {
             photoStatus.textContent = 'Foto profil tidak ditemukan';

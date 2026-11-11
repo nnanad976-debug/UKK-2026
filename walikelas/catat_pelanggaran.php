@@ -1,7 +1,6 @@
-
 <?php
-include "../middleware/auth.php";
-include "../config/koneksi.php";
+include __DIR__ . "/../middleware/auth.php";
+include __DIR__ . "/../config/koneksi.php";
 
 $role = strtolower(trim($_SESSION['role'] ?? ''));
 
@@ -13,18 +12,21 @@ if ($role !== 'guru' || empty($_SESSION['is_wali_kelas'])) {
 $pesan = '';
 $jenis_pesan = '';
 
-$guru_id = (int)($_SESSION['guru_id'] ?? 0);
 $user_id = (int)($_SESSION['user_id'] ?? 0);
+$session_guru_id = (int)($_SESSION['guru_id'] ?? 0);
+$nama_login = $_SESSION['nama'] ?? 'Wali Kelas';
 
 /* =========================================
    FUNGSI BANTU
 ========================================= */
 
-function e($value) {
+function e($value): string
+{
     return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
-function labelKelas($nama, $tingkat, $jurusan) {
+function labelKelas($nama, $tingkat, $jurusan): string
+{
     $nama = trim((string)$nama);
     $tingkat = trim((string)$tingkat);
     $jurusan = trim((string)$jurusan);
@@ -54,24 +56,13 @@ function labelKelas($nama, $tingkat, $jurusan) {
 
 $data_guru = null;
 
-if ($guru_id > 0) {
+if ($user_id > 0) {
     $stmt = mysqli_prepare(
         $koneksi,
-        "SELECT id, nama FROM t_guru WHERE id = ? LIMIT 1"
-    );
-
-    if ($stmt) {
-        mysqli_stmt_bind_param($stmt, "i", $guru_id);
-        mysqli_stmt_execute($stmt);
-        $data_guru = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
-        mysqli_stmt_close($stmt);
-    }
-}
-
-if (!$data_guru && $user_id > 0) {
-    $stmt = mysqli_prepare(
-        $koneksi,
-        "SELECT id, nama FROM t_guru WHERE user_id = ? LIMIT 1"
+        "SELECT id, nama
+         FROM t_guru
+         WHERE user_id = ?
+         LIMIT 1"
     );
 
     if ($stmt) {
@@ -82,8 +73,25 @@ if (!$data_guru && $user_id > 0) {
     }
 }
 
+if (!$data_guru && $session_guru_id > 0) {
+    $stmt = mysqli_prepare(
+        $koneksi,
+        "SELECT id, nama
+         FROM t_guru
+         WHERE id = ?
+         LIMIT 1"
+    );
+
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $session_guru_id);
+        mysqli_stmt_execute($stmt);
+        $data_guru = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+        mysqli_stmt_close($stmt);
+    }
+}
+
 $guru_id = (int)($data_guru['id'] ?? 0);
-$nama_guru = $data_guru['nama'] ?? ($_SESSION['nama'] ?? 'Wali Kelas');
+$nama_guru = $data_guru['nama'] ?? $nama_login;
 
 if ($guru_id <= 0) {
     $pesan = 'Data guru tidak ditemukan. Silakan hubungi administrator.';
@@ -103,7 +111,10 @@ $query_tahun = mysqli_query(
      LIMIT 1"
 );
 
-$data_tahun = $query_tahun ? mysqli_fetch_assoc($query_tahun) : null;
+$data_tahun = $query_tahun
+    ? mysqli_fetch_assoc($query_tahun)
+    : null;
+
 $tahun_ajaran_id = (int)($data_tahun['id'] ?? 0);
 
 /* =========================================
@@ -138,11 +149,6 @@ if (isset($_POST['simpan_tindakan'])) {
 
     } else {
 
-        /*
-         * Hanya catatan milik Wali Kelas yang sedang login
-         * dan belum berstatus Selesai yang boleh diubah.
-         */
-
         $stmt = mysqli_prepare(
             $koneksi,
             "UPDATE t_pelanggaran_siswa
@@ -170,13 +176,13 @@ if (isset($_POST['simpan_tindakan'])) {
 
             mysqli_stmt_close($stmt);
 
-            if ($berhasil && $jumlah_diubah > 0) {
-                header("Location: catat_pelanggaran.php?tindakan_berhasil=1");
+            if ($berhasil && $jumlah_diubah >= 0) {
+                header("Location: catat_pelanggaran.php?tindakan_berhasil=1#riwayat");
                 exit;
-            } else {
-                $pesan = 'Catatan tidak dapat diperbarui. Pastikan catatan masih bisa diubah.';
-                $jenis_pesan = 'warning';
             }
+
+            $pesan = 'Catatan tidak dapat diperbarui.';
+            $jenis_pesan = 'warning';
 
         } else {
             $pesan = 'Terjadi kesalahan saat menyiapkan perubahan tindakan.';
@@ -203,12 +209,16 @@ if ($tahun_get > 0 && $tahun_get !== $tahun_ajaran_id) {
 $daftar_kelas = [];
 
 if ($tahun_ajaran_id > 0) {
+
     $query_kelas = mysqli_query(
         $koneksi,
         "SELECT id, nama, tingkat, jurusan
          FROM t_kelas
          WHERE status_aktif = 1
-         ORDER BY FIELD(tingkat, 'X', 'XI', 'XII'), jurusan ASC, nama ASC"
+         ORDER BY
+            FIELD(tingkat, 'X', 'XI', 'XII'),
+            jurusan ASC,
+            nama ASC"
     );
 
     if ($query_kelas) {
@@ -225,6 +235,7 @@ if ($tahun_ajaran_id > 0) {
 $daftar_siswa = [];
 
 if ($tahun_ajaran_id > 0) {
+
     $stmt = mysqli_prepare(
         $koneksi,
         "SELECT DISTINCT
@@ -233,8 +244,10 @@ if ($tahun_ajaran_id > 0) {
             s.nama,
             ks.kelas_id
          FROM t_siswa s
-         INNER JOIN t_kelas_siswa ks ON ks.siswa_id = s.id
-         INNER JOIN t_kelas k ON k.id = ks.kelas_id
+         INNER JOIN t_kelas_siswa ks
+            ON ks.siswa_id = s.id
+         INNER JOIN t_kelas k
+            ON k.id = ks.kelas_id
          WHERE ks.tahun_ajaran_id = ?
            AND ks.status_aktif = 1
            AND ks.tanggal_mulai <= CURDATE()
@@ -269,7 +282,13 @@ $daftar_jenis = [];
 
 $query_jenis = mysqli_query(
     $koneksi,
-    "SELECT id, kode, nama, poin, tingkat, pelanggaran_kategori_id
+    "SELECT
+        id,
+        kode,
+        nama,
+        poin,
+        tingkat,
+        pelanggaran_kategori_id
      FROM t_pelanggaran
      WHERE status_aktif = 1
      ORDER BY id ASC"
@@ -338,7 +357,8 @@ if (isset($_POST['simpan'])) {
             $koneksi,
             "SELECT id
              FROM t_kelas
-             WHERE id = ? AND status_aktif = 1
+             WHERE id = ?
+               AND status_aktif = 1
              LIMIT 1"
         );
 
@@ -347,7 +367,11 @@ if (isset($_POST['simpan'])) {
         if ($stmt) {
             mysqli_stmt_bind_param($stmt, "i", $kelas_id);
             mysqli_stmt_execute($stmt);
-            $kelas_valid = (bool)mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+
+            $kelas_valid = (bool)mysqli_fetch_assoc(
+                mysqli_stmt_get_result($stmt)
+            );
+
             mysqli_stmt_close($stmt);
         }
 
@@ -371,8 +395,10 @@ if (isset($_POST['simpan'])) {
                     k.tingkat,
                     k.jurusan
                  FROM t_siswa s
-                 INNER JOIN t_kelas_siswa ks ON ks.siswa_id = s.id
-                 INNER JOIN t_kelas k ON k.id = ks.kelas_id
+                 INNER JOIN t_kelas_siswa ks
+                    ON ks.siswa_id = s.id
+                 INNER JOIN t_kelas k
+                    ON k.id = ks.kelas_id
                  WHERE s.id = ?
                    AND ks.kelas_id = ?
                    AND ks.tahun_ajaran_id = ?
@@ -400,7 +426,11 @@ if (isset($_POST['simpan'])) {
                 );
 
                 mysqli_stmt_execute($stmt);
-                $data_siswa = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+
+                $data_siswa = mysqli_fetch_assoc(
+                    mysqli_stmt_get_result($stmt)
+                );
+
                 mysqli_stmt_close($stmt);
             }
 
@@ -415,9 +445,14 @@ if (isset($_POST['simpan'])) {
 
                 $stmt = mysqli_prepare(
                     $koneksi,
-                    "SELECT id, nama, poin, pelanggaran_kategori_id
+                    "SELECT
+                        id,
+                        nama,
+                        poin,
+                        pelanggaran_kategori_id
                      FROM t_pelanggaran
-                     WHERE id = ? AND status_aktif = 1
+                     WHERE id = ?
+                       AND status_aktif = 1
                      LIMIT 1"
                 );
 
@@ -426,7 +461,11 @@ if (isset($_POST['simpan'])) {
                 if ($stmt) {
                     mysqli_stmt_bind_param($stmt, "i", $pelanggaran_id);
                     mysqli_stmt_execute($stmt);
-                    $data_pelanggaran = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+
+                    $data_pelanggaran = mysqli_fetch_assoc(
+                        mysqli_stmt_get_result($stmt)
+                    );
+
                     mysqli_stmt_close($stmt);
                 }
 
@@ -439,7 +478,11 @@ if (isset($_POST['simpan'])) {
 
                     $nama_siswa = $data_siswa['nama'];
                     $nama_pelanggaran = $data_pelanggaran['nama'];
-                    $kategori_id = (int)($data_pelanggaran['pelanggaran_kategori_id'] ?? 0);
+
+                    $kategori_id = (int)(
+                        $data_pelanggaran['pelanggaran_kategori_id'] ?? 0
+                    );
+
                     $poin = (int)$data_pelanggaran['poin'];
 
                     $nama_kelas = labelKelas(
@@ -449,10 +492,10 @@ if (isset($_POST['simpan'])) {
                     );
 
                     $nama_guru_simpan = $nama_guru;
-
-                    // Tindakan akan diisi melalui tombol pada tabel.
                     $tindakan = '';
                     $status = 'Diproses';
+
+                    /* INSERT PELANGGARAN */
 
                     $stmt = mysqli_prepare(
                         $koneksi,
@@ -498,10 +541,11 @@ if (isset($_POST['simpan'])) {
                         );
 
                         $berhasil = mysqli_stmt_execute($stmt);
+
                         mysqli_stmt_close($stmt);
 
                         if ($berhasil) {
-                            header("Location: catat_pelanggaran.php?berhasil=1");
+                            header("Location: catat_pelanggaran.php?berhasil=1#riwayat");
                             exit;
                         }
                     }
@@ -519,7 +563,7 @@ if (isset($_POST['simpan'])) {
 ========================================= */
 
 if (($_GET['berhasil'] ?? '') === '1') {
-    $pesan = 'Pelanggaran berhasil dicatat! Silakan klik tombol Tindakan pada tabel untuk mengisi tindak lanjut.';
+    $pesan = 'Pelanggaran berhasil dicatat! Data sudah masuk ke riwayat pelanggaran.';
     $jenis_pesan = 'success';
 }
 
@@ -530,6 +574,7 @@ if (($_GET['tindakan_berhasil'] ?? '') === '1') {
 
 /* =========================================
    RIWAYAT PENCATATAN WALI KELAS
+   HANYA DATA WALI YANG LOGIN
 ========================================= */
 
 $daftar_riwayat = [];
@@ -544,14 +589,22 @@ if ($guru_id > 0 && $tahun_ajaran_id > 0) {
             k.tingkat,
             k.jurusan
          FROM t_pelanggaran_siswa ps
-         LEFT JOIN t_kelas k ON k.id = ps.kelas_id
+         LEFT JOIN t_kelas k
+            ON k.id = ps.kelas_id
          WHERE ps.guru_id = ?
            AND ps.tahun_ajaran_id = ?
-         ORDER BY ps.tanggal DESC, ps.id DESC"
+         ORDER BY ps.id DESC"
     );
 
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, "ii", $guru_id, $tahun_ajaran_id);
+
+        mysqli_stmt_bind_param(
+            $stmt,
+            "ii",
+            $guru_id,
+            $tahun_ajaran_id
+        );
+
         mysqli_stmt_execute($stmt);
 
         $result = mysqli_stmt_get_result($stmt);
@@ -567,414 +620,537 @@ if ($guru_id > 0 && $tahun_ajaran_id > 0) {
 
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<title>Catat Pelanggaran Wali Kelas</title>
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.datatables.net/2.3.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-
-<style>
-:root {
-    --blue:#2878cf;
-    --blue-dark:#203e68;
-    --blue-soft:#eaf3ff;
-    --page:#f6f9fd;
-    --white:#fff;
-    --text:#263f63;
-    --muted:#7890ad;
-    --line:#dce9f8;
-}
-
-* {
-    box-sizing:border-box;
-}
-
-body {
-    margin:0;
-    background:var(--page);
-    color:var(--text);
-    font-family:"Segoe UI",Arial,sans-serif;
-}
-
-a {
-    text-decoration:none;
-}
-
-/* SIDEBAR */
-
-.sidebar {
-    position:fixed;
-    top:0;
-    left:0;
-    width:282px;
-    height:100vh;
-    padding:25px 14px 16px;
-    display:flex;
-    flex-direction:column;
-    background:var(--white);
-    border-right:1px solid var(--line);
-    z-index:1000;
-    overflow-y:auto;
-}
-
-.brand {
-    padding:0 14px 20px;
-    margin-bottom:22px;
-    border-bottom:1px solid var(--line);
-}
-
-.brand-title {
-    color:var(--blue-dark);
-    font-size:19px;
-    font-weight:700;
-    margin-bottom:5px;
-}
-
-.brand-subtitle {
-    color:var(--muted);
-    font-size:12px;
-}
-
-.menu-title {
-    margin:0 14px 11px;
-    color:#91a5bd;
-    font-size:10px;
-    font-weight:700;
-    letter-spacing:1px;
-    text-transform:uppercase;
-}
-
-.menu {
-    display:flex;
-    flex-direction:column;
-    gap:5px;
-}
-
-.menu-link {
-    display:flex;
-    align-items:center;
-    min-height:42px;
-    padding:11px 14px;
-    border-radius:9px;
-    color:#5e7695;
-    font-size:13px;
-    transition:.2s;
-    text-decoration:none;
-}
-
-.menu-link:hover {
-    background:#f2f7fd;
-    color:var(--blue);
-}
-
-.menu-link.active {
-    background:var(--blue-soft);
-    color:var(--blue);
-    font-weight:600;
-    box-shadow:inset 3px 0 0 var(--blue);
-}
-
-.logout {
-    margin-top:auto;
-    padding-top:14px;
-    border-top:1px solid var(--line);
-}
-
-.logout .menu-link {
-    color:#d9534f;
-}
-
-.logout .menu-link:hover {
-    background:#fff0ef;
-}
-
-/* KONTEN UTAMA */
-
-.main {
-    width:calc(100% - 282px);
-    min-height:100vh;
-    margin-left:282px;
-    padding:24px 28px 40px;
-}
-
-.container {
-    width:100%;
-    max-width:none !important;
-    margin:0 auto;
-    padding:0 !important;
-}
-
-.judul,
-h4 {
-    color:#234e78;
-}
-
-.card {
-    border:1px solid #e1eaf4 !important;
-    border-radius:10px;
-    box-shadow:0 3px 12px rgba(35,78,120,.05) !important;
-}
-
-.card-body {
-    padding:24px;
-}
-
-.form-label {
-    color:#405873;
-    font-weight:600;
-}
-
-.form-control,
-.form-select {
-    border-color:#d7e3ef;
-    border-radius:7px;
-    padding:10px 12px;
-    color:#344b63;
-}
-
-.form-control:focus,
-.form-select:focus {
-    border-color:#8eb5d8;
-    box-shadow:0 0 0 .2rem rgba(87,143,190,.14);
-}
-
-textarea.form-control {
-    min-height:110px;
-    resize:vertical;
-}
-
-.form-control[readonly] {
-    background:#f1f5fa;
-    color:#526b85;
-    font-weight:600;
-}
-
-.btn-primary {
-    --bs-btn-color:#fff;
-    --bs-btn-bg:#5f91ba;
-    --bs-btn-border-color:#5f91ba;
-    --bs-btn-hover-color:#fff;
-    --bs-btn-hover-bg:#4b7fa9;
-    --bs-btn-hover-border-color:#4b7fa9;
-    border-radius:7px;
-    padding:8px 15px;
-}
-
-.btn-secondary {
-    --bs-btn-bg:#e8f0f8;
-    --bs-btn-border-color:#d8e5f1;
-    --bs-btn-color:#426584;
-    --bs-btn-hover-bg:#dceaf6;
-    --bs-btn-hover-border-color:#cbddeb;
-    --bs-btn-hover-color:#234e78;
-    border-radius:7px;
-    padding:8px 15px;
-}
-
-.btn-tindakan {
-    background:#eaf3ff;
-    color:#2878cf;
-    border:1px solid #d3e5f8;
-    border-radius:7px;
-    padding:7px 11px;
-    font-size:12px;
-    font-weight:600;
-    white-space:nowrap;
-}
-
-.btn-tindakan:hover {
-    background:#dcecff;
-    color:#1e62a8;
-}
-
-.btn-terkunci {
-    display:inline-block;
-    background:#e4f3e9;
-    color:#34734b;
-    border-radius:7px;
-    padding:7px 11px;
-    font-size:12px;
-    font-weight:600;
-    white-space:nowrap;
-}
-
-.table {
-    color:#344b63;
-    vertical-align:middle;
-    margin-bottom:0;
-}
-
-.table thead th {
-    background:#eaf2fa;
-    color:#315b82;
-    border-color:#dce7f1;
-    font-weight:600;
-    padding:12px;
-    white-space:nowrap;
-}
-
-.table tbody td {
-    border-color:#e5edf5;
-    padding:11px 12px;
-}
-
-.status-badge {
-    display:inline-block;
-    padding:5px 10px;
-    border-radius:20px;
-    font-size:12px;
-    font-weight:600;
-    white-space:nowrap;
-}
-
-.status-diproses {
-    background:#fff3d9;
-    color:#946b17;
-}
-
-.status-ditindaklanjuti {
-    background:#eaf0ff;
-    color:#4265a5;
-}
-
-.status-selesai {
-    background:#e4f3e9;
-    color:#34734b;
-}
-
-.status-lain {
-    background:#eaf0f7;
-    color:#526b85;
-}
-
-.keterangan {
-    color:#71849a;
-    font-size:14px;
-}
-
-.tindakan-text {
-    min-width:150px;
-    max-width:260px;
-    white-space:normal;
-    overflow-wrap:anywhere;
-}
-
-/* DATATABLES */
-
-.dt-container .dt-layout-row {
-    margin:12px 0;
-}
-
-.dt-container .dt-layout-row:first-child {
-    margin-top:22px;
-    margin-bottom:8px;
-}
-
-.dt-container .dt-layout-cell {
-    display:flex;
-    align-items:center;
-}
-
-.dt-container .dt-length,
-.dt-container .dt-search {
-    display:flex;
-    align-items:center;
-    gap:8px;
-}
-
-.dt-container .dt-length label,
-.dt-container .dt-search label {
-    display:flex;
-    align-items:center;
-    gap:8px;
-    margin:0;
-    font-size:13px;
-    white-space:nowrap;
-}
-
-.dt-container .dt-length select {
-    width:55px !important;
-    min-width:55px;
-    height:38px;
-    padding:6px 5px;
-    border:1px solid #d7e3ef;
-    border-radius:7px;
-    background:#fff;
-    color:#344b63;
-}
-
-.dt-container .dt-search input {
-    width:190px;
-    height:38px;
-    padding:7px 12px;
-    border:1px solid #d7e3ef;
-    border-radius:7px;
-    margin-left:0 !important;
-}
-
-.dt-container .dt-length select:focus,
-.dt-container .dt-search input:focus {
-    outline:none;
-    border-color:#8eb5d8;
-    box-shadow:0 0 0 .15rem rgba(87,143,190,.14);
-}
-
-.alert {
-    border-radius:7px;
-}
-
-.modal-content {
-    border:1px solid #e1eaf4;
-    border-radius:12px;
-}
-
-.modal-header {
-    border-bottom:1px solid #e5edf5;
-}
-
-.modal-footer {
-    border-top:1px solid #e5edf5;
-}
-
-/* RESPONSIVE */
-
-@media(max-width:900px) {
-    .sidebar {
-        position:static;
-        width:100%;
-        height:auto;
-        min-height:auto;
-    }
-
-    .main {
-        width:100%;
-        margin-left:0;
-        padding:18px 14px 30px;
-    }
-
-    .logout {
-        margin-top:14px;
-    }
-}
-
-@media(max-width:576px) {
-    .card-body {
-        padding:17px;
-    }
-
-    .dt-container .dt-search input {
-        width:140px;
-    }
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Catat Pelanggaran - Sistem Pelanggaran</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/2.3.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --blue: #2878cf;
+            --blue-dark: #203e68;
+            --blue-soft: #eaf3ff;
+            --page: #f6f9fd;
+            --white: #ffffff;
+            --text: #263f63;
+            --muted: #7890ad;
+            --line: #dce9f8;
+            --shadow: 0 8px 22px rgba(32, 62, 104, .07);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: var(--page);
+            color: var(--text);
+        }
+
+        a {
+            text-decoration: none;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 282px;
+            height: 100vh;
+            padding: 25px 14px 16px;
+            display: flex;
+            flex-direction: column;
+            background: var(--white);
+            border-right: 1px solid var(--line);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .brand {
+            padding: 0 14px 20px;
+            margin-bottom: 22px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .brand-title {
+            color: var(--blue-dark);
+            font-size: 18px;
+            font-weight: 700;
+            line-height: 1.4;
+            margin-bottom: 5px;
+        }
+
+        .brand-subtitle {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .menu-title {
+            margin: 0 14px 11px;
+            color: #91a5bd;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .menu {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .menu-link {
+            display: flex;
+            align-items: center;
+            min-height: 42px;
+            padding: 11px 14px;
+            border-radius: 9px;
+            color: #5e7695;
+            font-size: 13px;
+            font-weight: 500;
+            transition: .2s ease;
+        }
+
+        .menu-link:hover {
+            background: #f2f7fd;
+            color: var(--blue);
+        }
+
+        .menu-link.active {
+            background: var(--blue-soft);
+            color: var(--blue);
+            font-weight: 600;
+            box-shadow: inset 3px 0 0 var(--blue);
+        }
+
+        .logout {
+            margin-top: auto;
+            padding-top: 14px;
+            border-top: 1px solid var(--line);
+        }
+
+        .logout .menu-link {
+            color: #d9534f;
+        }
+
+        .logout .menu-link:hover {
+            background: #fff0ef;
+        }
+
+        .main {
+            width: calc(100% - 282px);
+            min-height: 100vh;
+            margin-left: 282px;
+            padding: 24px 28px 40px;
+        }
+
+        .page-head {
+            background: #ffffff;
+            border: 1px solid var(--line);
+            border-radius: 11px;
+            padding: 24px 25px;
+            margin-bottom: 22px;
+            box-shadow: 0 5px 15px rgba(32, 62, 104, .04);
+        }
+
+        .page-head h3 {
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--blue-dark);
+            margin-bottom: 3px;
+        }
+
+        .page-head p {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .panel {
+            background: var(--white);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            margin-bottom: 22px;
+        }
+
+        .panel-header {
+            margin-bottom: 20px;
+        }
+
+        .panel-header h4 {
+            color: var(--blue-dark);
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .panel-header p {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .form-label {
+            display: block;
+            color: #405873;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .form-control,
+        .form-select {
+            border: 1px solid var(--line);
+            border-radius: 9px;
+            padding: 10px 13px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 13px;
+            box-shadow: none;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(40, 120, 207, .10);
+        }
+
+        .form-control[readonly] {
+            background: #f5f8fc;
+            color: #526b89;
+            font-weight: 600;
+        }
+
+        textarea.form-control {
+            min-height: 110px;
+            resize: vertical;
+        }
+
+        .form-text {
+            color: var(--muted);
+            font-size: 11px;
+            margin-top: 6px;
+        }
+
+        .btn-primary {
+            background: var(--blue);
+            border: 1px solid var(--blue);
+            border-radius: 8px;
+            padding: 10px 17px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background: var(--blue-dark);
+            border-color: var(--blue-dark);
+        }
+
+        .btn-secondary {
+            background: #edf3fa;
+            border: 1px solid var(--line);
+            color: #526b89;
+            border-radius: 8px;
+            padding: 9px 15px;
+            font-size: 13px;
+        }
+
+        .btn-secondary:hover {
+            background: #e3edf8;
+            color: var(--blue-dark);
+            border-color: var(--line);
+        }
+
+        .alert {
+            border-radius: 10px;
+            font-size: 13px;
+            padding: 13px 16px;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .table {
+            width: 100%;
+            margin-bottom: 0;
+            border-collapse: collapse;
+            vertical-align: middle;
+        }
+
+        .table thead th {
+            background: #f5f8fc;
+            color: #7188a5;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 14px;
+            text-align: left;
+            white-space: nowrap;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .table tbody td {
+            padding: 13px 14px;
+            font-size: 13px;
+            color: #526b89;
+            vertical-align: middle;
+            border-bottom: 1px solid #edf2f8;
+        }
+
+        .table tbody tr:hover {
+            background: #fafcff;
+        }
+
+        .keterangan {
+            min-width: 160px;
+            max-width: 260px;
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+
+        .tindakan-text {
+            min-width: 150px;
+            max-width: 260px;
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .status-diproses {
+            background: #fff3d9;
+            color: #946b17;
+        }
+
+        .status-ditindaklanjuti {
+            background: #eaf0ff;
+            color: #4265a5;
+        }
+
+        .status-selesai {
+            background: #e4f3e9;
+            color: #34734b;
+        }
+
+        .status-lain {
+            background: #eaf0f7;
+            color: #526b85;
+        }
+
+        .btn-tindakan {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--blue-soft);
+            color: var(--blue);
+            border: 1px solid #d3e5f8;
+            border-radius: 8px;
+            padding: 8px 11px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .btn-tindakan:hover {
+            background: #dcecff;
+            color: #1e62a8;
+        }
+
+        .btn-terkunci {
+            display: inline-block;
+            background: #e4f3e9;
+            color: #34734b;
+            border-radius: 8px;
+            padding: 8px 11px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 28px;
+            color: #8498b1;
+            font-size: 13px;
+        }
+
+        .dt-container {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .dt-container .dt-layout-row {
+            margin: 13px 0;
+            gap: 12px;
+        }
+
+        .dt-container .dt-layout-row:first-child {
+            margin-top: 20px;
+        }
+
+        .dt-container .dt-layout-cell {
+            display: flex;
+            align-items: center;
+        }
+
+        .dt-container .dt-length,
+        .dt-container .dt-search {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dt-container .dt-length label,
+        .dt-container .dt-search label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .dt-container .dt-length select {
+            width: 65px !important;
+            min-width: 65px;
+            height: 36px;
+            padding: 5px 8px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fff;
+            color: var(--text);
+        }
+
+        .dt-container .dt-search input {
+            width: 190px;
+            height: 36px;
+            padding: 7px 11px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            margin-left: 0 !important;
+            color: var(--text);
+        }
+
+        .dt-container .dt-search input:focus,
+        .dt-container .dt-length select:focus {
+            outline: none;
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(40, 120, 207, .10);
+        }
+
+        .dt-container .dt-info {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .dt-container .dt-paging .dt-paging-button {
+            border-radius: 7px !important;
+            font-size: 12px;
+        }
+
+        .dt-container .dt-paging .dt-paging-button.current {
+            background: var(--blue-soft) !important;
+            border-color: var(--line) !important;
+            color: var(--blue) !important;
+        }
+
+        .modal-content {
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            box-shadow: var(--shadow);
+        }
+
+        .modal-header {
+            padding: 20px 22px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .modal-title {
+            color: var(--blue-dark);
+            font-size: 17px;
+            font-weight: 700;
+        }
+
+        .modal-body {
+            padding: 22px;
+        }
+
+        .modal-footer {
+            padding: 15px 22px;
+            border-top: 1px solid var(--line);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 28px;
+            color: #9aabc0;
+            font-size: 10px;
+        }
+
+        @media (max-width: 900px) {
+            .sidebar {
+                position: static;
+                width: 100%;
+                height: auto;
+            }
+
+            .logout {
+                margin-top: 15px;
+            }
+
+            .main {
+                width: 100%;
+                margin-left: 0;
+            }
+        }
+
+        @media (max-width: 650px) {
+            .main {
+                padding: 18px 14px 30px;
+            }
+
+            .page-head {
+                padding: 20px;
+            }
+
+            .page-head h3 {
+                font-size: 24px;
+            }
+
+            .panel {
+                padding: 18px;
+            }
+
+            .dt-container .dt-search input {
+                width: 140px;
+            }
+        }
+    </style>
 </head>
 
 <body>
-
-<!-- SIDEBAR WALI KELAS -->
 
 <aside class="sidebar">
 
@@ -991,12 +1167,23 @@ textarea.form-control {
             Dashboard
         </a>
 
-        <a href="catat_pelanggaran.php" class="menu-link active">
+        <a href="catat_pelanggaran.php"
+           class="menu-link active"
+           aria-current="page">
             Catat Pelanggaran
+        </a>
+
+        <a href="riwayat.php" class="menu-link">
+            Riwayat
         </a>
 
         <a href="data_siswa.php" class="menu-link">
             Data Siswa
+        </a>
+
+        <!-- MENU REKAP POIN SISWA -->
+        <a href="rekap_poin.php" class="menu-link">
+            Rekap Poin Siswa
         </a>
 
         <a href="rekap_pelanggaran.php" class="menu-link">
@@ -1004,7 +1191,7 @@ textarea.form-control {
         </a>
 
         <a href="cetak_rekap.php" class="menu-link">
-            Cetak Rekap
+            Laporan
         </a>
 
         <a href="../about.php" class="menu-link">
@@ -1021,34 +1208,16 @@ textarea.form-control {
 
 </aside>
 
-<!-- KONTEN UTAMA -->
-
 <main class="main">
 
-<div class="container py-4">
-
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-        <a href="../dashboard.php" class="btn btn-secondary">
-            &larr; Kembali ke Dashboard
-        </a>
+    <div class="page-head">
+        <h3>Catat Pelanggaran</h3>
+        <p>Catat dan kelola pelanggaran siswa.</p>
     </div>
-
-    <!-- JUDUL -->
-
-    <div class="card mb-4">
-        <div class="card-body">
-            <h2 class="judul mb-1">Catat Pelanggaran</h2>
-            <p class="text-muted mb-0">
-                Catat pelanggaran seluruh siswa di sekolah dengan mudah dan terstruktur.
-            </p>
-        </div>
-    </div>
-
-    <!-- PESAN -->
 
     <?php if ($pesan !== ''): ?>
-        <div class="alert alert-<?= e($jenis_pesan); ?> mb-4">
-            <?= e($pesan); ?>
+        <div class="alert alert-<?= e($jenis_pesan) ?> mb-4">
+            <?= e($pesan) ?>
         </div>
     <?php endif; ?>
 
@@ -1072,187 +1241,195 @@ textarea.form-control {
 
     <?php endif; ?>
 
-    <!-- FORM PELANGGARAN -->
+    <!-- FORM TAMBAH PELANGGARAN -->
 
-    <div class="card mb-4">
-        <div class="card-body">
+    <section class="panel">
 
-            <h4 class="mb-1">Tambah Pelanggaran</h4>
-
-            <p class="keterangan mb-4">
+        <div class="panel-header">
+            <h4>Tambah Pelanggaran</h4>
+            <p>
                 Pilih kelas dan siswa, lalu masukkan jenis pelanggaran beserta keterangannya.
-                Tindakan dapat ditambahkan melalui tombol pada tabel riwayat.
+                Tindakan dapat ditambahkan melalui tabel riwayat.
             </p>
+        </div>
 
-            <form method="POST" action="catat_pelanggaran.php">
+        <form method="POST" action="catat_pelanggaran.php">
 
-                <div class="mb-3">
-                    <label for="nama_guru" class="form-label">
-                        Wali Kelas yang Mencatat
-                    </label>
+            <div class="mb-3">
+                <label for="nama_guru" class="form-label">
+                    Wali Kelas yang Mencatat
+                </label>
 
-                    <input
-                        type="text"
-                        id="nama_guru"
-                        class="form-control"
-                        value="<?= e($nama_guru); ?>"
-                        readonly
-                    >
+                <input
+                    type="text"
+                    id="nama_guru"
+                    class="form-control"
+                    value="<?= e($nama_guru) ?>"
+                    readonly
+                >
 
-                    <small class="text-muted">
-                        Nama pencatat diambil otomatis dari akun yang sedang login.
-                    </small>
+                <div class="form-text">
+                    Nama pencatat diambil otomatis dari akun yang sedang login.
                 </div>
+            </div>
 
-                <div class="mb-3">
-                    <label for="kelas_id" class="form-label">Kelas</label>
+            <div class="mb-3">
+                <label for="kelas_id" class="form-label">
+                    Kelas
+                </label>
 
-                    <select
-                        id="kelas_id"
-                        name="kelas_id"
-                        class="form-select"
-                        required
-                        <?= (
-                            count($daftar_kelas) === 0 ||
-                            $guru_id <= 0 ||
-                            $tahun_ajaran_id <= 0
-                        ) ? 'disabled' : ''; ?>
-                    >
-                        <option value="">-- Pilih Kelas --</option>
-
-                        <?php foreach ($daftar_kelas as $k): ?>
-                            <?php
-                            $label = labelKelas(
-                                $k['nama'],
-                                $k['tingkat'],
-                                $k['jurusan']
-                            );
-                            ?>
-
-                            <option
-                                value="<?= (int)$k['id']; ?>"
-                                <?= $kelas_awal === (int)$k['id'] ? 'selected' : ''; ?>
-                            >
-                                <?= e($label); ?>
-                            </option>
-                        <?php endforeach; ?>
-
-                    </select>
-                </div>
-
-                <div class="mb-3">
-                    <label for="siswa_id" class="form-label">Nama Siswa</label>
-
-                    <select
-                        id="siswa_id"
-                        name="siswa_id"
-                        class="form-select"
-                        required
-                        disabled
-                    >
-                        <option value="">-- Pilih kelas terlebih dahulu --</option>
-
-                        <?php foreach ($daftar_siswa as $s): ?>
-                            <option
-                                value="<?= (int)$s['id']; ?>"
-                                data-kelas="<?= (int)$s['kelas_id']; ?>"
-                            >
-                                <?= e($s['nis'] . ' - ' . $s['nama']); ?>
-                            </option>
-                        <?php endforeach; ?>
-
-                    </select>
-                </div>
-
-                <div class="mb-3">
-                    <label for="pelanggaran_id" class="form-label">
-                        Jenis Pelanggaran
-                    </label>
-
-                    <select
-                        id="pelanggaran_id"
-                        name="pelanggaran_id"
-                        class="form-select"
-                        required
-                    >
-                        <option value="">-- Pilih Pelanggaran --</option>
-
-                        <?php foreach ($daftar_jenis as $p): ?>
-                            <option
-                                value="<?= (int)$p['id']; ?>"
-                                <?= $jenis_awal === (int)$p['id'] ? 'selected' : ''; ?>
-                            >
-                                <?= e($p['kode'] . ' - ' . $p['nama']); ?>
-                                (<?= e($p['tingkat']); ?>, <?= (int)$p['poin']; ?> poin)
-                            </option>
-                        <?php endforeach; ?>
-
-                    </select>
-                </div>
-
-                <div class="mb-3">
-                    <label for="tanggal" class="form-label">Tanggal</label>
-
-                    <input
-                        type="date"
-                        id="tanggal"
-                        name="tanggal"
-                        class="form-control"
-                        value="<?= e($_POST['tanggal'] ?? date('Y-m-d')); ?>"
-                        required
-                    >
-                </div>
-
-                <div class="mb-4">
-                    <label for="keterangan" class="form-label">Keterangan</label>
-
-                    <textarea
-                        id="keterangan"
-                        name="keterangan"
-                        class="form-control"
-                        rows="4"
-                        placeholder="Contoh: Siswa membolos pada saat jam pelajaran."
-                        required
-                    ><?= e($_POST['keterangan'] ?? ''); ?></textarea>
-                </div>
-
-                <button
-                    type="submit"
-                    name="simpan"
-                    class="btn btn-primary"
+                <select
+                    id="kelas_id"
+                    name="kelas_id"
+                    class="form-select"
+                    required
                     <?= (
                         count($daftar_kelas) === 0 ||
-                        count($daftar_siswa) === 0 ||
                         $guru_id <= 0 ||
                         $tahun_ajaran_id <= 0
-                    ) ? 'disabled' : ''; ?>
+                    ) ? 'disabled' : '' ?>
                 >
-                    Simpan Pelanggaran
-                </button>
+                    <option value="">-- Pilih Kelas --</option>
 
-            </form>
+                    <?php foreach ($daftar_kelas as $k): ?>
+                        <?php
+                        $label = labelKelas(
+                            $k['nama'],
+                            $k['tingkat'],
+                            $k['jurusan']
+                        );
+                        ?>
 
-        </div>
-    </div>
+                        <option
+                            value="<?= (int)$k['id'] ?>"
+                            <?= $kelas_awal === (int)$k['id'] ? 'selected' : '' ?>
+                        >
+                            <?= e($label) ?>
+                        </option>
+                    <?php endforeach; ?>
+
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="siswa_id" class="form-label">
+                    Nama Siswa
+                </label>
+
+                <select
+                    id="siswa_id"
+                    name="siswa_id"
+                    class="form-select"
+                    required
+                    disabled
+                >
+                    <option value="">-- Pilih kelas terlebih dahulu --</option>
+
+                    <?php foreach ($daftar_siswa as $s): ?>
+                        <option
+                            value="<?= (int)$s['id'] ?>"
+                            data-kelas="<?= (int)$s['kelas_id'] ?>"
+                        >
+                            <?= e($s['nis'] . ' - ' . $s['nama']) ?>
+                        </option>
+                    <?php endforeach; ?>
+
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="pelanggaran_id" class="form-label">
+                    Jenis Pelanggaran
+                </label>
+
+                <select
+                    id="pelanggaran_id"
+                    name="pelanggaran_id"
+                    class="form-select"
+                    required
+                >
+                    <option value="">-- Pilih Pelanggaran --</option>
+
+                    <?php foreach ($daftar_jenis as $p): ?>
+                        <option
+                            value="<?= (int)$p['id'] ?>"
+                            <?= $jenis_awal === (int)$p['id'] ? 'selected' : '' ?>
+                        >
+                            <?= e($p['kode'] . ' - ' . $p['nama']) ?>
+                            (<?= e($p['tingkat']) ?>, <?= (int)$p['poin'] ?> poin)
+                        </option>
+                    <?php endforeach; ?>
+
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="tanggal" class="form-label">
+                    Tanggal
+                </label>
+
+                <input
+                    type="date"
+                    id="tanggal"
+                    name="tanggal"
+                    class="form-control"
+                    value="<?= e($_POST['tanggal'] ?? date('Y-m-d')) ?>"
+                    required
+                >
+            </div>
+
+            <div class="mb-4">
+                <label for="keterangan" class="form-label">
+                    Keterangan
+                </label>
+
+                <textarea
+                    id="keterangan"
+                    name="keterangan"
+                    class="form-control"
+                    rows="4"
+                    placeholder="Contoh: Siswa membolos pada saat jam pelajaran."
+                    required
+                ><?= e($_POST['keterangan'] ?? '') ?></textarea>
+            </div>
+
+            <button
+                type="submit"
+                name="simpan"
+                class="btn btn-primary"
+                <?= (
+                    count($daftar_kelas) === 0 ||
+                    count($daftar_siswa) === 0 ||
+                    $guru_id <= 0 ||
+                    $tahun_ajaran_id <= 0
+                ) ? 'disabled' : '' ?>
+            >
+                Simpan Pelanggaran
+            </button>
+
+        </form>
+
+    </section>
 
     <!-- RIWAYAT PELANGGARAN -->
 
-    <div class="card">
+    <section class="panel" id="riwayat">
 
-        <div class="card-body">
-
-            <h4 class="mb-1">Riwayat Pelanggaran</h4>
-
-            <p class="keterangan mb-3">
+        <div class="panel-header">
+            <h4>Riwayat Pelanggaran</h4>
+            <p>
                 Daftar pelanggaran yang telah dicatat oleh Anda pada tahun ajaran aktif.
                 Klik tombol Tindakan untuk mengisi atau memperbarui tindak lanjut.
             </p>
+        </div>
+
+        <?php if (count($daftar_riwayat) > 0): ?>
 
             <div class="table-responsive">
 
                 <table
                     id="tabelRiwayat"
-                    class="table table-bordered table-hover align-middle w-100"
+                    class="table table-hover align-middle w-100"
                 >
 
                     <thead>
@@ -1273,93 +1450,107 @@ textarea.form-control {
 
                     <tbody>
 
-                    <?php foreach ($daftar_riwayat as $i => $data): ?>
+                        <?php foreach ($daftar_riwayat as $i => $data): ?>
 
-                        <?php
-                        $kelas_tampil = $data['nama_kelas'] ?? '-';
+                            <?php
+                            $kelas_tampil = $data['nama_kelas'] ?? '-';
 
-                        if (!empty($data['nama_kelas_asli'])) {
-                            $kelas_tampil = labelKelas(
-                                $data['nama_kelas_asli'],
-                                $data['tingkat'],
-                                $data['jurusan']
+                            if (!empty($data['nama_kelas_asli'])) {
+                                $kelas_tampil = labelKelas(
+                                    $data['nama_kelas_asli'],
+                                    $data['tingkat'],
+                                    $data['jurusan']
+                                );
+                            }
+
+                            $status = trim(
+                                (string)($data['status'] ?? 'Diproses')
                             );
-                        }
 
-                        $status = trim((string)($data['status'] ?? 'Diproses'));
+                            $status_class = 'status-lain';
 
-                        $status_class = 'status-lain';
+                            if (strcasecmp($status, 'Diproses') === 0) {
+                                $status_class = 'status-diproses';
+                            } elseif (strcasecmp($status, 'Ditindaklanjuti') === 0) {
+                                $status_class = 'status-ditindaklanjuti';
+                            } elseif (strcasecmp($status, 'Selesai') === 0) {
+                                $status_class = 'status-selesai';
+                            }
 
-                        if (strcasecmp($status, 'Diproses') === 0) {
-                            $status_class = 'status-diproses';
-                        } elseif (strcasecmp($status, 'Ditindaklanjuti') === 0) {
-                            $status_class = 'status-ditindaklanjuti';
-                        } elseif (strcasecmp($status, 'Selesai') === 0) {
-                            $status_class = 'status-selesai';
-                        }
+                            $tindakan_tampil = trim(
+                                (string)($data['tindakan'] ?? '')
+                            );
+                            ?>
 
-                        $tindakan_tampil = trim((string)($data['tindakan'] ?? ''));
-                        ?>
+                            <tr>
 
-                        <tr>
-                            <td><?= $i + 1; ?></td>
+                                <td><?= $i + 1 ?></td>
 
-                            <td><?= e($data['tanggal']); ?></td>
+                                <td><?= e($data['tanggal']) ?></td>
 
-                            <td><?= e($data['nama_siswa']); ?></td>
+                                <td><?= e($data['nama_siswa']) ?></td>
 
-                            <td><?= e($kelas_tampil); ?></td>
+                                <td><?= e($kelas_tampil) ?></td>
 
-                            <td><?= e($data['nama_pelanggaran']); ?></td>
+                                <td><?= e($data['nama_pelanggaran']) ?></td>
 
-                            <td><?= e($data['nama_guru'] ?? '-'); ?></td>
+                                <td><?= e($data['nama_guru'] ?? '-') ?></td>
 
-                            <td><?= e($data['keterangan']); ?></td>
+                                <td>
+                                    <div class="keterangan">
+                                        <?= e($data['keterangan']) ?>
+                                    </div>
+                                </td>
 
-                            <td>
-                                <div class="tindakan-text">
-                                    <?= $tindakan_tampil !== ''
-                                        ? nl2br(e($tindakan_tampil))
-                                        : '<span class="text-muted">Belum ada tindakan</span>'; ?>
-                                </div>
-                            </td>
+                                <td>
+                                    <div class="tindakan-text">
+                                        <?php if ($tindakan_tampil !== ''): ?>
+                                            <?= nl2br(e($tindakan_tampil)) ?>
+                                        <?php else: ?>
+                                            <span class="text-muted">
+                                                Belum ada tindakan
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
 
-                            <td><?= (int)$data['poin']; ?></td>
+                                <td><?= (int)$data['poin'] ?></td>
 
-                            <td>
-                                <span class="status-badge <?= e($status_class); ?>">
-                                    <?= e($status); ?>
-                                </span>
-                            </td>
-
-                            <td>
-                                <?php if (strcasecmp($status, 'Selesai') === 0): ?>
-
-                                    <span class="btn-terkunci">
-                                        Selesai
+                                <td>
+                                    <span class="status-badge <?= e($status_class) ?>">
+                                        <?= e($status) ?>
                                     </span>
+                                </td>
 
-                                <?php else: ?>
+                                <td>
+                                    <?php if (strcasecmp($status, 'Selesai') === 0): ?>
 
-                                    <button
-                                        type="button"
-                                        class="btn-tindakan btn-buka-tindakan"
-                                        data-id="<?= (int)$data['id']; ?>"
-                                        data-siswa="<?= e($data['nama_siswa']); ?>"
-                                        data-pelanggaran="<?= e($data['nama_pelanggaran']); ?>"
-                                        data-tindakan="<?= e($tindakan_tampil); ?>"
-                                        data-status="<?= e($status); ?>"
-                                    >
-                                        <?= $tindakan_tampil !== ''
-                                            ? 'Ubah Tindakan'
-                                            : 'Tambah Tindakan'; ?>
-                                    </button>
+                                        <span class="btn-terkunci">
+                                            Selesai
+                                        </span>
 
-                                <?php endif; ?>
-                            </td>
-                        </tr>
+                                    <?php else: ?>
 
-                    <?php endforeach; ?>
+                                        <button
+                                            type="button"
+                                            class="btn-tindakan btn-buka-tindakan"
+                                            data-id="<?= (int)$data['id'] ?>"
+                                            data-siswa="<?= e($data['nama_siswa']) ?>"
+                                            data-pelanggaran="<?= e($data['nama_pelanggaran']) ?>"
+                                            data-tindakan="<?= e($tindakan_tampil) ?>"
+                                            data-status="<?= e($status) ?>"
+                                        >
+                                            <?= $tindakan_tampil !== ''
+                                                ? 'Ubah Tindakan'
+                                                : 'Tambah Tindakan' ?>
+                                        </button>
+
+                                    <?php endif; ?>
+                                </td>
+
+                            </tr>
+
+                        <?php endforeach; ?>
 
                     </tbody>
 
@@ -1367,17 +1558,19 @@ textarea.form-control {
 
             </div>
 
-            <?php if (count($daftar_riwayat) === 0): ?>
-                <p class="text-center text-muted py-3 mb-0">
-                    Belum ada riwayat pelanggaran.
-                </p>
-            <?php endif; ?>
+        <?php else: ?>
 
-        </div>
+            <div class="empty">
+                Belum ada riwayat pelanggaran yang dicatat oleh akun ini pada tahun ajaran aktif.
+            </div>
 
+        <?php endif; ?>
+
+    </section>
+
+    <div class="footer">
+        Sistem Pelanggaran Sekolah · Project Rekayasa Perangkat Lunak
     </div>
-
-</div>
 
 </main>
 
@@ -1397,6 +1590,7 @@ textarea.form-control {
             <form method="POST" action="catat_pelanggaran.php">
 
                 <div class="modal-header">
+
                     <div>
                         <h5 class="modal-title" id="judulModalTindakan">
                             Tindakan Pelanggaran
@@ -1413,6 +1607,7 @@ textarea.form-control {
                         data-bs-dismiss="modal"
                         aria-label="Tutup"
                     ></button>
+
                 </div>
 
                 <div class="modal-body">
@@ -1424,6 +1619,7 @@ textarea.form-control {
                     >
 
                     <div class="mb-3">
+
                         <label for="tindakan_baru" class="form-label">
                             Tindakan yang Diberikan
                         </label>
@@ -1436,9 +1632,11 @@ textarea.form-control {
                             placeholder="Contoh: Siswa diberikan teguran dan diminta membuat surat pernyataan."
                             required
                         ></textarea>
+
                     </div>
 
                     <div class="mb-2">
+
                         <label for="status_baru" class="form-label">
                             Status Pelanggaran
                         </label>
@@ -1453,15 +1651,18 @@ textarea.form-control {
                             <option value="Ditindaklanjuti">Ditindaklanjuti</option>
                             <option value="Selesai">Selesai</option>
                         </select>
+
                     </div>
 
                     <small class="text-muted">
-                        Jika status diubah menjadi Selesai, catatan tindakan tidak dapat diubah kembali.
+                        Jika status diubah menjadi Selesai,
+                        catatan tindakan tidak dapat diubah kembali.
                     </small>
 
                 </div>
 
                 <div class="modal-footer">
+
                     <button
                         type="button"
                         class="btn btn-secondary"
@@ -1477,12 +1678,12 @@ textarea.form-control {
                     >
                         Simpan Tindakan
                     </button>
+
                 </div>
 
             </form>
 
         </div>
-
     </div>
 </div>
 
@@ -1504,7 +1705,7 @@ const semuaPilihanSiswa = Array.from(
     pilihSiswa.options
 ).slice(1);
 
-const siswaAwal = <?= (int)$siswa_awal; ?>;
+const siswaAwal = <?= (int)$siswa_awal ?>;
 
 function filterSiswa(idSiswa = 0) {
 
@@ -1556,12 +1757,12 @@ pilihKelas.addEventListener('change', function() {
 
 filterSiswa(siswaAwal);
 
+
 /* =========================================
    MODAL TINDAKAN
 ========================================= */
 
 const modalTindakanElement = document.getElementById('modalTindakan');
-
 const modalTindakan = new bootstrap.Modal(modalTindakanElement);
 
 const inputId = document.getElementById('pelanggaran_siswa_id');
@@ -1583,13 +1784,14 @@ document.querySelectorAll('.btn-buka-tindakan').forEach(function(button) {
         inputTindakan.value = tindakan;
         inputStatus.value = status;
 
-        infoPelanggaran.textContent =
-            siswa + ' - ' + pelanggaran;
+        infoPelanggaran.textContent = siswa + ' - ' + pelanggaran;
 
         modalTindakan.show();
+
     });
 
 });
+
 
 /* =========================================
    DATATABLES
@@ -1597,43 +1799,31 @@ document.querySelectorAll('.btn-buka-tindakan').forEach(function(button) {
 
 $(document).ready(function() {
 
-    const jumlahRiwayat = <?= count($daftar_riwayat); ?>;
+    const jumlahRiwayat = <?= count($daftar_riwayat) ?>;
 
     if (jumlahRiwayat > 0) {
 
         $('#tabelRiwayat').DataTable({
 
-            pageLength:10,
-
-            lengthMenu:[10,25,50,100],
-
-            order:[],
-
-            scrollX:true,
+            pageLength: 10,
+            lengthMenu: [10, 25, 50, 100],
+            order: [],
+            scrollX: true,
 
             language: {
+                search: "Cari:",
+                searchPlaceholder: "Cari riwayat...",
+                lengthMenu: "Tampilkan _MENU_ data",
+                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ riwayat",
+                infoEmpty: "Tidak ada riwayat pelanggaran",
+                infoFiltered: "(disaring dari _MAX_ data)",
+                zeroRecords: "Riwayat tidak ditemukan",
+                emptyTable: "Belum ada riwayat pelanggaran",
 
-                search:"Cari:",
-
-                searchPlaceholder:"Cari riwayat...",
-
-                lengthMenu:"Tampilkan _MENU_ data",
-
-                info:"Menampilkan _START_ sampai _END_ dari _TOTAL_ riwayat",
-
-                infoEmpty:"Tidak ada riwayat pelanggaran",
-
-                infoFiltered:"(disaring dari _MAX_ data)",
-
-                zeroRecords:"Riwayat tidak ditemukan",
-
-                emptyTable:"Belum ada riwayat pelanggaran",
-
-                paginate:{
-                    previous:"Sebelumnya",
-                    next:"Berikutnya"
+                paginate: {
+                    previous: "Sebelumnya",
+                    next: "Berikutnya"
                 }
-
             }
 
         });
@@ -1641,6 +1831,28 @@ $(document).ready(function() {
     }
 
 });
+
+
+/* =========================================
+   ARAHKAN KE RIWAYAT SETELAH REDIRECT
+========================================= */
+
+if (window.location.hash === '#riwayat') {
+
+    window.addEventListener('load', function() {
+
+        const bagianRiwayat = document.getElementById('riwayat');
+
+        if (bagianRiwayat) {
+            bagianRiwayat.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+
+    });
+
+}
 
 </script>
 

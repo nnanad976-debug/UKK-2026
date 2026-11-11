@@ -3,7 +3,7 @@
 include __DIR__ . "/middleware/auth.php";
 
 $role = strtolower(trim($_SESSION['role'] ?? ''));
-$nama = $_SESSION['nama'] ?? 'User';
+$nama = $_SESSION['nama'] ?? $_SESSION['name'] ?? 'User';
 
 // Deteksi Wali Kelas dari penugasan saat login
 $isWaliKelas = (
@@ -395,14 +395,22 @@ if ($role === 'admin') {
 
             <?php elseif ($jenisDashboard === 'wali_kelas'): ?>
 
-                <!-- MENU WALI KELAS: URUTAN SUDAH DIPERBAIKI -->
+                <!-- MENU WALI KELAS -->
 
                 <a href="walikelas/catat_pelanggaran.php" class="menu-link">
                     Catat Pelanggaran
                 </a>
 
+                <a href="walikelas/riwayat.php" class="menu-link">
+                    Riwayat
+                </a>
+
                 <a href="walikelas/data_siswa.php" class="menu-link">
                     Data Siswa
+                </a>
+
+                <a href="walikelas/rekap_poin.php" class="menu-link">
+                    Rekap Poin Siswa
                 </a>
 
                 <a href="walikelas/rekap_pelanggaran.php" class="menu-link">
@@ -410,7 +418,7 @@ if ($role === 'admin') {
                 </a>
 
                 <a href="walikelas/cetak_rekap.php" class="menu-link">
-                  Laporan
+                    Laporan
                 </a>
 
             <?php else: ?>
@@ -556,12 +564,26 @@ if ($role === 'admin') {
                     <div class="card-content">
                         <h4>Catat Pelanggaran</h4>
                         <p>
-                            Catat pelanggaran siswa di seluruh sekolah
-                            dengan mudah dan terstruktur.
+                            Catat pelanggaran siswa di kelas
+                            yang menjadi tanggung jawab Anda.
                         </p>
                     </div>
 
                     <a href="walikelas/catat_pelanggaran.php" class="card-button">
+                        Buka
+                    </a>
+                </div>
+
+                <div class="card">
+                    <div class="card-content">
+                        <h4>Riwayat Pelanggaran</h4>
+                        <p>
+                            Lihat riwayat pelanggaran yang telah
+                            dicatat oleh Wali Kelas yang sedang login.
+                        </p>
+                    </div>
+
+                    <a href="walikelas/riwayat.php" class="card-button">
                         Buka
                     </a>
                 </div>
@@ -582,10 +604,24 @@ if ($role === 'admin') {
 
                 <div class="card">
                     <div class="card-content">
+                        <h4>Rekap Poin Siswa</h4>
+                        <p>
+                            Lihat jumlah pelanggaran dan akumulasi
+                            poin seluruh siswa di kelas yang Anda ampu.
+                        </p>
+                    </div>
+
+                    <a href="walikelas/rekap_poin.php" class="card-button">
+                        Buka
+                    </a>
+                </div>
+
+                <div class="card">
+                    <div class="card-content">
                         <h4>Rekap Pelanggaran</h4>
                         <p>
-                            Pantau jumlah pelanggaran
-                            dan total poin setiap siswa.
+                            Pantau data pelanggaran siswa
+                            dan perkembangan ketertiban kelas.
                         </p>
                     </div>
 

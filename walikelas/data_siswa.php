@@ -3,6 +3,10 @@
 include __DIR__ . "/../middleware/auth.php";
 include __DIR__ . "/../config/koneksi.php";
 
+/* =====================================
+   PEMERIKSAAN AKSES WALI KELAS
+===================================== */
+
 $role = strtolower(trim($_SESSION['role'] ?? ''));
 
 if (
@@ -17,8 +21,13 @@ if (
 $guru_id = (int) $_SESSION['guru_id'];
 $nama = $_SESSION['nama'] ?? 'Wali Kelas';
 
-function e($value) {
-    return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+function e($value): string
+{
+    return htmlspecialchars(
+        (string) ($value ?? ''),
+        ENT_QUOTES,
+        'UTF-8'
+    );
 }
 
 /* =====================================
@@ -54,7 +63,6 @@ $stmt->bind_param("i", $guru_id);
 $stmt->execute();
 
 $result_kelas = $stmt->get_result();
-
 $daftar_kelas = [];
 
 while ($row = $result_kelas->fetch_assoc()) {
@@ -72,29 +80,23 @@ $tahun_ajaran_id = 0;
 $nama_kelas_aktif = '';
 
 $pilihan_kelas = trim($_GET['penugasan'] ?? '');
-
 $kelas_valid = false;
 
 if ($pilihan_kelas !== '') {
-
     $bagian = explode('|', $pilihan_kelas);
 
     if (count($bagian) === 2) {
-
         $pilih_kelas_id = (int) $bagian[0];
         $pilih_tahun_id = (int) $bagian[1];
 
         foreach ($daftar_kelas as $kelas) {
-
             if (
                 (int) $kelas['kelas_id'] === $pilih_kelas_id &&
                 (int) $kelas['tahun_ajaran_id'] === $pilih_tahun_id
             ) {
-
                 $kelas_id = $pilih_kelas_id;
                 $tahun_ajaran_id = $pilih_tahun_id;
                 $nama_kelas_aktif = $kelas['nama_kelas'];
-
                 $kelas_valid = true;
                 break;
             }
@@ -103,21 +105,18 @@ if ($pilihan_kelas !== '') {
 }
 
 /* =====================================
-   JIKA BELUM MEMILIH KELAS
-   GUNAKAN PENUGASAN PERTAMA
+   DEFAULT PENUGASAN PERTAMA
 ===================================== */
 
 if (!$kelas_valid && !empty($daftar_kelas)) {
-
     $kelas_id = (int) $daftar_kelas[0]['kelas_id'];
-
     $tahun_ajaran_id = (int) $daftar_kelas[0]['tahun_ajaran_id'];
-
     $nama_kelas_aktif = $daftar_kelas[0]['nama_kelas'];
 }
 
 /* =====================================
    AMBIL DATA SISWA
+   SATU SISWA SATU PENEMPATAN
 ===================================== */
 
 $siswa = [];
@@ -133,8 +132,22 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
             s.jenis_kelamin,
             s.tanggal_lahir,
             s.alamat
-
         FROM t_kelas_siswa ks
+
+        INNER JOIN (
+            SELECT MAX(id) AS id
+            FROM t_kelas_siswa
+            WHERE kelas_id = ?
+              AND tahun_ajaran_id = ?
+              AND status_aktif = 1
+              AND tanggal_mulai <= CURDATE()
+              AND (
+                  tanggal_selesai IS NULL
+                  OR tanggal_selesai >= CURDATE()
+              )
+            GROUP BY siswa_id
+        ) penempatan_aktif
+            ON penempatan_aktif.id = ks.id
 
         INNER JOIN t_siswa s
             ON s.id = ks.siswa_id
@@ -143,11 +156,6 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
           AND ks.tahun_ajaran_id = ?
           AND ks.status_aktif = 1
           AND s.status_aktif = 1
-          AND ks.tanggal_mulai <= CURDATE()
-          AND (
-              ks.tanggal_selesai IS NULL
-              OR ks.tanggal_selesai >= CURDATE()
-          )
 
         ORDER BY s.nama ASC
     ";
@@ -159,7 +167,9 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
     }
 
     $stmt_siswa->bind_param(
-        "ii",
+        "iiii",
+        $kelas_id,
+        $tahun_ajaran_id,
         $kelas_id,
         $tahun_ajaran_id
     );
@@ -174,24 +184,29 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
 
     $stmt_siswa->close();
 }
+
+/* =====================================
+   HALAMAN AKTIF SIDEBAR
+===================================== */
+
+$halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
+
+function menuAktif(string $file, string $halamanAktifSidebar): string
+{
+    return $file === $halamanAktifSidebar ? 'active' : '';
+}
 ?>
 
 <!DOCTYPE html>
 <html lang="id">
 
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Data Siswa - Sistem Pelanggaran</title>
 
     <style>
-
         :root {
             --blue: #2878cf;
             --blue-dark: #203e68;
@@ -220,13 +235,13 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
             text-decoration: none;
         }
 
+        /* LAYOUT */
+
         .layout {
             min-height: 100vh;
         }
 
-        /* =================================
-           SIDEBAR
-        ================================= */
+        /* SIDEBAR */
 
         .sidebar {
             position: fixed;
@@ -237,7 +252,7 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
             padding: 25px 14px 16px;
             display: flex;
             flex-direction: column;
-            background: #fff;
+            background: var(--white);
             border-right: 1px solid var(--line);
             z-index: 1000;
             overflow-y: auto;
@@ -251,14 +266,16 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
 
         .brand-title {
             color: var(--blue-dark);
-            font-size: 19px;
+            font-size: 18px;
             font-weight: 700;
+            line-height: 1.4;
             margin-bottom: 5px;
         }
 
         .brand-subtitle {
             color: var(--muted);
             font-size: 12px;
+            line-height: 1.5;
         }
 
         .menu-title {
@@ -285,7 +302,7 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
             color: #5e7695;
             font-size: 13px;
             font-weight: 500;
-            transition: .2s;
+            transition: .2s ease;
         }
 
         .menu-link:hover {
@@ -314,9 +331,7 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
             background: #fff0ef;
         }
 
-        /* =================================
-           MAIN CONTENT
-        ================================= */
+        /* MAIN CONTENT */
 
         .main {
             width: calc(100% - 282px);
@@ -325,9 +340,7 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
             padding: 24px 28px 40px;
         }
 
-        /* =================================
-           TOPBAR
-        ================================= */
+        /* TOPBAR */
 
         .topbar {
             background: linear-gradient(
@@ -348,6 +361,7 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
 
         .welcome h2 {
             font-size: 25px;
+            font-weight: 700;
             color: var(--blue-dark);
             margin-bottom: 6px;
         }
@@ -355,6 +369,7 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
         .welcome p {
             font-size: 13px;
             color: var(--muted);
+            line-height: 1.6;
         }
 
         .user-box {
@@ -373,9 +388,7 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
             white-space: nowrap;
         }
 
-        /* =================================
-           PAGE HEADER
-        ================================= */
+        /* PAGE HEADER */
 
         .page-head {
             margin: 4px 6px 18px;
@@ -383,6 +396,7 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
 
         .page-head h3 {
             font-size: 28px;
+            font-weight: 700;
             color: var(--blue-dark);
             margin-bottom: 5px;
         }
@@ -390,11 +404,10 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
         .page-head p {
             color: var(--muted);
             font-size: 13px;
+            line-height: 1.6;
         }
 
-        /* =================================
-           PANEL DATA SISWA
-        ================================= */
+        /* PANEL */
 
         .panel {
             background: var(--white);
@@ -416,6 +429,7 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
         .panel-header h4 {
             color: var(--blue-dark);
             font-size: 17px;
+            font-weight: 700;
             margin-bottom: 6px;
         }
 
@@ -424,6 +438,8 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
             font-size: 12px;
             line-height: 1.6;
         }
+
+        /* PILIH KELAS */
 
         .form-select {
             min-width: 220px;
@@ -437,11 +453,15 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
             font-size: 13px;
             outline: none;
             cursor: pointer;
+            transition: .2s;
         }
 
         .form-select:focus {
             border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(40, 120, 207, .10);
         }
+
+        /* TABEL */
 
         .table-responsive {
             width: 100%;
@@ -476,10 +496,15 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
             background: #fafcff;
         }
 
+        .student-name {
+            color: var(--blue-dark);
+            font-weight: 600;
+        }
+
         .badge-gender {
             display: inline-block;
-            background: #eaf3ff;
-            color: #2878cf;
+            background: var(--blue-soft);
+            color: var(--blue);
             padding: 6px 10px;
             border-radius: 20px;
             font-size: 12px;
@@ -487,9 +512,7 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
             white-space: nowrap;
         }
 
-        /* =================================
-           TOMBOL CATAT PELANGGARAN
-        ================================= */
+        /* TOMBOL CATAT */
 
         .btn-catat {
             display: inline-flex;
@@ -502,7 +525,7 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
             font-size: 12px;
             font-weight: 600;
             white-space: nowrap;
-            transition: .2s;
+            transition: .2s ease;
         }
 
         .btn-catat:hover {
@@ -510,9 +533,7 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
             color: #fff;
         }
 
-        /* =================================
-           EMPTY STATE & FOOTER
-        ================================= */
+        /* EMPTY STATE */
 
         .empty {
             text-align: center;
@@ -521,15 +542,20 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
             font-size: 13px;
         }
 
+        /* TOTAL */
+
         .total-info {
             margin-top: 18px;
-            color: #7890ad;
+            color: var(--muted);
             font-size: 13px;
         }
 
         .total-info strong {
             color: var(--blue-dark);
+            font-weight: 700;
         }
+
+        /* FOOTER */
 
         .footer {
             text-align: center;
@@ -538,9 +564,7 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
             font-size: 10px;
         }
 
-        /* =================================
-           RESPONSIVE
-        ================================= */
+        /* RESPONSIVE */
 
         @media (max-width: 1100px) {
             .table {
@@ -549,7 +573,6 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
         }
 
         @media (max-width: 900px) {
-
             .sidebar {
                 position: static;
                 width: 100%;
@@ -567,7 +590,6 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
         }
 
         @media (max-width: 650px) {
-
             .main {
                 padding: 18px 14px 30px;
             }
@@ -595,23 +617,18 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
                 width: 100%;
             }
         }
-
     </style>
-
 </head>
 
 <body>
 
 <div class="layout">
 
-    <!-- =================================
-         SIDEBAR WALI KELAS
-    ================================= -->
+    <!-- SIDEBAR WALI KELAS -->
 
     <aside class="sidebar">
 
         <div class="brand">
-
             <div class="brand-title">
                 Sistem Pelanggaran
             </div>
@@ -619,7 +636,6 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
             <div class="brand-subtitle">
                 SMK Muhammadiyah
             </div>
-
         </div>
 
         <div class="menu-title">
@@ -643,11 +659,25 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
             </a>
 
             <a
+                href="riwayat.php"
+                class="menu-link"
+            >
+                Riwayat
+            </a>
+
+            <a
                 href="data_siswa.php"
                 class="menu-link active"
                 aria-current="page"
             >
                 Data Siswa
+            </a>
+
+            <a
+                href="rekap_poin.php"
+                class="menu-link"
+            >
+                Rekap Poin Siswa
             </a>
 
             <a
@@ -674,42 +704,31 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
         </nav>
 
         <div class="logout">
-
-            <a
-                href="../logout.php"
-                class="menu-link"
-            >
+            <a href="../logout.php" class="menu-link">
                 Logout
             </a>
-
         </div>
 
     </aside>
 
-    <!-- =================================
-         KONTEN UTAMA
-    ================================= -->
+    <!-- KONTEN UTAMA -->
 
     <main class="main">
 
         <section class="topbar">
 
             <div class="welcome">
-
                 <h2>Data Siswa</h2>
 
                 <p>
                     Lihat data siswa sesuai kelas yang menjadi tanggung jawab Anda.
                 </p>
-
             </div>
 
             <div class="user-box">
-
                 <span class="user-name">
                     <?= e($nama) ?>
                 </span>
-
             </div>
 
         </section>
@@ -729,13 +748,11 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
             <div class="panel-header">
 
                 <div>
-
                     <h4>Daftar Siswa</h4>
 
                     <p>
                         Data siswa berdasarkan kelas yang menjadi tanggung jawab Anda.
                     </p>
-
                 </div>
 
                 <?php if (!empty($daftar_kelas)): ?>
@@ -790,7 +807,6 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
                     <table class="table">
 
                         <thead>
-
                             <tr>
                                 <th>No</th>
                                 <th>NIS</th>
@@ -801,7 +817,6 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
                                 <th>Alamat</th>
                                 <th>Aksi</th>
                             </tr>
-
                         </thead>
 
                         <tbody>
@@ -809,11 +824,9 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
                             <?php if (empty($siswa)): ?>
 
                                 <tr>
-
                                     <td colspan="8" class="empty">
                                         Belum ada siswa aktif di kelas ini.
                                     </td>
-
                                 </tr>
 
                             <?php else: ?>
@@ -835,21 +848,19 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
                                         </td>
 
                                         <td>
-                                            <strong>
+                                            <span class="student-name">
                                                 <?= e($row['nama']) ?>
-                                            </strong>
+                                            </span>
                                         </td>
 
                                         <td>
-
                                             <span class="badge-gender">
-
-                                                <?= $row['jenis_kelamin'] === 'L'
+                                                <?= ($row['jenis_kelamin'] ?? '') === 'L'
                                                     ? 'Laki-laki'
-                                                    : 'Perempuan' ?>
-
+                                                    : (($row['jenis_kelamin'] ?? '') === 'P'
+                                                        ? 'Perempuan'
+                                                        : '-') ?>
                                             </span>
-
                                         </td>
 
                                         <td>
@@ -861,14 +872,12 @@ if ($kelas_id > 0 && $tahun_ajaran_id > 0) {
                                         </td>
 
                                         <td>
-
                                             <a
                                                 href="catat_pelanggaran.php?siswa_id=<?= (int) $row['id'] ?>&kelas_id=<?= $kelas_id ?>&tahun_ajaran_id=<?= $tahun_ajaran_id ?>"
                                                 class="btn-catat"
                                             >
                                                 Catat Pelanggaran
                                             </a>
-
                                         </td>
 
                                     </tr>
