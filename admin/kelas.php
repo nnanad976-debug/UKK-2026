@@ -37,7 +37,7 @@ $batasKelas = [
     'TKR' => ['X' => 5, 'XI' => 4, 'XII' => 5],
     'TSM' => ['X' => 3, 'XI' => 3, 'XII' => 3],
     'TKJ' => ['X' => 4, 'XI' => 4, 'XII' => 4],
-    'RPL' => ['X' => 2, 'XI' => 1, 'XII' => 2],
+    'RPL' => ['X' => 6, 'XI' => 6, 'XII' => 6],
     'BD'  => ['X' => 1, 'XI' => 1, 'XII' => 1]
 ];
 
@@ -753,7 +753,7 @@ document.addEventListener('DOMContentLoaded', function () {
         TKR: {X: 5, XI: 4, XII: 5},
         TSM: {X: 3, XI: 3, XII: 3},
         TKJ: {X: 4, XI: 4, XII: 4},
-        RPL: {X: 2, XI: 1, XII: 2},
+        RPL: {X: 6, XI: 6, XII: 6},
         BD:  {X: 1, XI: 1, XII: 1}
     };
 
