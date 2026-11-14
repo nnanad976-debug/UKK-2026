@@ -3,15 +3,33 @@
 include "../middleware/auth.php";
 include "../config/koneksi.php";
 
-if (strtolower($_SESSION['role'] ?? '') !== 'admin') {
+if (strtolower(trim($_SESSION['role'] ?? '')) !== 'admin') {
     http_response_code(403);
     exit("Anda tidak memiliki akses");
 }
 
+mysqli_set_charset($koneksi, 'utf8mb4');
+
 if (!function_exists('e')) {
-    function e($value): string {
+    function e($value): string
+    {
         return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
     }
+}
+
+/* ================= FUNGSI TINGKAT OTOMATIS ================= */
+
+function tingkatPelanggaran(int $poin): string
+{
+    if ($poin >= 35) {
+        return 'Berat';
+    }
+
+    if ($poin >= 11) {
+        return 'Sedang';
+    }
+
+    return 'Ringan';
 }
 
 $pesan = '';
@@ -27,7 +45,8 @@ $old = [
     'status_aktif' => '1'
 ];
 
-/* NOTIFIKASI */
+/* ================= NOTIFIKASI ================= */
+
 if (isset($_GET['berhasil'])) {
     $pesan = 'Data jenis pelanggaran berhasil ditambahkan.';
 } elseif (isset($_GET['diubah'])) {
@@ -39,7 +58,8 @@ if (isset($_GET['berhasil'])) {
     $jenis_pesan = 'danger';
 }
 
-/* PROSES TAMBAH DATA */
+/* ================= PROSES TAMBAH DATA ================= */
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan'])) {
 
     $bukaForm = true;
@@ -64,8 +84,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan'])) {
         $pesan = 'Kategori, kode, dan nama pelanggaran wajib diisi.';
         $jenis_pesan = 'danger';
 
-    } elseif ($poin === false || $poin < 0) {
-        $pesan = 'Poin harus berupa angka dan tidak boleh kurang dari 0.';
+    } elseif ($poin === false || $poin < 1) {
+        $pesan = 'Poin harus berupa angka dan minimal 1.';
         $jenis_pesan = 'danger';
 
     } elseif ($status === false || !in_array($status, [0, 1], true)) {
@@ -74,7 +94,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan'])) {
 
     } else {
 
-        /* CEK KATEGORI */
+        /* CEK KATEGORI AKTIF */
+
         $cekKategori = mysqli_prepare(
             $koneksi,
             "SELECT id
@@ -101,6 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan'])) {
         }
 
         /* CEK KODE DUPLIKAT */
+
         if ($pesan === '') {
 
             $cekKode = mysqli_prepare(
@@ -131,7 +153,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan'])) {
         }
 
         /* SIMPAN DATA */
+
         if ($pesan === '') {
+
+            $tingkat = tingkatPelanggaran((int)$poin);
 
             $stmt = mysqli_prepare(
                 $koneksi,
@@ -141,25 +166,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan'])) {
                     kode,
                     nama,
                     poin,
+                    tingkat,
                     deskripsi,
                     status_aktif
                 )
-                VALUES (?, ?, ?, ?, ?, ?)"
+                VALUES (?, ?, ?, ?, ?, ?, ?)"
             );
 
             if (!$stmt) {
-                $pesan = 'Data gagal disimpan. Silakan coba kembali.';
+                $pesan = 'Data gagal disimpan. Pastikan kolom tingkat tersedia di tabel t_pelanggaran.';
                 $jenis_pesan = 'danger';
 
             } else {
 
                 mysqli_stmt_bind_param(
                     $stmt,
-                    'issisi',
+                    'ississi',
                     $kategori_id,
                     $kode,
                     $nama,
                     $poin,
+                    $tingkat,
                     $deskripsi,
                     $status
                 );
@@ -171,17 +198,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan'])) {
                     exit;
 
                 } else {
-                    $pesan = 'Data gagal disimpan. Silakan coba kembali.';
+                    $pesan = 'Data gagal disimpan. Periksa kembali struktur tabel database.';
                     $jenis_pesan = 'danger';
-                }
 
-                mysqli_stmt_close($stmt);
+                    mysqli_stmt_close($stmt);
+                }
             }
         }
     }
 }
 
-/* AMBIL KATEGORI AKTIF */
+/* ================= AMBIL KATEGORI AKTIF ================= */
+
 $query_kategori = mysqli_query(
     $koneksi,
     "SELECT id, nama
@@ -190,7 +218,18 @@ $query_kategori = mysqli_query(
      ORDER BY nama ASC"
 );
 
-/* AMBIL DATA JENIS PELANGGARAN */
+if (!$query_kategori) {
+    die('Gagal mengambil data kategori pelanggaran.');
+}
+
+/* ================= AMBIL JENIS PELANGGARAN AKTIF ================= */
+/*
+   Hanya tampilkan jenis pelanggaran yang:
+   1. Status jenis pelanggarannya aktif.
+   2. Kategorinya masih aktif.
+   3. Tidak menampilkan data dari kategori yang dinonaktifkan.
+*/
+
 $query_data = mysqli_query(
     $koneksi,
     "SELECT
@@ -198,19 +237,23 @@ $query_data = mysqli_query(
         p.kode,
         p.nama,
         p.poin,
+        p.tingkat,
         p.deskripsi,
         p.status_aktif,
         k.nama AS nama_kategori
     FROM t_pelanggaran p
-    LEFT JOIN t_pelanggaran_kategori k
+    INNER JOIN t_pelanggaran_kategori k
         ON p.pelanggaran_kategori_id = k.id
-    WHERE p.id = (
-        SELECT MIN(p2.id)
-        FROM t_pelanggaran p2
-        WHERE p2.nama = p.nama
-          AND p2.poin = p.poin
-          AND p2.pelanggaran_kategori_id = p.pelanggaran_kategori_id
-    )
+    WHERE p.status_aktif = 1
+      AND k.status_aktif = 1
+      AND p.id = (
+          SELECT MIN(p2.id)
+          FROM t_pelanggaran p2
+          WHERE p2.nama = p.nama
+            AND p2.poin = p.poin
+            AND p2.pelanggaran_kategori_id = p.pelanggaran_kategori_id
+            AND p2.status_aktif = 1
+      )
     ORDER BY p.id DESC"
 );
 
@@ -221,14 +264,14 @@ if (!$query_data) {
 
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>Jenis Pelanggaran - Sistem Pelanggaran</title>
+    <title>Kelola Jenis Pelanggaran</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
-
     <link href="https://cdn.datatables.net/2.3.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 
     <style>
@@ -236,122 +279,116 @@ if (!$query_data) {
             --blue: #2878cf;
             --blue-dark: #203e68;
             --blue-soft: #eaf3ff;
-            --page: #f3f7fc;
-            --white: #ffffff;
-            --text: #2f435a;
             --muted: #7890ad;
             --line: #dce9f8;
         }
 
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
         body {
             margin: 0;
-            background: var(--page);
-            color: var(--text);
+            background: #f3f7fc;
+            color: #2f435a;
             font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 16px;
         }
 
-        a {
-            text-decoration: none;
-        }
-
-        /* ================= SIDEBAR ================= */
+        a { text-decoration: none; }
 
         .sidebar {
             position: fixed;
-            top: 0;
             left: 0;
+            top: 0;
             width: 282px;
             min-width: 282px;
+            max-width: 282px;
             height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: #fff;
+            border-right: 1px solid var(--line);
             padding: 25px 14px 16px;
             display: flex;
             flex-direction: column;
-            background: #ffffff;
-            border-right: 1px solid var(--line);
             z-index: 1000;
-            overflow-y: auto;
         }
 
-        .brand {
-            padding: 0 14px 20px;
-            margin-bottom: 22px;
+        .sidebar .brand {
+            padding: 0 15px 22px;
             border-bottom: 1px solid var(--line);
+            margin-bottom: 22px;
         }
 
-        .brand-title {
-            color: var(--blue-dark);
-            font-size: 19px;
+        .sidebar .brand-title {
+            font-size: 18px;
             font-weight: 700;
+            color: var(--blue-dark);
             margin-bottom: 5px;
         }
 
-        .brand-subtitle {
-            color: var(--muted);
+        .sidebar .brand-subtitle {
             font-size: 12px;
+            color: var(--muted);
         }
 
-        .menu-title {
-            margin: 0 14px 11px;
-            color: #91a5bd;
+        .sidebar .menu-title {
             font-size: 10px;
             font-weight: 700;
+            color: #9aabc0;
             letter-spacing: 1px;
             text-transform: uppercase;
+            margin: 0 15px 10px;
         }
 
-        .menu {
+        .sidebar .menu {
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 3px;
         }
 
-        .menu-link {
+        .sidebar .menu-link {
+            min-height: 43px;
             display: flex;
             align-items: center;
-            min-height: 42px;
-            padding: 11px 14px;
-            border-radius: 9px;
+            padding: 10px 15px;
+            border-radius: 10px;
             color: #5e7695;
+            font-family: "Segoe UI", Arial, sans-serif;
             font-size: 13px;
-            transition: .2s;
+            font-weight: 400;
+            line-height: 1.5;
+            transition: background-color .15s ease, color .15s ease;
         }
 
-        .menu-link:hover {
-            background: #f2f7fd;
+        .sidebar .menu-link:hover {
+            background: var(--blue-soft);
             color: var(--blue);
         }
 
-        .menu-link.active {
+        .sidebar .menu-link.active {
             background: var(--blue-soft);
             color: var(--blue);
             font-weight: 600;
-            box-shadow: inset 3px 0 0 var(--blue);
+            box-shadow: inset 4px 0 0 var(--blue);
         }
 
-        .logout {
+        .sidebar .logout {
             margin-top: auto;
             padding-top: 14px;
             border-top: 1px solid var(--line);
         }
 
-        .logout .menu-link {
-            color: #d9534f;
-        }
+        .sidebar .logout .menu-link { color: #d9534f; }
 
-        .logout .menu-link:hover {
+        .sidebar .logout .menu-link:hover {
             background: #fff0ef;
+            color: #c03935;
         }
-
-        /* ================= KONTEN ================= */
 
         .main {
+            margin-left: 282px;
             width: calc(100% - 282px);
             min-height: 100vh;
-            margin-left: 282px;
             padding: 24px 28px 40px;
         }
 
@@ -362,9 +399,16 @@ if (!$query_data) {
             padding: 0 !important;
         }
 
-        .judul,
+        .judul, h4 { color: #234e78; }
+
+        .judul {
+            font-size: 28px;
+            font-weight: 600;
+        }
+
         h4 {
-            color: #234e78;
+            font-size: 20px;
+            font-weight: 600;
         }
 
         .card {
@@ -373,46 +417,51 @@ if (!$query_data) {
             box-shadow: 0 3px 12px rgba(35, 78, 120, .05) !important;
         }
 
-        .card-body {
-            padding: 22px;
-        }
+        .card-body { padding: 24px; }
 
         .keterangan {
             color: #71849a;
             font-size: 14px;
         }
 
-        /* ================= FORM ================= */
-
         .form-label {
             color: #405873;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 16px;
         }
 
-        .form-control,
-        .form-select {
+        .form-control, .form-select {
             border-color: #d7e3ef;
             border-radius: 7px;
             padding: 10px 12px;
-            font-size: 14px;
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 16px;
+            color: #344b63;
         }
 
-        .form-control:focus,
-        .form-select:focus {
+        .form-control::placeholder {
+            color: #9aaabd;
+            font-size: 15px;
+        }
+
+        .form-control:focus, .form-select:focus {
             border-color: #8eb5d8;
             box-shadow: 0 0 0 .2rem rgba(87, 143, 190, .14);
         }
 
         textarea.form-control {
             min-height: 100px;
+            resize: vertical;
         }
-
-        /* ================= TOMBOL ================= */
 
         .btn {
             border-radius: 7px;
-            font-size: 13px;
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 16px;
+            font-weight: 400;
+            line-height: 1.5;
+            padding: 8px 15px;
+            transition: background-color .15s ease, border-color .15s ease;
         }
 
         .btn-primary {
@@ -422,7 +471,6 @@ if (!$query_data) {
             --bs-btn-hover-color: #fff;
             --bs-btn-hover-bg: #4b7fa9;
             --bs-btn-hover-border-color: #4b7fa9;
-            padding: 8px 15px;
         }
 
         .btn-secondary {
@@ -432,7 +480,6 @@ if (!$query_data) {
             --bs-btn-hover-bg: #dceaf6;
             --bs-btn-hover-border-color: #cbddeb;
             --bs-btn-hover-color: #234e78;
-            padding: 8px 15px;
         }
 
         .btn-danger {
@@ -446,15 +493,19 @@ if (!$query_data) {
 
         .btn-sm {
             padding: 5px 11px;
+            font-size: 13px;
         }
 
-        /* ================= STATUS ================= */
+        .alert {
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 15px;
+            border-radius: 8px;
+        }
 
-        .status-aktif,
-        .status-nonaktif {
+        .status-aktif, .status-nonaktif {
             display: inline-block;
             padding: 5px 10px;
-            border-radius: 20px;
+            border-radius: 6px;
             font-size: 12px;
             font-weight: 600;
             white-space: nowrap;
@@ -470,10 +521,72 @@ if (!$query_data) {
             color: #a34f4f;
         }
 
-        /* ================= TABEL ================= */
+        .tingkat-label {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 78px;
+            padding: 7px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: .2px;
+            border: 1px solid transparent;
+            white-space: nowrap;
+            line-height: 1.2;
+        }
+
+        .tingkat-ringan {
+            color: #26734d;
+            background: #edf8f1;
+            border-color: #ccebd8;
+        }
+
+        .tingkat-sedang {
+            color: #946600;
+            background: #fff8e5;
+            border-color: #f2e1a8;
+        }
+
+        .tingkat-berat {
+            color: #b33c45;
+            background: #fff0f0;
+            border-color: #f2cccc;
+        }
+
+        #hasilTingkat {
+            display: inline-block;
+            min-width: 78px;
+            padding: 7px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            border: 1px solid transparent;
+        }
+
+        .hasil-ringan {
+            color: #26734d;
+            background: #edf8f1;
+            border-color: #ccebd8 !important;
+        }
+
+        .hasil-sedang {
+            color: #946600;
+            background: #fff8e5;
+            border-color: #f2e1a8 !important;
+        }
+
+        .hasil-berat {
+            color: #b33c45;
+            background: #fff0f0;
+            border-color: #f2cccc !important;
+        }
 
         .table {
             color: #344b63;
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 15px;
             vertical-align: middle;
             margin-bottom: 0;
         }
@@ -483,13 +596,15 @@ if (!$query_data) {
             color: #315b82;
             border-color: #dce7f1;
             font-weight: 600;
-            padding: 12px;
+            font-size: 14px;
+            padding: 13px 12px;
             white-space: nowrap;
         }
 
         .table tbody td {
             border-color: #e5edf5;
-            padding: 11px 12px;
+            padding: 12px;
+            font-size: 14px;
         }
 
         .table-hover tbody tr:hover > * {
@@ -502,31 +617,30 @@ if (!$query_data) {
             gap: 7px;
         }
 
-        .aksi form {
-            margin: 0;
+        .aksi form { margin: 0; }
+
+        #tabelJenis td:last-child { white-space: nowrap; }
+
+        .dt-container {
+            width: 100%;
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 13px;
+            color: #344b63;
         }
 
-        #tabelJenis td:last-child {
-            white-space: nowrap;
-        }
-
-        /* ================= DATATABLES ================= */
-
-        .dt-container .dt-layout-row {
-            margin: 12px 0;
-        }
+        .dt-container .dt-layout-row { margin: 12px 0; }
 
         .dt-container .dt-layout-row:first-child {
             margin-top: 22px;
             margin-bottom: 8px;
         }
 
-        /* Baris bawah: info kiri dan pagination kanan */
         .dt-container .dt-layout-row:last-child {
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 12px;
+            min-height: 40px;
             margin-top: 15px;
         }
 
@@ -536,15 +650,13 @@ if (!$query_data) {
             min-width: 0;
         }
 
-        .dt-container .dt-length,
-        .dt-container .dt-search {
+        .dt-container .dt-length, .dt-container .dt-search {
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
-        .dt-container .dt-length label,
-        .dt-container .dt-search label {
+        .dt-container .dt-length label, .dt-container .dt-search label {
             display: flex;
             align-items: center;
             gap: 8px;
@@ -562,6 +674,8 @@ if (!$query_data) {
             border-radius: 7px;
             background: #fff;
             color: #344b63;
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 13px;
         }
 
         .dt-container .dt-search input {
@@ -571,6 +685,8 @@ if (!$query_data) {
             border: 1px solid #d7e3ef;
             border-radius: 7px;
             margin-left: 0 !important;
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 13px;
         }
 
         .dt-container .dt-length select:focus,
@@ -580,9 +696,7 @@ if (!$query_data) {
             box-shadow: 0 0 0 .15rem rgba(87, 143, 190, .14);
         }
 
-        .dt-container .dt-layout-table {
-            margin-top: 8px;
-        }
+        .dt-container .dt-layout-table { margin-top: 8px; }
 
         .dt-container .dt-info {
             font-size: 13px;
@@ -593,19 +707,21 @@ if (!$query_data) {
         .dt-container .dt-paging {
             display: flex;
             justify-content: flex-end;
+            align-items: center;
+            min-height: 40px;
+            flex-shrink: 0;
         }
 
         .dt-container .dt-paging .pagination {
             display: flex;
             align-items: center;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             gap: 0;
             margin: 0;
+            padding: 0;
         }
 
-        .dt-container .dt-paging .page-item {
-            margin: 0;
-        }
+        .dt-container .dt-paging .page-item { margin: 0; }
 
         .dt-container .dt-paging .page-link {
             min-width: 36px;
@@ -613,14 +729,17 @@ if (!$query_data) {
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 6px 12px;
+            padding: 6px 11px;
             margin-left: -1px;
             border: 1px solid #d8e1e9;
             border-radius: 0;
             background: #fff;
             color: #0d6efd;
-            font-size: 14px;
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 13px;
+            line-height: 1.4;
             box-shadow: none;
+            white-space: nowrap;
         }
 
         .dt-container .dt-paging .page-item:first-child .page-link {
@@ -657,17 +776,14 @@ if (!$query_data) {
             color: #fff;
         }
 
-        .table-responsive {
-            width: 100%;
-        }
-
-        /* ================= RESPONSIVE ================= */
+        .table-responsive { width: 100%; }
 
         @media (max-width: 900px) {
             .sidebar {
                 position: relative;
                 width: 100%;
                 min-width: 100%;
+                max-width: 100%;
                 height: auto;
                 min-height: auto;
             }
@@ -678,35 +794,28 @@ if (!$query_data) {
                 padding: 18px 14px 30px;
             }
 
-            .logout {
-                margin-top: 14px;
-            }
+            .sidebar .logout { margin-top: 14px; }
 
-            .dt-container .dt-layout-row:last-child {
-                flex-wrap: wrap;
-            }
+            .dt-container .dt-layout-row:last-child { flex-wrap: wrap; }
         }
 
         @media (max-width: 576px) {
-            .card-body {
-                padding: 17px;
-            }
+            .card-body { padding: 17px; }
+            .judul { font-size: 24px; }
+            .dt-container .dt-layout-row { flex-wrap: wrap; }
+            .dt-container .dt-search input { width: 140px; }
 
-            .dt-container .dt-layout-row {
-                flex-wrap: wrap;
-            }
-
-            .dt-container .dt-search input {
-                width: 140px;
-            }
-
-            .dt-container .dt-layout-row:last-child {
-                justify-content: center;
-            }
+            .dt-container .dt-layout-row:last-child { justify-content: center; }
 
             .dt-container .dt-info {
                 width: 100%;
                 text-align: center;
+            }
+
+            .dt-container .dt-paging {
+                justify-content: center;
+                width: 100%;
+                overflow-x: auto;
             }
         }
     </style>
@@ -714,306 +823,269 @@ if (!$query_data) {
 
 <body>
 
-<!-- SIDEBAR -->
-<aside class="sidebar">
-    <?php include "layout/sidebar.php"; ?>
-</aside>
+    <aside class="sidebar">
+        <?php include "layout/sidebar.php"; ?>
+    </aside>
 
-<!-- KONTEN UTAMA -->
-<main class="main">
-    <div class="container py-2">
+    <main class="main">
+        <div class="container py-4">
 
-        <!-- TOMBOL ATAS -->
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
 
-            <a href="../dashboard.php" class="btn btn-secondary">
-                &larr; Kembali ke Dashboard
-            </a>
-
-            <button
-                type="button"
-                class="btn btn-primary"
-                id="tombolTambah"
-                data-bs-toggle="collapse"
-                data-bs-target="#formTambahJenis"
-                aria-expanded="<?= $bukaForm ? 'true' : 'false'; ?>"
-                aria-controls="formTambahJenis">
-
-                + Tambah Data Jenis Pelanggaran
-            </button>
-
-        </div>
-
-        <!-- JUDUL HALAMAN -->
-        <div class="card mb-4">
-            <div class="card-body">
-
-                <h2 class="judul mb-1">Jenis Pelanggaran</h2>
-
-                <p class="text-muted mb-0">
-                    Tambah dan kelola data jenis pelanggaran siswa.
-                </p>
-
-            </div>
-        </div>
-
-        <!-- FORM TAMBAH -->
-        <div
-            class="collapse <?= $bukaForm ? 'show' : ''; ?>"
-            id="formTambahJenis">
-
-            <div class="card mb-4">
-                <div class="card-body">
-
-                    <h4 class="mb-4">Tambah Jenis Pelanggaran</h4>
-
-                    <?php if ($pesan !== '' && $jenis_pesan === 'danger'): ?>
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-
-                            <?= e($pesan); ?>
-
-                            <button
-                                type="button"
-                                class="btn-close"
-                                data-bs-dismiss="alert"
-                                aria-label="Tutup">
-                            </button>
-
-                        </div>
-                    <?php endif; ?>
-
-                    <form
-                        method="POST"
-                        action="jenis_pelanggaran.php"
-                        id="formJenis"
-                        autocomplete="off">
-
-                        <div class="mb-3">
-                            <label for="pelanggaran_kategori_id" class="form-label">
-                                Kategori Pelanggaran
-                            </label>
-
-                            <select
-                                name="pelanggaran_kategori_id"
-                                id="pelanggaran_kategori_id"
-                                class="form-select"
-                                required>
-
-                                <option value="">-- Pilih Kategori --</option>
-
-                                <?php if ($query_kategori): ?>
-                                    <?php while ($kategori = mysqli_fetch_assoc($query_kategori)): ?>
-
-                                        <option
-                                            value="<?= e($kategori['id']); ?>"
-                                            <?= (string)$old['pelanggaran_kategori_id'] === (string)$kategori['id'] ? 'selected' : ''; ?>>
-
-                                            <?= e($kategori['nama']); ?>
-
-                                        </option>
-
-                                    <?php endwhile; ?>
-                                <?php endif; ?>
-
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="kode" class="form-label">
-                                Kode Pelanggaran
-                            </label>
-
-                            <input
-                                type="text"
-                                name="kode"
-                                id="kode"
-                                class="form-control"
-                                placeholder="Contoh: PLG001"
-                                value="<?= e($old['kode']); ?>"
-                                required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="nama" class="form-label">
-                                Nama Pelanggaran
-                            </label>
-
-                            <input
-                                type="text"
-                                name="nama"
-                                id="nama"
-                                class="form-control"
-                                placeholder="Masukkan nama pelanggaran"
-                                value="<?= e($old['nama']); ?>"
-                                required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="poin" class="form-label">
-                                Poin Pelanggaran
-                            </label>
-
-                            <input
-                                type="number"
-                                name="poin"
-                                id="poin"
-                                class="form-control"
-                                min="0"
-                                placeholder="Masukkan jumlah poin"
-                                value="<?= e($old['poin']); ?>"
-                                required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="deskripsi" class="form-label">
-                                Deskripsi
-                            </label>
-
-                            <textarea
-                                name="deskripsi"
-                                id="deskripsi"
-                                class="form-control"
-                                placeholder="Masukkan deskripsi pelanggaran"><?= e($old['deskripsi']); ?></textarea>
-                        </div>
-
-                        <div class="mb-4">
-                            <label for="status_aktif" class="form-label">
-                                Status
-                            </label>
-
-                            <select
-                                name="status_aktif"
-                                id="status_aktif"
-                                class="form-select"
-                                required>
-
-                                <option
-                                    value="1"
-                                    <?= (string)$old['status_aktif'] === '1' ? 'selected' : ''; ?>>
-                                    Aktif
-                                </option>
-
-                                <option
-                                    value="0"
-                                    <?= (string)$old['status_aktif'] === '0' ? 'selected' : ''; ?>>
-                                    Tidak Aktif
-                                </option>
-
-                            </select>
-                        </div>
-
-                        <button
-                            type="submit"
-                            name="simpan"
-                            value="1"
-                            class="btn btn-primary">
-                            Simpan
-                        </button>
-
-                        <button
-                            type="button"
-                            class="btn btn-secondary"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#formTambahJenis">
-                            Tutup Form
-                        </button>
-
-                    </form>
-
-                </div>
-            </div>
-        </div>
-
-        <!-- NOTIFIKASI BERHASIL -->
-        <?php if ($pesan !== '' && $jenis_pesan === 'success'): ?>
-
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-
-                <?= e($pesan); ?>
+                <a href="../dashboard.php" class="btn btn-secondary">
+                    &larr; Kembali ke Dashboard
+                </a>
 
                 <button
                     type="button"
-                    class="btn-close"
-                    data-bs-dismiss="alert"
-                    aria-label="Tutup">
+                    class="btn btn-primary"
+                    id="tombolTambah"
+                    style="<?= $bukaForm ? 'display:none;' : ''; ?>">
+                    + Tambah Jenis Pelanggaran
                 </button>
 
             </div>
 
-        <?php endif; ?>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2 class="judul mb-1">Kelola Jenis Pelanggaran</h2>
+                    <p class="text-muted mb-0">
+                        Tambah dan kelola jenis pelanggaran siswa beserta poinnya.
+                    </p>
+                </div>
+            </div>
 
-        <!-- TABEL DATA -->
-        <div class="card">
-            <div class="card-body">
+            <?php if ($pesan !== ''): ?>
+                <div
+                    class="alert alert-<?= e($jenis_pesan); ?> alert-dismissible fade show"
+                    role="alert">
 
-                <h4 class="mb-1">Data Jenis Pelanggaran</h4>
+                    <?= e($pesan); ?>
 
-                <p class="keterangan mb-3">
-                    Daftar jenis pelanggaran siswa berdasarkan kategori dan poin.
-                </p>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert"
+                        aria-label="Tutup">
+                    </button>
+                </div>
+            <?php endif; ?>
 
-                <div class="table-responsive">
+            <div
+                id="formTambahJenis"
+                style="<?= $bukaForm ? '' : 'display:none;'; ?>">
 
-                    <table
-                        id="tabelJenis"
-                        class="table table-bordered table-hover align-middle w-100">
+                <div class="card mb-4">
+                    <div class="card-body">
 
-                        <thead>
-                            <tr>
-                                <th style="width:60px">No</th>
-                                <th>Kode</th>
-                                <th>Kategori</th>
-                                <th>Nama Pelanggaran</th>
-                                <th>Poin</th>
-                                <th>Deskripsi</th>
-                                <th>Status</th>
-                                <th style="width:150px">Aksi</th>
-                            </tr>
-                        </thead>
+                        <h4 class="mb-4">Tambah Jenis Pelanggaran</h4>
 
-                        <tbody>
+                        <form method="POST" action="jenis_pelanggaran.php" id="formJenis">
 
-                            <?php if (mysqli_num_rows($query_data) > 0): ?>
+                            <div class="mb-3">
+                                <label for="pelanggaran_kategori_id" class="form-label">
+                                    Kategori Pelanggaran
+                                </label>
+
+                                <select
+                                    name="pelanggaran_kategori_id"
+                                    id="pelanggaran_kategori_id"
+                                    class="form-select"
+                                    required>
+
+                                    <option value="">-- Pilih Kategori --</option>
+
+                                    <?php while ($kategori = mysqli_fetch_assoc($query_kategori)): ?>
+                                        <option
+                                            value="<?= (int)$kategori['id']; ?>"
+                                            <?= (string)$old['pelanggaran_kategori_id'] === (string)$kategori['id'] ? 'selected' : ''; ?>>
+                                            <?= e($kategori['nama']); ?>
+                                        </option>
+                                    <?php endwhile; ?>
+
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="kode" class="form-label">Kode Pelanggaran</label>
+
+                                <input
+                                    type="text"
+                                    name="kode"
+                                    id="kode"
+                                    class="form-control"
+                                    placeholder="Contoh: PLG-052"
+                                    maxlength="30"
+                                    value="<?= e($old['kode']); ?>"
+                                    required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="nama" class="form-label">Nama Pelanggaran</label>
+
+                                <input
+                                    type="text"
+                                    name="nama"
+                                    id="nama"
+                                    class="form-control"
+                                    placeholder="Masukkan nama pelanggaran"
+                                    maxlength="150"
+                                    value="<?= e($old['nama']); ?>"
+                                    required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="poin" class="form-label">Poin Pelanggaran</label>
+
+                                <input
+                                    type="number"
+                                    name="poin"
+                                    id="poin"
+                                    class="form-control"
+                                    placeholder="Masukkan jumlah poin"
+                                    min="1"
+                                    step="1"
+                                    value="<?= e($old['poin']); ?>"
+                                    required>
+
+                                <small class="text-muted d-block mt-2">
+                                    Tingkat ditentukan otomatis berdasarkan jumlah poin.
+                                </small>
+
+                                <div class="mt-3">
+                                    <span class="text-muted me-2">Tingkat otomatis:</span>
+                                    <strong id="hasilTingkat">Belum ditentukan</strong>
+                                </div>
+
+                                <small class="text-muted d-block mt-2">
+                                    1–10 poin: Ringan | 11–34 poin: Sedang | 35 poin ke atas: Berat
+                                </small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="deskripsi" class="form-label">Deskripsi</label>
+
+                                <textarea
+                                    name="deskripsi"
+                                    id="deskripsi"
+                                    class="form-control"
+                                    rows="4"
+                                    placeholder="Masukkan deskripsi pelanggaran"><?= e($old['deskripsi']); ?></textarea>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="status_aktif" class="form-label">Status</label>
+
+                                <select
+                                    name="status_aktif"
+                                    id="status_aktif"
+                                    class="form-select"
+                                    required>
+
+                                    <option
+                                        value="1"
+                                        <?= (string)$old['status_aktif'] === '1' ? 'selected' : ''; ?>>
+                                        Aktif
+                                    </option>
+
+                                    <option
+                                        value="0"
+                                        <?= (string)$old['status_aktif'] === '0' ? 'selected' : ''; ?>>
+                                        Tidak Aktif
+                                    </option>
+
+                                </select>
+                            </div>
+
+                            <button type="submit" name="simpan" class="btn btn-primary">
+                                Simpan Jenis Pelanggaran
+                            </button>
+
+                            <button type="button" class="btn btn-secondary" id="tombolBatal">
+                                Batal
+                            </button>
+
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+
+                    <h4 class="mb-1">Data Jenis Pelanggaran</h4>
+
+                    <p class="keterangan mb-3">
+                        Menampilkan jenis pelanggaran yang aktif dari kategori aktif.
+                    </p>
+
+                    <div class="table-responsive">
+                        <table
+                            class="table table-bordered table-hover align-middle"
+                            id="tabelJenis"
+                            style="width:100%;">
+
+                            <thead>
+                                <tr>
+                                    <th style="width:60px;">No</th>
+                                    <th>Kode</th>
+                                    <th>Kategori</th>
+                                    <th>Nama Pelanggaran</th>
+                                    <th>Poin</th>
+                                    <th>Tingkat</th>
+                                    <th>Status</th>
+                                    <th style="width:140px;">Aksi</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                <?php $no = 1; ?>
 
                                 <?php while ($data = mysqli_fetch_assoc($query_data)): ?>
 
+                                    <?php
+                                    $tingkat = $data['tingkat'] ?? '';
+
+                                    if ($tingkat === 'Berat') {
+                                        $classTingkat = 'tingkat-berat';
+                                    } elseif ($tingkat === 'Sedang') {
+                                        $classTingkat = 'tingkat-sedang';
+                                    } else {
+                                        $classTingkat = 'tingkat-ringan';
+                                    }
+                                    ?>
+
                                     <tr>
-                                        <td></td>
+                                        <td><?= $no++; ?></td>
+
+                                        <td><?= e($data['kode']); ?></td>
+
+                                        <td><?= e($data['nama_kategori'] ?? '-'); ?></td>
 
                                         <td>
-                                            <?= e($data['kode']); ?>
-                                        </td>
+                                            <div class="fw-semibold">
+                                                <?= e($data['nama']); ?>
+                                            </div>
 
-                                        <td>
-                                            <?= e($data['nama_kategori'] ?? '-'); ?>
-                                        </td>
-
-                                        <td>
-                                            <?= e($data['nama']); ?>
-                                        </td>
-
-                                        <td>
-                                            <?= e($data['poin']); ?>
-                                        </td>
-
-                                        <td>
-                                            <?= e($data['deskripsi'] ?: '-'); ?>
-                                        </td>
-
-                                        <td>
-                                            <?php if ((int)$data['status_aktif'] === 1): ?>
-
-                                                <span class="status-aktif">
-                                                    Aktif
-                                                </span>
-
-                                            <?php else: ?>
-
-                                                <span class="status-nonaktif">
-                                                    Tidak Aktif
-                                                </span>
-
+                                            <?php if (!empty($data['deskripsi'])): ?>
+                                                <small class="text-muted">
+                                                    <?= e($data['deskripsi']); ?>
+                                                </small>
                                             <?php endif; ?>
+                                        </td>
+
+                                        <td><?= (int)$data['poin']; ?></td>
+
+                                        <td>
+                                            <span class="tingkat-label <?= $classTingkat; ?>">
+                                                <?= e($tingkat); ?>
+                                            </span>
+                                        </td>
+
+                                        <td>
+                                            <span class="status-aktif">Aktif</span>
                                         </td>
 
                                         <td>
@@ -1025,23 +1097,12 @@ if (!$query_data) {
                                                     Edit
                                                 </a>
 
-                                                <form
-                                                    action="hapus_jenis_pelanggaran.php"
-                                                    method="POST"
-                                                    onsubmit="return confirm('Yakin ingin menghapus jenis pelanggaran ini?')">
-
-                                                    <input
-                                                        type="hidden"
-                                                        name="id"
-                                                        value="<?= (int)$data['id']; ?>">
-
-                                                    <button
-                                                        type="submit"
-                                                        class="btn btn-sm btn-danger">
-                                                        Hapus
-                                                    </button>
-
-                                                </form>
+                                                <a
+                                                    href="hapus_jenis_pelanggaran.php?id=<?= (int)$data['id']; ?>"
+                                                    class="btn btn-sm btn-danger"
+                                                    onclick="return confirm('Yakin ingin menghapus jenis pelanggaran ini?')">
+                                                    Hapus
+                                                </a>
 
                                             </div>
                                         </td>
@@ -1049,123 +1110,141 @@ if (!$query_data) {
 
                                 <?php endwhile; ?>
 
-                            <?php endif; ?>
-
-                        </tbody>
-
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
 
                 </div>
-
             </div>
+
         </div>
+    </main>
 
-    </div>
-</main>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/2.3.4/js/dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.min.js"></script>
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+            const formTambah = document.getElementById('formTambahJenis');
+            const tombolTambah = document.getElementById('tombolTambah');
+            const tombolBatal = document.getElementById('tombolBatal');
+            const formJenis = document.getElementById('formJenis');
 
-<script src="https://cdn.datatables.net/2.3.4/js/dataTables.min.js"></script>
-
-<script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.min.js"></script>
-
-<script>
-$(document).ready(function () {
-
-    /* DATATABLES */
-    $('#tabelJenis').DataTable({
-
-        pageLength: 10,
-        lengthMenu: [5, 10, 25, 50, 100],
-
-        ordering: true,
-        searching: true,
-        paging: true,
-        autoWidth: false,
-
-        // Pagination lengkap: first, previous, numbers, next, last.
-        pagingType: 'full_numbers',
-
-        order: [[1, 'desc']],
-
-        language: {
-            search: 'Cari:',
-            searchPlaceholder: 'Cari jenis pelanggaran...',
-            lengthMenu: 'Tampilkan _MENU_ data',
-
-            info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
-            infoEmpty: 'Menampilkan 0 sampai 0 dari 0 data',
-            infoFiltered: '(difilter dari _MAX_ total data)',
-
-            zeroRecords: 'Data jenis pelanggaran tidak ditemukan',
-            emptyTable: 'Belum ada data jenis pelanggaran',
-
-            paginate: {
-                first: '«',
-                previous: 'Sebelumnya',
-                next: 'Berikutnya',
-                last: '»'
-            }
-        },
-
-        columnDefs: [
-            {
-                targets: [0, 7],
-                orderable: false,
-                searchable: false
-            }
-        ],
-
-        drawCallback: function () {
-
-            const api = this.api();
-            const info = api.page.info();
-
-            api.column(0, {
-                page: 'current',
-                search: 'applied',
-                order: 'applied'
-            }).nodes().each(function (cell, i) {
-
-                cell.textContent = info.start + i + 1;
-
+            tombolTambah.addEventListener('click', function () {
+                formTambah.style.display = 'block';
+                tombolTambah.style.display = 'none';
             });
 
-        }
+            tombolBatal.addEventListener('click', function () {
+                formJenis.reset();
 
-    });
+                formTambah.style.display = 'none';
+                tombolTambah.style.display = 'inline-block';
 
-    /* BUKA DAN TUTUP FORM */
-    const formTambah = document.getElementById('formTambahJenis');
-    const tombolTambah = document.getElementById('tombolTambah');
+                perbaruiTingkat();
+            });
 
-    formTambah.addEventListener('shown.bs.collapse', function () {
+            const inputKode = document.getElementById('kode');
 
-        tombolTambah.textContent = '− Tutup Form Tambah Jenis Pelanggaran';
+            inputKode.addEventListener('input', function () {
+                this.value = this.value.toUpperCase();
+            });
 
-        formTambah.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start'
+            const inputPoin = document.getElementById('poin');
+            const hasilTingkat = document.getElementById('hasilTingkat');
+
+            function perbaruiTingkat() {
+
+                const poin = Number(inputPoin.value);
+
+                hasilTingkat.className = '';
+
+                if (
+                    inputPoin.value.trim() === '' ||
+                    !Number.isInteger(poin) ||
+                    poin < 1
+                ) {
+                    hasilTingkat.textContent = 'Belum ditentukan';
+                    hasilTingkat.style.color = '#7890ad';
+                    hasilTingkat.style.background = '#f1f5f9';
+                    hasilTingkat.style.borderColor = '#dce5ee';
+                    return;
+                }
+
+                hasilTingkat.style.background = '';
+                hasilTingkat.style.borderColor = '';
+
+                if (poin >= 35) {
+                    hasilTingkat.textContent = 'Berat';
+                    hasilTingkat.classList.add('hasil-berat');
+
+                } else if (poin >= 11) {
+                    hasilTingkat.textContent = 'Sedang';
+                    hasilTingkat.classList.add('hasil-sedang');
+
+                } else {
+                    hasilTingkat.textContent = 'Ringan';
+                    hasilTingkat.classList.add('hasil-ringan');
+                }
+            }
+
+            inputPoin.addEventListener('input', perbaruiTingkat);
+            perbaruiTingkat();
+
+            if (typeof DataTable !== 'undefined') {
+
+                new DataTable('#tabelJenis', {
+                    pageLength: 10,
+                    lengthMenu: [5, 10, 25, 50, 100],
+                    pagingType: 'full_numbers',
+                    paging: true,
+                    ordering: true,
+                    searching: true,
+                    autoWidth: false,
+                    renderer: 'bootstrap',
+
+                    language: {
+                        emptyTable: 'Belum ada data jenis pelanggaran aktif.',
+                        zeroRecords: 'Data yang dicari tidak ditemukan.',
+                        info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
+                        infoEmpty: 'Menampilkan 0 data',
+                        infoFiltered: '(disaring dari _MAX_ total data)',
+                        lengthMenu: 'Tampilkan _MENU_ data',
+                        search: 'Cari:',
+                        searchPlaceholder: 'Cari jenis pelanggaran...',
+
+                        paginate: {
+                            first: '«',
+                            last: '»',
+                            next: 'Berikutnya',
+                            previous: 'Sebelumnya'
+                        },
+
+                        aria: {
+                            paginate: {
+                                first: 'Halaman pertama',
+                                last: 'Halaman terakhir',
+                                next: 'Halaman berikutnya',
+                                previous: 'Halaman sebelumnya'
+                            }
+                        }
+                    },
+
+                    columnDefs: [
+                        {
+                            targets: 7,
+                            orderable: false,
+                            searchable: false
+                        }
+                    ]
+                });
+            }
+
         });
-
-    });
-
-    formTambah.addEventListener('hidden.bs.collapse', function () {
-
-        tombolTambah.textContent = '+ Tambah Data Jenis Pelanggaran';
-
-    });
-
-    if (formTambah.classList.contains('show')) {
-
-        tombolTambah.textContent = '− Tutup Form Tambah Jenis Pelanggaran';
-
-    }
-
-});
-</script>
+    </script>
 
 </body>
 </html>

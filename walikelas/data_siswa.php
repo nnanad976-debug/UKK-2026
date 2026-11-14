@@ -461,6 +461,37 @@ function menuAktif(string $file, string $halamanAktifSidebar): string
             box-shadow: 0 0 0 3px rgba(40, 120, 207, .10);
         }
 
+        /* PENCARIAN SISWA */
+
+        .search-input {
+            width: 260px;
+            max-width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 9px;
+            background: #fff;
+            padding: 10px 13px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 13px;
+            outline: none;
+            transition: .2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(40, 120, 207, .10);
+        }
+
+        .search-input::placeholder {
+            color: #9aabc0;
+        }
+
+        .search-info {
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
         /* TABEL */
 
         .table-responsive {
@@ -608,9 +639,14 @@ function menuAktif(string $file, string $halamanAktifSidebar): string
                 padding: 18px;
             }
 
-            .form-select {
+            .form-select,
+            .search-input {
                 width: 100%;
                 max-width: 100%;
+            }
+
+            .panel-header > div:last-child {
+                width: 100%;
             }
 
             .panel-header form {
@@ -644,24 +680,15 @@ function menuAktif(string $file, string $halamanAktifSidebar): string
 
         <nav class="menu">
 
-            <a
-                href="../dashboard.php"
-                class="menu-link"
-            >
+            <a href="../dashboard.php" class="menu-link">
                 Dashboard
             </a>
 
-            <a
-                href="catat_pelanggaran.php"
-                class="menu-link"
-            >
+            <a href="catat_pelanggaran.php" class="menu-link">
                 Catat Pelanggaran
             </a>
 
-            <a
-                href="riwayat.php"
-                class="menu-link"
-            >
+            <a href="riwayat.php" class="menu-link">
                 Riwayat
             </a>
 
@@ -673,31 +700,19 @@ function menuAktif(string $file, string $halamanAktifSidebar): string
                 Data Siswa
             </a>
 
-            <a
-                href="rekap_poin.php"
-                class="menu-link"
-            >
+            <a href="rekap_poin.php" class="menu-link">
                 Rekap Poin Siswa
             </a>
 
-            <a
-                href="rekap_pelanggaran.php"
-                class="menu-link"
-            >
+            <a href="rekap_pelanggaran.php" class="menu-link">
                 Rekap Pelanggaran
             </a>
 
-            <a
-                href="cetak_rekap.php"
-                class="menu-link"
-            >
+            <a href="cetak_rekap.php" class="menu-link">
                 Laporan
             </a>
 
-            <a
-                href="../about.php"
-                class="menu-link"
-            >
+            <a href="../about.php" class="menu-link">
                 About Me
             </a>
 
@@ -757,38 +772,51 @@ function menuAktif(string $file, string $halamanAktifSidebar): string
 
                 <?php if (!empty($daftar_kelas)): ?>
 
-                    <form method="GET">
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
 
-                        <select
-                            name="penugasan"
-                            class="form-select"
-                            onchange="this.form.submit()"
+                        <form method="GET">
+
+                            <select
+                                name="penugasan"
+                                class="form-select"
+                                onchange="this.form.submit()"
+                            >
+
+                                <?php foreach ($daftar_kelas as $kelas): ?>
+
+                                    <?php
+                                    $value_kelas =
+                                        (int) $kelas['kelas_id'] . '|' .
+                                        (int) $kelas['tahun_ajaran_id'];
+
+                                    $value_aktif =
+                                        $kelas_id . '|' .
+                                        $tahun_ajaran_id;
+                                    ?>
+
+                                    <option
+                                        value="<?= e($value_kelas) ?>"
+                                        <?= $value_kelas === $value_aktif ? 'selected' : '' ?>
+                                    >
+                                        <?= e($kelas['nama_kelas']) ?>
+                                    </option>
+
+                                <?php endforeach; ?>
+
+                            </select>
+
+                        </form>
+
+                        <input
+                            type="search"
+                            id="cariSiswa"
+                            class="search-input"
+                            placeholder="Cari nama siswa..."
+                            autocomplete="off"
+                            aria-label="Cari nama siswa"
                         >
 
-                            <?php foreach ($daftar_kelas as $kelas): ?>
-
-                                <?php
-                                $value_kelas =
-                                    (int) $kelas['kelas_id'] . '|' .
-                                    (int) $kelas['tahun_ajaran_id'];
-
-                                $value_aktif =
-                                    $kelas_id . '|' .
-                                    $tahun_ajaran_id;
-                                ?>
-
-                                <option
-                                    value="<?= e($value_kelas) ?>"
-                                    <?= $value_kelas === $value_aktif ? 'selected' : '' ?>
-                                >
-                                    <?= e($kelas['nama_kelas']) ?>
-                                </option>
-
-                            <?php endforeach; ?>
-
-                        </select>
-
-                    </form>
+                    </div>
 
                 <?php endif; ?>
 
@@ -892,7 +920,7 @@ function menuAktif(string $file, string $halamanAktifSidebar): string
 
                 </div>
 
-                <div class="total-info">
+                <div class="total-info" id="totalInfo">
 
                     Total siswa:
                     <strong><?= number_format(count($siswa)) ?></strong>
@@ -903,6 +931,8 @@ function menuAktif(string $file, string $halamanAktifSidebar): string
                     <strong><?= e($nama_kelas_aktif) ?></strong>
 
                 </div>
+
+                <div class="search-info" id="searchInfo"></div>
 
             <?php endif; ?>
 
@@ -915,6 +945,92 @@ function menuAktif(string $file, string $halamanAktifSidebar): string
     </main>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const inputCari = document.getElementById('cariSiswa');
+    const tabel = document.querySelector('.table tbody');
+    const totalInfo = document.getElementById('totalInfo');
+    const searchInfo = document.getElementById('searchInfo');
+
+    if (!inputCari || !tabel) {
+        return;
+    }
+
+    const barisSiswa = Array.from(
+        tabel.querySelectorAll('tr')
+    ).filter(function (baris) {
+        return baris.querySelector('.student-name') !== null;
+    });
+
+    const jumlahAwal = barisSiswa.length;
+
+    const pesanKosong = document.createElement('tr');
+
+    pesanKosong.innerHTML = `
+        <td colspan="8" class="empty">
+            Siswa yang dicari tidak ditemukan.
+        </td>
+    `;
+
+    inputCari.addEventListener('input', function () {
+
+        const kataKunci = this.value
+            .trim()
+            .toLocaleLowerCase('id-ID');
+
+        let jumlahTampil = 0;
+
+        barisSiswa.forEach(function (baris) {
+
+            const elemenNama = baris.querySelector('.student-name');
+
+            const nama = elemenNama.textContent
+                .trim()
+                .toLocaleLowerCase('id-ID');
+
+            const cocok = nama.includes(kataKunci);
+
+            baris.style.display = cocok ? '' : 'none';
+
+            if (cocok) {
+                jumlahTampil++;
+
+                const kolomNomor = baris.querySelector('td:first-child');
+
+                if (kolomNomor) {
+                    kolomNomor.textContent = jumlahTampil;
+                }
+            }
+        });
+
+        if (jumlahTampil === 0 && jumlahAwal > 0) {
+            tabel.appendChild(pesanKosong);
+        } else {
+            pesanKosong.remove();
+        }
+
+        if (totalInfo) {
+            totalInfo.innerHTML = `
+                Total siswa:
+                <strong>${jumlahTampil}</strong>
+                &nbsp; | &nbsp;
+                Kelas:
+                <strong><?= e($nama_kelas_aktif) ?></strong>
+            `;
+        }
+
+        if (searchInfo) {
+            searchInfo.textContent = kataKunci
+                ? `Menampilkan ${jumlahTampil} dari ${jumlahAwal} siswa.`
+                : '';
+        }
+
+    });
+
+});
+</script>
 
 </body>
 </html>

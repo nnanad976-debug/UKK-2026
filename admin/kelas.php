@@ -3,10 +3,13 @@
 include "../middleware/auth.php";
 include "../config/koneksi.php";
 
-if (strtolower($_SESSION['role'] ?? '') !== 'admin') {
+if (strtolower(trim($_SESSION['role'] ?? '')) !== 'admin') {
     http_response_code(403);
     exit("Anda tidak memiliki akses");
 }
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+mysqli_set_charset($koneksi, 'utf8mb4');
 
 if (!function_exists('e')) {
     function e($value): string
@@ -41,10 +44,14 @@ $batasKelas = [
     'BD'  => ['X' => 1, 'XI' => 1, 'XII' => 1]
 ];
 
-$tingkatInput = (string)($_POST['tingkat'] ?? '');
-$jurusanInput = (string)($_POST['jurusan'] ?? '');
-$nomorInput = (string)($_POST['nomor'] ?? '');
+$tingkatInput = trim((string)($_POST['tingkat'] ?? ''));
+$jurusanInput = trim((string)($_POST['jurusan'] ?? ''));
+$nomorInput = trim((string)($_POST['nomor'] ?? ''));
 $statusInput = (string)($_POST['status_aktif'] ?? '1');
+
+/* =========================
+   PESAN NOTIFIKASI
+========================= */
 
 if (isset($_GET['berhasil'])) {
     $pesan = 'Data kelas berhasil disimpan!';
@@ -57,11 +64,16 @@ if (isset($_GET['berhasil'])) {
     $jenis_pesan = 'success';
 }
 
+/* =========================
+   PROSES TAMBAH KELAS
+========================= */
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan'])) {
     $bukaForm = true;
 
-    $tingkat = trim($tingkatInput);
-    $jurusan = trim($jurusanInput);
+    $tingkat = $tingkatInput;
+    $jurusan = $jurusanInput;
+
     $nomor = filter_var($nomorInput, FILTER_VALIDATE_INT);
     $statusAktif = filter_var($statusInput, FILTER_VALIDATE_INT);
 
@@ -80,15 +92,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan'])) {
     } else {
         $nama = $tingkat . ' ' . $jurusan . ' ' . $nomor;
 
-        $cek = mysqli_prepare(
-            $koneksi,
-            "SELECT id FROM t_kelas WHERE nama = ? LIMIT 1"
-        );
+        try {
+            /* Periksa apakah nama kelas sudah terdaftar */
+            $cek = mysqli_prepare(
+                $koneksi,
+                "SELECT id FROM t_kelas WHERE nama = ? LIMIT 1"
+            );
 
-        if (!$cek) {
-            $pesan = 'Gagal memeriksa data kelas.';
-            $jenis_pesan = 'danger';
-        } else {
             mysqli_stmt_bind_param($cek, 's', $nama);
             mysqli_stmt_execute($cek);
 
@@ -101,40 +111,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan'])) {
                 $pesan = 'Kelas ' . $nama . ' sudah terdaftar.';
                 $jenis_pesan = 'danger';
             } else {
+                /* Simpan kelas baru */
                 $stmt = mysqli_prepare(
                     $koneksi,
-                    "INSERT INTO t_kelas (nama, tingkat, jurusan, status_aktif)
-                     VALUES (?, ?, ?, ?)"
+                    "INSERT INTO t_kelas
+                    (nama, tingkat, jurusan, status_aktif)
+                    VALUES (?, ?, ?, ?)"
                 );
 
-                if (!$stmt) {
-                    $pesan = 'Gagal menyiapkan penyimpanan data kelas.';
-                    $jenis_pesan = 'danger';
-                } else {
-                    mysqli_stmt_bind_param(
-                        $stmt,
-                        'sssi',
-                        $nama,
-                        $tingkat,
-                        $jurusan,
-                        $statusAktif
-                    );
+                mysqli_stmt_bind_param(
+                    $stmt,
+                    'sssi',
+                    $nama,
+                    $tingkat,
+                    $jurusan,
+                    $statusAktif
+                );
 
-                    if (mysqli_stmt_execute($stmt)) {
-                        mysqli_stmt_close($stmt);
-                        header('Location: kelas.php?berhasil=1');
-                        exit;
-                    }
+                mysqli_stmt_execute($stmt);
+                mysqli_stmt_close($stmt);
 
-                    $pesan = 'Data kelas gagal disimpan. Periksa data dan coba lagi.';
-                    $jenis_pesan = 'danger';
-
-                    mysqli_stmt_close($stmt);
-                }
+                header('Location: kelas.php?berhasil=1');
+                exit;
             }
+        } catch (Throwable $exception) {
+            $pesan = 'Data kelas gagal disimpan. Periksa data dan coba lagi.';
+            $jenis_pesan = 'danger';
         }
     }
 }
+
+/* =========================
+   AMBIL DATA KELAS
+========================= */
 
 $query = mysqli_query(
     $koneksi,
@@ -157,11 +166,8 @@ $query = mysqli_query(
         CAST(SUBSTRING_INDEX(nama, ' ', -1) AS UNSIGNED),
         id ASC"
 );
-
-if (!$query) {
-    die('Gagal mengambil data kelas: ' . e(mysqli_error($koneksi)));
-}
 ?>
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -190,13 +196,14 @@ if (!$query) {
             background: #f3f7fc;
             color: #2f435a;
             font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 16px;
         }
 
         a {
             text-decoration: none;
         }
 
-        /* SIDEBAR: CSS tetap berada di file kelas.php */
+        /* SIDEBAR */
         .sidebar {
             position: fixed;
             top: 0;
@@ -284,7 +291,7 @@ if (!$query) {
             color: #c03935;
         }
 
-        /* KONTEN: mulai setelah sidebar */
+        /* KONTEN */
         .main {
             width: calc(100% - 282px);
             min-height: 100vh;
@@ -316,6 +323,7 @@ if (!$query) {
 
         .form-label {
             color: #405873;
+            font-size: 16px;
             font-weight: 600;
         }
 
@@ -324,6 +332,9 @@ if (!$query) {
             border-color: #d7e3ef;
             border-radius: 7px;
             padding: 10px 12px;
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 16px;
+            color: #344b63;
         }
 
         .form-control:focus,
@@ -332,8 +343,15 @@ if (!$query) {
             box-shadow: 0 0 0 .2rem rgba(87, 143, 190, .14);
         }
 
+        /* TOMBOL UTAMA */
         .btn {
             border-radius: 7px;
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 16px;
+            font-weight: 400;
+            line-height: 1.5;
+            padding: 8px 15px;
+            transition: background-color .15s ease, border-color .15s ease;
         }
 
         .btn-primary {
@@ -343,7 +361,6 @@ if (!$query) {
             --bs-btn-hover-color: #fff;
             --bs-btn-hover-bg: #4b7fa9;
             --bs-btn-hover-border-color: #4b7fa9;
-            padding: 8px 15px;
         }
 
         .btn-secondary {
@@ -364,14 +381,21 @@ if (!$query) {
             --bs-btn-hover-border-color: #bd7777;
         }
 
-        .btn-sm {
-            padding: 5px 11px;
+        /* TOMBOL AKSI TABEL */
+        #tabelKelas .btn-sm {
+            padding: 6px 10px;
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 1.5;
+            border-radius: 6px;
         }
 
         .table {
             color: #344b63;
             vertical-align: middle;
             margin-bottom: 0;
+            font-size: 14px;
         }
 
         .table thead th {
@@ -397,7 +421,7 @@ if (!$query) {
             display: inline-block;
             padding: 5px 10px;
             border-radius: 20px;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             white-space: nowrap;
         }
@@ -413,11 +437,12 @@ if (!$query) {
         }
 
         .keterangan {
+            display: inline-block;
             color: #71849a;
-            font-size: 14px;
+            font-size: 16px;
         }
 
-        /* DataTables */
+        /* DATATABLES */
         #tabelKelas_wrapper .dt-layout-row {
             display: flex;
             align-items: center;
@@ -500,7 +525,7 @@ if (!$query) {
             white-space: nowrap;
         }
 
-        /* Tampilan layar kecil */
+        /* RESPONSIVE */
         @media (max-width: 900px) {
             .sidebar {
                 position: relative;
@@ -540,7 +565,7 @@ if (!$query) {
 
 <body>
 
-<!-- Sidebar hanya dipanggil satu kali. -->
+<!-- SIDEBAR -->
 <aside class="sidebar">
     <?php include "layout/sidebar.php"; ?>
 </aside>
@@ -548,42 +573,74 @@ if (!$query) {
 <main class="main">
     <div class="container py-2">
 
+        <!-- TOMBOL ATAS -->
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+
             <a href="../dashboard.php" class="btn btn-secondary">
                 &larr; Kembali ke Dashboard
             </a>
 
-            <button type="button" class="btn btn-primary" id="btnToggleKelas">
-                <?= $bukaForm ? 'Tutup Form' : '+ Tambah Data Kelas'; ?>
-            </button>
+            <?php if (!$bukaForm): ?>
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="btnToggleKelas"
+                    aria-expanded="false"
+                    aria-controls="formTambahKelas"
+                >
+                    + Tambah Data Kelas
+                </button>
+            <?php endif; ?>
+
         </div>
 
+        <!-- JUDUL HALAMAN -->
         <div class="card mb-4">
             <div class="card-body">
                 <h2 class="judul mb-1">Kelola Kelas</h2>
-                <p class="text-muted mb-0">Tambah dan kelola data kelas.</p>
+                <p class="text-muted mb-0">
+                    Tambah dan kelola data kelas.
+                </p>
             </div>
         </div>
 
+        <!-- NOTIFIKASI -->
         <?php if ($pesan !== ''): ?>
             <div class="alert alert-<?= e($jenis_pesan); ?> alert-dismissible fade show" role="alert">
                 <?= e($pesan); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Tutup"
+                ></button>
             </div>
         <?php endif; ?>
 
+        <!-- FORM TAMBAH KELAS -->
         <div
             class="card mb-4 <?= $bukaForm ? '' : 'd-none'; ?>"
             id="formTambahKelas"
         >
             <div class="card-body">
+
                 <h4 class="mb-4">Tambah Data Kelas</h4>
 
                 <form method="POST" action="kelas.php" id="formKelas">
+
                     <div class="mb-3">
-                        <label for="tingkat" class="form-label">Tingkat</label>
-                        <select id="tingkat" name="tingkat" class="form-select" required>
+                        <label for="tingkat" class="form-label">
+                            Tingkat
+                        </label>
+
+                        <select
+                            id="tingkat"
+                            name="tingkat"
+                            class="form-select"
+                            required
+                        >
                             <option value="">-- Pilih Tingkat --</option>
+
                             <?php foreach (['X', 'XI', 'XII'] as $pilihanTingkat): ?>
                                 <option
                                     value="<?= e($pilihanTingkat); ?>"
@@ -592,13 +649,23 @@ if (!$query) {
                                     <?= e($pilihanTingkat); ?>
                                 </option>
                             <?php endforeach; ?>
+
                         </select>
                     </div>
 
                     <div class="mb-3">
-                        <label for="jurusan" class="form-label">Jurusan</label>
-                        <select id="jurusan" name="jurusan" class="form-select" required>
+                        <label for="jurusan" class="form-label">
+                            Jurusan
+                        </label>
+
+                        <select
+                            id="jurusan"
+                            name="jurusan"
+                            class="form-select"
+                            required
+                        >
                             <option value="">-- Pilih Jurusan --</option>
+
                             <?php foreach (['TKR', 'TSM', 'TKJ', 'RPL', 'BD'] as $pilihanJurusan): ?>
                                 <option
                                     value="<?= e($pilihanJurusan); ?>"
@@ -607,55 +674,95 @@ if (!$query) {
                                     <?= e($pilihanJurusan); ?>
                                 </option>
                             <?php endforeach; ?>
+
                         </select>
                     </div>
 
                     <div class="mb-3">
-                        <label for="nomor" class="form-label">Nomor Kelas</label>
+                        <label for="nomor" class="form-label">
+                            Nomor Kelas
+                        </label>
+
                         <input
                             type="number"
                             id="nomor"
                             name="nomor"
                             class="form-control"
                             min="1"
-                            max="5"
+                            max="6"
                             value="<?= e($nomorInput); ?>"
                             placeholder="Contoh: 1"
                             required
                         >
-                        <small class="text-muted" id="keteranganNomor">
-                            Nama kelas dibuat otomatis, misalnya X TKR 1.
+
+                        <small class="keterangan" id="keteranganNomor">
+                            Pilih tingkat dan jurusan terlebih dahulu. Nama kelas dibuat otomatis.
                         </small>
                     </div>
 
                     <div class="mb-4">
-                        <label for="status_aktif" class="form-label">Status</label>
-                        <select id="status_aktif" name="status_aktif" class="form-select" required>
+                        <label for="status_aktif" class="form-label">
+                            Status
+                        </label>
+
+                        <select
+                            id="status_aktif"
+                            name="status_aktif"
+                            class="form-select"
+                            required
+                        >
                             <option value="1" <?= $statusInput === '1' ? 'selected' : ''; ?>>
                                 Aktif
                             </option>
+
                             <option value="0" <?= $statusInput === '0' ? 'selected' : ''; ?>>
                                 Tidak Aktif
                             </option>
                         </select>
                     </div>
 
-                    <button type="submit" name="simpan" value="1" class="btn btn-primary">
-                        Tambah Kelas
-                    </button>
+                    <div class="d-flex flex-wrap gap-2">
+
+                        <button
+                            type="submit"
+                            name="simpan"
+                            value="1"
+                            class="btn btn-primary"
+                        >
+                            Tambah Kelas
+                        </button>
+
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            id="btnBatalKelas"
+                        >
+                            Batal
+                        </button>
+
+                    </div>
+
                 </form>
             </div>
         </div>
 
+        <!-- TABEL DATA KELAS -->
         <div class="card">
             <div class="card-body">
+
                 <h4 class="mb-1">Data Kelas</h4>
+
                 <p class="keterangan mb-3">
                     Daftar kelas diurutkan berdasarkan jurusan, tingkat, dan nomor kelas.
                 </p>
 
                 <div class="table-responsive">
-                    <table id="tabelKelas" class="table table-bordered table-hover align-middle w-100">
+
+                    <table
+                        id="tabelKelas"
+                        class="table table-bordered table-hover align-middle w-100"
+                    >
+
                         <thead>
                             <tr>
                                 <th style="width: 60px;">No</th>
@@ -668,14 +775,23 @@ if (!$query) {
                         </thead>
 
                         <tbody>
+
                             <?php if (mysqli_num_rows($query) > 0): ?>
+
                                 <?php $no = 1; ?>
+
                                 <?php while ($kelas = mysqli_fetch_assoc($query)): ?>
+
                                     <tr>
+
                                         <td><?= $no++; ?></td>
+
                                         <td><?= e($kelas['nama'] ?? ''); ?></td>
+
                                         <td><?= e($kelas['tingkat'] ?? ''); ?></td>
+
                                         <td><?= e($kelas['jurusan'] ?? ''); ?></td>
+
                                         <td>
                                             <?php if ((int)($kelas['status_aktif'] ?? 0) === 1): ?>
                                                 <span class="status-aktif">Aktif</span>
@@ -683,8 +799,10 @@ if (!$query) {
                                                 <span class="status-nonaktif">Tidak Aktif</span>
                                             <?php endif; ?>
                                         </td>
+
                                         <td>
                                             <div class="d-flex flex-wrap gap-2">
+
                                                 <a
                                                     href="edit_kelas.php?id=<?= (int)$kelas['id']; ?>"
                                                     class="btn btn-sm btn-primary"
@@ -699,19 +817,28 @@ if (!$query) {
                                                 >
                                                     Hapus
                                                 </a>
+
                                             </div>
                                         </td>
+
                                     </tr>
+
                                 <?php endwhile; ?>
+
                             <?php else: ?>
+
                                 <tr>
                                     <td colspan="6" class="text-center text-muted py-4">
                                         Belum ada data kelas.
                                     </td>
                                 </tr>
+
                             <?php endif; ?>
+
                         </tbody>
+
                     </table>
+
                 </div>
             </div>
         </div>
@@ -726,83 +853,184 @@ if (!$query) {
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const tombol = document.getElementById('btnToggleKelas');
+
+    const tombolTambah = document.getElementById('btnToggleKelas');
+    const tombolBatal = document.getElementById('btnBatalKelas');
     const form = document.getElementById('formTambahKelas');
+    const formKelas = document.getElementById('formKelas');
+
     const tingkat = document.getElementById('tingkat');
     const jurusan = document.getElementById('jurusan');
     const nomor = document.getElementById('nomor');
     const keteranganNomor = document.getElementById('keteranganNomor');
 
-    tombol.addEventListener('click', function () {
-        const formTertutup = form.classList.contains('d-none');
+    /* =========================
+       BUKA FORM TAMBAH
+    ========================= */
 
-        if (formTertutup) {
+    if (form && tombolTambah) {
+
+        tombolTambah.addEventListener('click', function () {
+
             form.classList.remove('d-none');
-            tombol.textContent = 'Tutup Form';
+
+            tombolTambah.classList.add('d-none');
+
+            tombolTambah.setAttribute('aria-expanded', 'true');
+
             form.scrollIntoView({
                 behavior: 'smooth',
                 block: 'start'
             });
-        } else {
-            form.classList.add('d-none');
-            tombol.textContent = '+ Tambah Data Kelas';
-        }
-    });
+
+        });
+
+    }
+
+    /* =========================
+       BATAS NOMOR KELAS
+       HARUS SAMA DENGAN PHP
+    ========================= */
 
     const batas = {
-        TKR: {X: 5, XI: 4, XII: 5},
-        TSM: {X: 3, XI: 3, XII: 3},
-        TKJ: {X: 4, XI: 4, XII: 4},
-        RPL: {X: 6, XI: 6, XII: 6},
-        BD:  {X: 1, XI: 1, XII: 1}
+        TKR: {
+            X: 6,
+            XI: 6,
+            XII: 6
+        },
+        TSM: {
+            X: 6,
+            XI: 6,
+            XII: 6
+        },
+        TKJ: {
+            X: 6,
+            XI: 6,
+            XII: 6
+        },
+        RPL: {
+            X: 6,
+            XI: 6,
+            XII: 6
+        },
+        BD: {
+            X: 6,
+            XI: 6,
+            XII: 6
+        }
     };
 
     function perbaruiBatasNomor() {
-        const max = batas[jurusan.value]?.[tingkat.value];
+
+        const tingkatTerpilih = tingkat.value;
+        const jurusanTerpilih = jurusan.value;
+
+        const max = batas[jurusanTerpilih]?.[tingkatTerpilih];
 
         if (max) {
+
+            nomor.min = 1;
             nomor.max = max;
 
             keteranganNomor.textContent =
-                'Nomor kelas untuk ' + tingkat.value + ' ' +
-                jurusan.value + ' adalah 1 sampai ' + max + '.';
+                'Nomor kelas untuk ' +
+                tingkatTerpilih + ' ' +
+                jurusanTerpilih +
+                ' adalah 1 sampai ' + max + '.';
 
-            if (nomor.value !== '' && Number(nomor.value) > max) {
+            if (
+                nomor.value !== '' &&
+                Number(nomor.value) > max
+            ) {
                 nomor.value = '';
             }
+
         } else {
-            nomor.max = 5;
+
+            nomor.min = 1;
+            nomor.max = 6;
+
             keteranganNomor.textContent =
                 'Pilih tingkat dan jurusan terlebih dahulu. Nama kelas dibuat otomatis.';
+
         }
     }
 
     tingkat.addEventListener('change', perbaruiBatasNomor);
     jurusan.addEventListener('change', perbaruiBatasNomor);
+
     perbaruiBatasNomor();
 
+    /* =========================
+       TOMBOL BATAL
+    ========================= */
+
+    if (tombolBatal && form) {
+
+        tombolBatal.addEventListener('click', function () {
+
+            if (formKelas) {
+                formKelas.reset();
+            }
+
+            perbaruiBatasNomor();
+
+            form.classList.add('d-none');
+
+            if (tombolTambah) {
+                tombolTambah.classList.remove('d-none');
+                tombolTambah.setAttribute('aria-expanded', 'false');
+            }
+
+        });
+
+    }
+
+    /* =========================
+       DATATABLES
+    ========================= */
+
     if (window.jQuery && $.fn.DataTable) {
+
         $('#tabelKelas').DataTable({
+
             pageLength: 10,
-            lengthMenu: [10, 25, 50, 100],
+
+            lengthMenu: [5, 10, 25, 50, 100],
+
             ordering: true,
+
             searching: true,
+
             paging: true,
+
             autoWidth: false,
+
             language: {
+
                 search: 'Cari:',
+
                 searchPlaceholder: 'Cari nama kelas...',
+
                 lengthMenu: 'Tampilkan _MENU_ data',
+
                 info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ kelas',
+
                 infoEmpty: 'Belum ada data kelas',
+
                 infoFiltered: '(difilter dari _MAX_ total kelas)',
+
                 zeroRecords: 'Data kelas tidak ditemukan',
+
                 emptyTable: 'Belum ada data kelas',
+
                 paginate: {
                     previous: 'Sebelumnya',
                     next: 'Berikutnya'
                 }
+
             },
+
             columnDefs: [
                 {
                     targets: [0, 5],
@@ -810,8 +1038,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     searchable: false
                 }
             ]
+
         });
+
     }
+
 });
 </script>
 

@@ -3,7 +3,7 @@
 include "../middleware/auth.php";
 include "../config/koneksi.php";
 
-if (strtolower($_SESSION['role'] ?? '') !== 'admin') {
+if (strtolower(trim($_SESSION['role'] ?? '')) !== 'admin') {
     http_response_code(403);
     exit("Anda tidak memiliki akses");
 }
@@ -102,8 +102,7 @@ if (isset($_POST['simpan'])) {
     }
 }
 
-// Tampilkan kategori AKTIF saja.
-// Tidak ada pembatasan jumlah kategori aktif.
+// Tampilkan kategori aktif saja.
 $query = mysqli_query(
     $koneksi,
     "SELECT *
@@ -165,7 +164,7 @@ function e($value): string
             text-decoration: none;
         }
 
-        /* SIDEBAR: ukuran dan tampilan seperti halaman Kelola Guru */
+        /* SIDEBAR */
         .sidebar {
             position: fixed;
             left: 0;
@@ -420,7 +419,6 @@ function e($value): string
 
 <body>
 
-<!-- Sidebar menggunakan file layout yang sama dengan halaman admin -->
 <aside class="sidebar">
     <?php include "layout/sidebar.php"; ?>
 </aside>
@@ -439,10 +437,7 @@ function e($value): string
                 type="button"
                 class="btn btn-primary"
                 id="tombolTambah"
-                data-bs-toggle="collapse"
-                data-bs-target="#formTambahKategori"
-                aria-expanded="<?= $bukaForm ? 'true' : 'false'; ?>"
-                aria-controls="formTambahKategori">
+                style="<?= $bukaForm ? 'display:none;' : ''; ?>">
                 + Tambah Kategori Pelanggaran
             </button>
 
@@ -477,8 +472,8 @@ function e($value): string
 
         <!-- Form tambah kategori -->
         <div
-            class="collapse <?= $bukaForm ? 'show' : ''; ?>"
-            id="formTambahKategori">
+            id="formTambahKategori"
+            style="<?= $bukaForm ? '' : 'display:none;'; ?>">
 
             <div class="card mb-4">
                 <div class="card-body">
@@ -556,9 +551,8 @@ function e($value): string
                         <button
                             type="button"
                             class="btn btn-secondary"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#formTambahKategori">
-                            Tutup Form
+                            id="tombolBatal">
+                            Batal
                         </button>
 
                     </form>
@@ -654,23 +648,22 @@ function e($value): string
 document.addEventListener('DOMContentLoaded', function () {
     const formTambah = document.getElementById('formTambahKategori');
     const tombolTambah = document.getElementById('tombolTambah');
+    const tombolBatal = document.getElementById('tombolBatal');
+    const formKategori = document.getElementById('formKategori');
 
-    formTambah.addEventListener('shown.bs.collapse', function () {
-        tombolTambah.textContent = '− Tutup Form Kategori';
-
-        formTambah.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start'
-        });
+    // Buka form dan sembunyikan tombol tambah.
+    tombolTambah.addEventListener('click', function () {
+        formTambah.style.display = 'block';
+        tombolTambah.style.display = 'none';
     });
 
-    formTambah.addEventListener('hidden.bs.collapse', function () {
-        tombolTambah.textContent = '+ Tambah Kategori Pelanggaran';
-    });
+    // Batalkan pengisian dan tutup form.
+    tombolBatal.addEventListener('click', function () {
+        formKategori.reset();
 
-    if (formTambah.classList.contains('show')) {
-        tombolTambah.textContent = '− Tutup Form Kategori';
-    }
+        formTambah.style.display = 'none';
+        tombolTambah.style.display = 'inline-block';
+    });
 });
 </script>
 
