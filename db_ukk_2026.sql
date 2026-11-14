@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.0
+-- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Waktu pembuatan: 11 Nov 2026 pada 08.30
--- Versi server: 10.4.27-MariaDB
--- Versi PHP: 8.2.0
+-- Generation Time: Nov 14, 2026 at 04:02 PM
+-- Server version: 10.4.32-MariaDB
+-- PHP Version: 8.0.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -24,7 +24,83 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `t_guru`
+-- Table structure for table `backup_t_pelanggaran_20261114`
+--
+
+CREATE TABLE `backup_t_pelanggaran_20261114` (
+  `id` int(11) NOT NULL DEFAULT 0,
+  `pelanggaran_kategori_id` int(11) NOT NULL,
+  `kode` varchar(30) NOT NULL,
+  `nama` varchar(150) NOT NULL,
+  `poin` int(11) NOT NULL,
+  `deskripsi` text NOT NULL,
+  `status_aktif` tinyint(1) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `update_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `tingkat` varchar(20) NOT NULL DEFAULT 'Ringan'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `backup_t_pelanggaran_20261114`
+--
+
+INSERT INTO `backup_t_pelanggaran_20261114` (`id`, `pelanggaran_kategori_id`, `kode`, `nama`, `poin`, `deskripsi`, `status_aktif`, `created_at`, `update_at`, `tingkat`) VALUES
+(1, 1, 'PLG-001', 'Tidak membawa perlengkapan belajar', 2, 'Siswa tidak membawa perlengkapan belajar yang diperlukan.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(2, 1, 'PLG-002', 'Tidak mengerjakan tugas', 2, 'Siswa tidak menyelesaikan tugas yang diberikan guru.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(3, 1, 'PLG-003', 'Tidur saat pembelajaran', 3, 'Siswa tidur saat proses pembelajaran berlangsung.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(4, 1, 'PLG-004', 'Tidak melaksanakan piket sesuai jadwal', 3, 'Siswa tidak melaksanakan tugas piket sesuai jadwal.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(5, 1, 'PLG-005', 'Mengabaikan instruksi guru', 5, 'Siswa mengabaikan instruksi guru yang berkaitan dengan kegiatan belajar.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(6, 1, 'PLG-006', 'Tidak mematuhi tata tertib sekolah', 5, 'Siswa melanggar ketentuan tata tertib sekolah yang telah disosialisasikan.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(7, 1, 'PLG-007', 'Tidak mengikuti kegiatan sekolah tanpa alasan jelas', 5, 'Siswa tidak mengikuti kegiatan wajib sekolah tanpa keterangan yang dapat dipertanggungjawabkan.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(8, 1, 'PLG-008', 'Menyontek saat ulangan', 10, 'Siswa menggunakan jawaban atau bantuan yang tidak diizinkan saat ulangan.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(9, 1, 'PLG-009', 'Memalsukan tanda tangan guru atau orang tua', 15, 'Siswa memalsukan tanda tangan pada dokumen sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
+(10, 1, 'PLG-010', 'Mengulangi pelanggaran setelah pembinaan', 15, 'Siswa mengulangi pelanggaran setelah menjalani pembinaan resmi.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
+(11, 2, 'PLG-011', 'Terlambat datang ke sekolah', 2, 'Siswa tiba setelah waktu masuk sekolah yang ditentukan.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(12, 2, 'PLG-012', 'Terlambat masuk kelas setelah istirahat', 2, 'Siswa terlambat kembali ke kelas setelah waktu istirahat.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(13, 2, 'PLG-013', 'Terlambat masuk kelas tanpa alasan', 3, 'Siswa terlambat masuk kelas tanpa alasan yang jelas.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(14, 2, 'PLG-014', 'Tidak masuk kelas tanpa izin', 5, 'Siswa tidak berada di kelas saat pembelajaran tanpa izin.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(15, 2, 'PLG-015', 'Tidak mengikuti pelajaran tanpa izin', 5, 'Siswa tidak mengikuti kegiatan pembelajaran tanpa izin guru.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(16, 2, 'PLG-016', 'Tidak mengikuti upacara tanpa izin', 5, 'Siswa tidak mengikuti upacara sekolah tanpa izin atau alasan yang sah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(17, 2, 'PLG-017', 'Membolos pada jam pelajaran', 10, 'Siswa sengaja menghindari kegiatan belajar pada jam pelajaran.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(18, 2, 'PLG-018', 'Pulang sebelum waktunya tanpa izin', 10, 'Siswa meninggalkan kegiatan sekolah sebelum waktunya tanpa izin.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(19, 2, 'PLG-019', 'Meninggalkan sekolah tanpa izin', 10, 'Siswa keluar dari lingkungan sekolah tanpa izin pihak berwenang.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(20, 2, 'PLG-020', 'Memalsukan surat izin atau surat sakit', 15, 'Siswa menggunakan surat izin atau surat sakit palsu.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
+(21, 3, 'PLG-021', 'Seragam kurang rapi', 2, 'Seragam tidak dikenakan dengan rapi sesuai ketentuan sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(22, 3, 'PLG-022', 'Tidak memakai ikat pinggang sesuai ketentuan', 2, 'Siswa tidak menggunakan ikat pinggang sesuai aturan seragam.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(23, 3, 'PLG-023', 'Kaus kaki tidak sesuai ketentuan', 2, 'Siswa memakai kaus kaki yang tidak sesuai ketentuan sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(24, 3, 'PLG-024', 'Tidak memakai atribut lengkap', 3, 'Siswa tidak memakai atribut seragam yang diwajibkan.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(25, 3, 'PLG-025', 'Tidak memakai topi saat upacara', 5, 'Siswa tidak memakai topi saat diwajibkan dalam upacara.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(26, 3, 'PLG-026', 'Memakai sepatu tidak sesuai ketentuan', 5, 'Siswa menggunakan sepatu yang tidak sesuai aturan sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(27, 3, 'PLG-027', 'Memakai seragam tidak sesuai jadwal', 5, 'Siswa memakai seragam yang tidak sesuai jadwal yang ditetapkan.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(28, 3, 'PLG-028', 'Mengeluarkan baju saat diwajibkan rapi', 5, 'Siswa tidak memasukkan atau merapikan baju saat diwajibkan.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(29, 3, 'PLG-029', 'Memakai aksesori yang dilarang sekolah', 5, 'Siswa memakai aksesori yang dilarang dalam tata tertib sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(30, 3, 'PLG-030', 'Mengubah model seragam tanpa izin', 10, 'Siswa mengubah model seragam bertentangan dengan ketentuan sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(31, 4, 'PLG-031', 'Berbicara saat guru menjelaskan', 2, 'Siswa berbicara sehingga mengganggu proses penjelasan guru.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(32, 4, 'PLG-032', 'Mengganggu teman saat belajar', 3, 'Siswa mengganggu teman sehingga menghambat kegiatan belajar.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(33, 4, 'PLG-033', 'Membuat keributan di kelas', 5, 'Siswa membuat keributan yang mengganggu pembelajaran.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(34, 4, 'PLG-034', 'Menggunakan HP tanpa izin saat belajar', 5, 'Siswa menggunakan telepon genggam saat pembelajaran tanpa izin.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(35, 4, 'PLG-035', 'Berkata kasar kepada teman', 5, 'Siswa menggunakan kata-kata kasar kepada teman.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(36, 4, 'PLG-036', 'Mengganggu kegiatan sekolah', 5, 'Siswa mengganggu pelaksanaan kegiatan resmi sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(37, 4, 'PLG-037', 'Berbicara tidak sopan kepada guru', 10, 'Siswa berkata tidak sopan kepada guru.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(38, 4, 'PLG-038', 'Membawa barang yang dilarang sekolah', 10, 'Siswa membawa barang yang secara jelas dilarang tata tertib sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(39, 4, 'PLG-039', 'Merusak fasilitas sekolah dengan sengaja', 15, 'Siswa sengaja merusak fasilitas milik sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
+(40, 4, 'PLG-040', 'Melakukan perundungan atau perkelahian', 20, 'Siswa melakukan perundungan atau terlibat perkelahian yang terbukti.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
+(41, 5, 'PLG-041', 'Membuang sampah sembarangan', 2, 'Siswa membuang sampah bukan pada tempat yang disediakan.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(42, 5, 'PLG-042', 'Meninggalkan sampah setelah makan', 2, 'Siswa meninggalkan sampah makanan atau minuman di area sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(43, 5, 'PLG-043', 'Membiarkan meja dan kursi tidak rapi', 2, 'Siswa meninggalkan meja dan kursi dalam keadaan tidak rapi.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(44, 5, 'PLG-044', 'Meludah sembarangan', 3, 'Siswa meludah bukan pada tempat yang semestinya.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(45, 5, 'PLG-045', 'Tidak membersihkan area piket', 3, 'Siswa tidak membersihkan area yang menjadi tanggung jawab piketnya.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(46, 5, 'PLG-046', 'Tidak menjaga kebersihan kelas', 5, 'Siswa tidak menjaga kebersihan kelas sesuai tanggung jawabnya.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(47, 5, 'PLG-047', 'Tidak menjaga kebersihan toilet', 5, 'Siswa mengotori toilet dan tidak menjaga kebersihan fasilitas tersebut.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(48, 5, 'PLG-048', 'Mengotori fasilitas sekolah dengan sengaja', 10, 'Siswa sengaja mengotori fasilitas sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(49, 5, 'PLG-049', 'Mencoret meja, kursi, atau dinding', 10, 'Siswa mencoret fasilitas sekolah tanpa izin.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(50, 5, 'PLG-050', 'Merusak tanaman atau taman sekolah', 10, 'Siswa sengaja merusak tanaman atau fasilitas taman sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
+(51, 53, 'PLG-051', 'minum minuman keras', 100, 'rfhyhjgj', 0, '2026-11-14 05:22:04', '2026-11-14 05:22:04', 'Berat');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `t_guru`
 --
 
 CREATE TABLE `t_guru` (
@@ -39,7 +115,7 @@ CREATE TABLE `t_guru` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `t_guru`
+-- Dumping data for table `t_guru`
 --
 
 INSERT INTO `t_guru` (`id`, `nip`, `nama`, `email`, `status_aktif`, `user_id`, `created_at`, `updated_at`) VALUES
@@ -103,7 +179,7 @@ INSERT INTO `t_guru` (`id`, `nip`, `nama`, `email`, `status_aktif`, `user_id`, `
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `t_kelas`
+-- Table structure for table `t_kelas`
 --
 
 CREATE TABLE `t_kelas` (
@@ -117,7 +193,7 @@ CREATE TABLE `t_kelas` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `t_kelas`
+-- Dumping data for table `t_kelas`
 --
 
 INSERT INTO `t_kelas` (`id`, `nama`, `tingkat`, `jurusan`, `status_aktif`, `created_at`, `update_at`) VALUES
@@ -164,12 +240,14 @@ INSERT INTO `t_kelas` (`id`, `nama`, `tingkat`, `jurusan`, `status_aktif`, `crea
 (61, 'XI TKR 4', 'XI', 'TKR', 1, '2026-10-19 07:36:22', '2026-10-19 07:36:22'),
 (62, 'XI TKR 5', 'XI', 'TKR', 1, '2026-10-19 07:36:22', '2026-10-19 07:36:22'),
 (63, 'XII TKR 4', 'XII', 'TKR', 1, '2026-10-19 07:36:22', '2026-10-19 07:36:22'),
-(64, 'XII TKR 5', 'XII', 'TKR', 1, '2026-10-19 07:36:22', '2026-10-19 07:36:22');
+(64, 'XII TKR 5', 'XII', 'TKR', 1, '2026-10-19 07:36:22', '2026-10-19 07:36:22'),
+(65, 'XII RPL 3', 'XII', 'RPL', 1, '2026-11-14 02:58:43', '2026-11-14 02:58:43'),
+(66, 'XII RPL 4', 'XII', 'RPL', 1, '2026-11-14 03:57:23', '2026-11-14 03:57:23');
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `t_kelas_siswa`
+-- Table structure for table `t_kelas_siswa`
 --
 
 CREATE TABLE `t_kelas_siswa` (
@@ -185,7 +263,7 @@ CREATE TABLE `t_kelas_siswa` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `t_kelas_siswa`
+-- Dumping data for table `t_kelas_siswa`
 --
 
 INSERT INTO `t_kelas_siswa` (`id`, `siswa_id`, `tahun_ajaran_id`, `kelas_id`, `tanggal_mulai`, `tanggal_selesai`, `status_aktif`, `created_at`, `update_at`) VALUES
@@ -321,12 +399,14 @@ INSERT INTO `t_kelas_siswa` (`id`, `siswa_id`, `tahun_ajaran_id`, `kelas_id`, `t
 (212, 170, 50, 6, '2026-07-01', '2027-06-30', 1, '2026-11-10 02:27:27', '2026-11-10 02:27:27'),
 (213, 171, 50, 6, '2026-07-01', '2027-06-30', 1, '2026-11-10 02:27:27', '2026-11-10 02:27:27'),
 (214, 172, 50, 6, '2026-07-01', '2027-06-30', 1, '2026-11-10 02:27:27', '2026-11-10 02:27:27'),
-(215, 173, 50, 6, '2026-07-01', '2027-06-30', 1, '2026-11-10 02:27:27', '2026-11-10 02:27:27');
+(215, 173, 50, 6, '2026-07-01', '2027-06-30', 1, '2026-11-10 02:27:27', '2026-11-10 02:27:27'),
+(225, 175, 50, 21, '2026-07-01', '2027-06-30', 1, '2026-11-14 05:11:30', '2026-11-14 05:11:30'),
+(226, 176, 50, 65, '2026-07-01', '2027-06-30', 1, '2026-11-14 05:21:07', '2026-11-14 05:21:07');
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `t_pelanggaran`
+-- Table structure for table `t_pelanggaran`
 --
 
 CREATE TABLE `t_pelanggaran` (
@@ -343,65 +423,79 @@ CREATE TABLE `t_pelanggaran` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `t_pelanggaran`
+-- Dumping data for table `t_pelanggaran`
 --
 
 INSERT INTO `t_pelanggaran` (`id`, `pelanggaran_kategori_id`, `kode`, `nama`, `poin`, `deskripsi`, `status_aktif`, `created_at`, `update_at`, `tingkat`) VALUES
-(1, 1, 'PLG-001', 'Tidak membawa perlengkapan belajar', 2, 'Siswa tidak membawa perlengkapan belajar yang diperlukan.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
-(2, 1, 'PLG-002', 'Tidak mengerjakan tugas', 2, 'Siswa tidak menyelesaikan tugas yang diberikan guru.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
-(3, 1, 'PLG-003', 'Tidur saat pembelajaran', 3, 'Siswa tidur saat proses pembelajaran berlangsung.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
-(4, 1, 'PLG-004', 'Tidak melaksanakan piket sesuai jadwal', 3, 'Siswa tidak melaksanakan tugas piket sesuai jadwal.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
-(5, 1, 'PLG-005', 'Mengabaikan instruksi guru', 5, 'Siswa mengabaikan instruksi guru yang berkaitan dengan kegiatan belajar.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
-(6, 1, 'PLG-006', 'Tidak mematuhi tata tertib sekolah', 5, 'Siswa melanggar ketentuan tata tertib sekolah yang telah disosialisasikan.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
-(7, 1, 'PLG-007', 'Tidak mengikuti kegiatan sekolah tanpa alasan jelas', 5, 'Siswa tidak mengikuti kegiatan wajib sekolah tanpa keterangan yang dapat dipertanggungjawabkan.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
-(8, 1, 'PLG-008', 'Menyontek saat ulangan', 10, 'Siswa menggunakan jawaban atau bantuan yang tidak diizinkan saat ulangan.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
-(9, 1, 'PLG-009', 'Memalsukan tanda tangan guru atau orang tua', 15, 'Siswa memalsukan tanda tangan pada dokumen sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Berat'),
-(10, 1, 'PLG-010', 'Mengulangi pelanggaran setelah pembinaan', 15, 'Siswa mengulangi pelanggaran setelah menjalani pembinaan resmi.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Berat'),
-(11, 2, 'PLG-011', 'Terlambat datang ke sekolah', 2, 'Siswa tiba setelah waktu masuk sekolah yang ditentukan.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
-(12, 2, 'PLG-012', 'Terlambat masuk kelas setelah istirahat', 2, 'Siswa terlambat kembali ke kelas setelah waktu istirahat.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
-(13, 2, 'PLG-013', 'Terlambat masuk kelas tanpa alasan', 3, 'Siswa terlambat masuk kelas tanpa alasan yang jelas.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
-(14, 2, 'PLG-014', 'Tidak masuk kelas tanpa izin', 5, 'Siswa tidak berada di kelas saat pembelajaran tanpa izin.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
-(15, 2, 'PLG-015', 'Tidak mengikuti pelajaran tanpa izin', 5, 'Siswa tidak mengikuti kegiatan pembelajaran tanpa izin guru.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
-(16, 2, 'PLG-016', 'Tidak mengikuti upacara tanpa izin', 5, 'Siswa tidak mengikuti upacara sekolah tanpa izin atau alasan yang sah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
-(17, 2, 'PLG-017', 'Membolos pada jam pelajaran', 10, 'Siswa sengaja menghindari kegiatan belajar pada jam pelajaran.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Berat'),
-(18, 2, 'PLG-018', 'Pulang sebelum waktunya tanpa izin', 10, 'Siswa meninggalkan kegiatan sekolah sebelum waktunya tanpa izin.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Berat'),
-(19, 2, 'PLG-019', 'Meninggalkan sekolah tanpa izin', 10, 'Siswa keluar dari lingkungan sekolah tanpa izin pihak berwenang.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Berat'),
-(20, 2, 'PLG-020', 'Memalsukan surat izin atau surat sakit', 15, 'Siswa menggunakan surat izin atau surat sakit palsu.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Berat'),
-(21, 3, 'PLG-021', 'Seragam kurang rapi', 2, 'Seragam tidak dikenakan dengan rapi sesuai ketentuan sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
-(22, 3, 'PLG-022', 'Tidak memakai ikat pinggang sesuai ketentuan', 2, 'Siswa tidak menggunakan ikat pinggang sesuai aturan seragam.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
-(23, 3, 'PLG-023', 'Kaus kaki tidak sesuai ketentuan', 2, 'Siswa memakai kaus kaki yang tidak sesuai ketentuan sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
-(24, 3, 'PLG-024', 'Tidak memakai atribut lengkap', 3, 'Siswa tidak memakai atribut seragam yang diwajibkan.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
-(25, 3, 'PLG-025', 'Tidak memakai topi saat upacara', 5, 'Siswa tidak memakai topi saat diwajibkan dalam upacara.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
-(26, 3, 'PLG-026', 'Memakai sepatu tidak sesuai ketentuan', 5, 'Siswa menggunakan sepatu yang tidak sesuai aturan sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
-(27, 3, 'PLG-027', 'Memakai seragam tidak sesuai jadwal', 5, 'Siswa memakai seragam yang tidak sesuai jadwal yang ditetapkan.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
-(28, 3, 'PLG-028', 'Mengeluarkan baju saat diwajibkan rapi', 5, 'Siswa tidak memasukkan atau merapikan baju saat diwajibkan.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
-(29, 3, 'PLG-029', 'Memakai aksesori yang dilarang sekolah', 5, 'Siswa memakai aksesori yang dilarang dalam tata tertib sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
-(30, 3, 'PLG-030', 'Mengubah model seragam tanpa izin', 10, 'Siswa mengubah model seragam bertentangan dengan ketentuan sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Berat'),
-(31, 4, 'PLG-031', 'Berbicara saat guru menjelaskan', 2, 'Siswa berbicara sehingga mengganggu proses penjelasan guru.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
-(32, 4, 'PLG-032', 'Mengganggu teman saat belajar', 3, 'Siswa mengganggu teman sehingga menghambat kegiatan belajar.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
-(33, 4, 'PLG-033', 'Membuat keributan di kelas', 5, 'Siswa membuat keributan yang mengganggu pembelajaran.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
-(34, 4, 'PLG-034', 'Menggunakan HP tanpa izin saat belajar', 5, 'Siswa menggunakan telepon genggam saat pembelajaran tanpa izin.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
-(35, 4, 'PLG-035', 'Berkata kasar kepada teman', 5, 'Siswa menggunakan kata-kata kasar kepada teman.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
-(36, 4, 'PLG-036', 'Mengganggu kegiatan sekolah', 5, 'Siswa mengganggu pelaksanaan kegiatan resmi sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
-(37, 4, 'PLG-037', 'Berbicara tidak sopan kepada guru', 10, 'Siswa berkata tidak sopan kepada guru.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Berat'),
-(38, 4, 'PLG-038', 'Membawa barang yang dilarang sekolah', 10, 'Siswa membawa barang yang secara jelas dilarang tata tertib sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Berat'),
-(39, 4, 'PLG-039', 'Merusak fasilitas sekolah dengan sengaja', 15, 'Siswa sengaja merusak fasilitas milik sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Berat'),
-(40, 4, 'PLG-040', 'Melakukan perundungan atau perkelahian', 20, 'Siswa melakukan perundungan atau terlibat perkelahian yang terbukti.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Berat'),
-(41, 5, 'PLG-041', 'Membuang sampah sembarangan', 2, 'Siswa membuang sampah bukan pada tempat yang disediakan.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
-(42, 5, 'PLG-042', 'Meninggalkan sampah setelah makan', 2, 'Siswa meninggalkan sampah makanan atau minuman di area sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
-(43, 5, 'PLG-043', 'Membiarkan meja dan kursi tidak rapi', 2, 'Siswa meninggalkan meja dan kursi dalam keadaan tidak rapi.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
-(44, 5, 'PLG-044', 'Meludah sembarangan', 3, 'Siswa meludah bukan pada tempat yang semestinya.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Ringan'),
-(45, 5, 'PLG-045', 'Tidak membersihkan area piket', 3, 'Siswa tidak membersihkan area yang menjadi tanggung jawab piketnya.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
-(46, 5, 'PLG-046', 'Tidak menjaga kebersihan kelas', 5, 'Siswa tidak menjaga kebersihan kelas sesuai tanggung jawabnya.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
-(47, 5, 'PLG-047', 'Tidak menjaga kebersihan toilet', 5, 'Siswa mengotori toilet dan tidak menjaga kebersihan fasilitas tersebut.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Sedang'),
-(48, 5, 'PLG-048', 'Mengotori fasilitas sekolah dengan sengaja', 10, 'Siswa sengaja mengotori fasilitas sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Berat'),
-(49, 5, 'PLG-049', 'Mencoret meja, kursi, atau dinding', 10, 'Siswa mencoret fasilitas sekolah tanpa izin.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Berat'),
-(50, 5, 'PLG-050', 'Merusak tanaman atau taman sekolah', 10, 'Siswa sengaja merusak tanaman atau fasilitas taman sekolah.', 1, '2026-09-23 03:54:22', '2026-09-23 03:54:22', 'Berat');
+(1, 2, 'PLG-001', 'Terlambat datang ke sekolah', 5, 'Datang ke sekolah melewati waktu yang telah ditentukan.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Ringan'),
+(2, 3, 'PLG-002', 'Memakai seragam tidak sesuai ketentuan', 5, 'Mengenakan seragam yang tidak sesuai aturan sekolah.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Ringan'),
+(3, 3, 'PLG-003', 'Tidak memakai atribut seragam lengkap', 5, 'Tidak menggunakan atribut seragam sesuai ketentuan.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Ringan'),
+(4, 3, 'PLG-004', 'Memakai makeup berlebihan', 5, 'Menggunakan riasan yang tidak sesuai ketentuan sekolah.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Ringan'),
+(5, 3, 'PLG-005', 'Memakai perhiasan atau aksesori yang dilarang', 5, 'Menggunakan perhiasan atau aksesori yang tidak diperbolehkan.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Ringan'),
+(6, 3, 'PLG-006', 'Rambut tidak sesuai ketentuan sekolah', 5, 'Penataan atau model rambut tidak sesuai aturan sekolah.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Ringan'),
+(7, 3, 'PLG-007', 'Kuku panjang atau memakai kuteks', 3, 'Memiliki kuku panjang atau menggunakan kuteks.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Ringan'),
+(8, 5, 'PLG-008', 'Membuang sampah sembarangan', 5, 'Tidak membuang sampah pada tempat yang disediakan.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Ringan'),
+(9, 4, 'PLG-009', 'Tidur saat kegiatan belajar mengajar', 5, 'Tidur ketika kegiatan pembelajaran berlangsung.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Ringan'),
+(10, 4, 'PLG-010', 'Makan atau minum saat pelajaran tanpa izin', 3, 'Makan atau minum ketika pembelajaran berlangsung tanpa izin.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Ringan'),
+(11, 4, 'PLG-011', 'Membuat keributan di kelas', 5, 'Mengganggu ketertiban kegiatan belajar di kelas.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Ringan'),
+(12, 1, 'PLG-012', 'Tidak mengerjakan tugas atau PR', 5, 'Tidak menyelesaikan tugas yang diberikan guru.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Ringan'),
+(13, 1, 'PLG-013', 'Tidak membawa perlengkapan belajar', 3, 'Tidak membawa perlengkapan yang diperlukan untuk belajar.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Ringan'),
+(14, 4, 'PLG-014', 'Keluar kelas tanpa izin guru', 10, 'Meninggalkan kelas tanpa izin dari guru.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Ringan'),
+(15, 2, 'PLG-015', 'Membolos pelajaran', 15, 'Tidak mengikuti jam pelajaran tanpa izin.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Sedang'),
+(16, 2, 'PLG-016', 'Tidak masuk sekolah tanpa keterangan', 15, 'Tidak hadir di sekolah tanpa memberikan keterangan.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Sedang'),
+(17, 4, 'PLG-017', 'Menggunakan HP saat pelajaran tanpa izin', 15, 'Menggunakan telepon genggam ketika pembelajaran tanpa izin.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Sedang'),
+(18, 4, 'PLG-018', 'Menyontek saat ulangan atau ujian', 15, 'Melakukan kecurangan ketika ulangan atau ujian.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Sedang'),
+(19, 2, 'PLG-019', 'Tidak mengikuti upacara tanpa alasan jelas', 15, 'Tidak mengikuti upacara sekolah tanpa alasan yang dapat diterima.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Sedang'),
+(20, 2, 'PLG-020', 'Tidak mengikuti kegiatan wajib sekolah tanpa izin', 15, 'Tidak mengikuti kegiatan wajib sekolah tanpa izin.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Sedang'),
+(21, 4, 'PLG-021', 'Berkata kasar atau menghina teman', 15, 'Menggunakan perkataan kasar atau menghina warga sekolah.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Sedang'),
+(22, 4, 'PLG-022', 'Melakukan perundungan secara verbal', 25, 'Menghina atau merendahkan teman secara verbal.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Sedang'),
+(23, 4, 'PLG-023', 'Merusak fasilitas sekolah dalam skala ringan', 20, 'Merusak fasilitas sekolah dengan kerusakan ringan.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Sedang'),
+(24, 2, 'PLG-024', 'Meninggalkan lingkungan sekolah tanpa izin', 25, 'Keluar dari lingkungan sekolah tanpa izin.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Sedang'),
+(25, 2, 'PLG-025', 'Memanjat pagar sekolah untuk keluar', 25, 'Keluar dari lingkungan sekolah dengan melewati pagar.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Sedang'),
+(26, 1, 'PLG-026', 'Mengulangi pelanggaran ringan meskipun sudah ditegur', 20, 'Mengulangi pelanggaran ringan setelah mendapatkan teguran.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Sedang'),
+(27, 4, 'PLG-027', 'Berkelahi dengan siswa lain di lingkungan sekolah', 50, 'Terlibat perkelahian dengan siswa lain di lingkungan sekolah.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Berat'),
+(28, 4, 'PLG-028', 'Terlibat tawuran antarpelajar', 75, 'Terlibat dalam tawuran antarpelajar.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Berat'),
+(29, 4, 'PLG-029', 'Melakukan bullying berat terhadap teman', 50, 'Melakukan perundungan serius terhadap siswa lain.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Berat'),
+(30, 4, 'PLG-030', 'Melakukan pemalakan terhadap siswa lain', 75, 'Meminta atau mengambil uang maupun barang milik siswa lain secara paksa.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Berat'),
+(31, 4, 'PLG-031', 'Mengancam atau mengintimidasi teman', 50, 'Mengancam atau mengintimidasi siswa lain.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Berat'),
+(32, 4, 'PLG-032', 'Melakukan kekerasan terhadap guru atau staf sekolah', 100, 'Melakukan tindakan kekerasan terhadap guru atau staf sekolah.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Berat'),
+(33, 4, 'PLG-033', 'Mencuri barang milik teman atau guru', 50, 'Mengambil barang milik orang lain tanpa izin dengan maksud memilikinya.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Berat'),
+(34, 4, 'PLG-034', 'Merokok di lingkungan sekolah', 50, 'Merokok di area sekolah.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Berat'),
+(35, 4, 'PLG-035', 'Menggunakan vape di lingkungan sekolah', 50, 'Menggunakan rokok elektronik di area sekolah.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Berat'),
+(36, 4, 'PLG-036', 'Membawa senjata tajam ke sekolah', 75, 'Membawa benda tajam yang dilarang ke lingkungan sekolah.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Berat'),
+(37, 4, 'PLG-037', 'Mengajak atau menghasut siswa lain untuk berkelahi', 50, 'Mengajak atau memprovokasi siswa lain untuk melakukan perkelahian.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Berat'),
+(38, 4, 'PLG-038', 'Merusak fasilitas sekolah dengan sengaja hingga menimbulkan kerugian besar', 50, 'Sengaja merusak fasilitas sekolah hingga menimbulkan kerugian besar.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Berat'),
+(39, 4, 'PLG-039', 'Mengambil barang milik sekolah tanpa izin', 50, 'Mengambil barang inventaris sekolah tanpa izin.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Berat'),
+(40, 2, 'PLG-040', 'Mengajak siswa lain membolos secara bersama-sama', 35, 'Mengajak beberapa siswa untuk tidak mengikuti kegiatan sekolah tanpa izin.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Berat'),
+(41, 4, 'PLG-041', 'Melakukan perundungan secara berulang meskipun sudah ditegur', 50, 'Mengulangi tindakan perundungan meskipun sudah mendapatkan teguran.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Berat'),
+(42, 4, 'PLG-042', 'Mengganggu kegiatan resmi sekolah dengan sengaja', 35, 'Sengaja mengganggu kegiatan resmi yang diselenggarakan sekolah.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Berat'),
+(43, 4, 'PLG-043', 'Melakukan tindakan kekerasan yang menyebabkan siswa lain mengalami cedera', 75, 'Melakukan kekerasan yang mengakibatkan siswa lain mengalami cedera.', 1, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Berat'),
+(44, 5, 'PLG-044', 'Meludah sembarangan', 3, 'Siswa meludah bukan pada tempat yang semestinya.', 0, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Ringan'),
+(45, 5, 'PLG-045', 'Tidak membersihkan area piket', 3, 'Siswa tidak membersihkan area yang menjadi tanggung jawab piketnya.', 0, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Ringan'),
+(46, 5, 'PLG-046', 'Tidak menjaga kebersihan kelas', 5, 'Siswa tidak menjaga kebersihan kelas sesuai tanggung jawabnya.', 0, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Ringan'),
+(47, 5, 'PLG-047', 'Tidak menjaga kebersihan toilet', 5, 'Siswa mengotori toilet dan tidak menjaga kebersihan fasilitas tersebut.', 0, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Ringan'),
+(48, 5, 'PLG-048', 'Mengotori fasilitas sekolah dengan sengaja', 10, 'Siswa sengaja mengotori fasilitas sekolah.', 0, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Ringan'),
+(49, 5, 'PLG-049', 'Mencoret meja, kursi, atau dinding', 10, 'Siswa mencoret fasilitas sekolah tanpa izin.', 0, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Ringan'),
+(50, 5, 'PLG-050', 'Merusak tanaman atau taman sekolah', 10, 'Siswa sengaja merusak tanaman atau fasilitas taman sekolah.', 0, '2026-09-23 03:54:22', '2026-11-14 06:18:45', 'Ringan'),
+(51, 53, 'PLG-051', 'minum minuman keras', 100, 'rfhyhjgj', 0, '2026-11-14 05:22:04', '2026-11-14 06:18:45', 'Berat'),
+(52, 1, 'ARSIP-OLD-001', 'Memalsukan tanda tangan guru atau orang tua', 15, 'Arsip jenis pelanggaran dari katalog lama.', 0, '2026-11-14 12:08:48', '2026-11-14 12:08:48', 'Sedang'),
+(53, 1, 'ARSIP-OLD-002', 'Mengabaikan instruksi guru', 5, 'Arsip jenis pelanggaran dari katalog lama.', 0, '2026-11-14 12:08:48', '2026-11-14 12:08:48', 'Ringan'),
+(54, 1, 'ARSIP-OLD-003', 'Tidak melaksanakan piket sesuai jadwal', 3, 'Arsip jenis pelanggaran dari katalog lama.', 0, '2026-11-14 12:08:48', '2026-11-14 12:08:48', 'Ringan'),
+(55, 1, 'ARSIP-OLD-004', 'Tidak mematuhi tata tertib sekolah', 5, 'Arsip jenis pelanggaran dari katalog lama.', 0, '2026-11-14 12:08:48', '2026-11-14 12:08:48', 'Ringan'),
+(56, 2, 'ARSIP-OLD-005', 'Memalsukan surat izin atau surat sakit', 15, 'Arsip jenis pelanggaran dari katalog lama.', 0, '2026-11-14 12:08:48', '2026-11-14 12:08:48', 'Sedang'),
+(57, 2, 'ARSIP-OLD-006', 'Terlambat masuk kelas setelah istirahat', 2, 'Arsip jenis pelanggaran dari katalog lama.', 0, '2026-11-14 12:08:48', '2026-11-14 12:08:48', 'Ringan'),
+(58, 2, 'ARSIP-OLD-007', 'Terlambat masuk kelas tanpa alasan', 3, 'Arsip jenis pelanggaran dari katalog lama.', 0, '2026-11-14 12:08:48', '2026-11-14 12:08:48', 'Ringan'),
+(59, 3, 'ARSIP-OLD-008', 'Mengubah model seragam tanpa izin', 10, 'Arsip jenis pelanggaran dari katalog lama.', 0, '2026-11-14 12:08:48', '2026-11-14 12:08:48', 'Ringan'),
+(60, 4, 'ARSIP-OLD-009', 'Berbicara tidak sopan kepada guru', 10, 'Arsip jenis pelanggaran dari katalog lama.', 0, '2026-11-14 12:08:48', '2026-11-14 12:08:48', 'Ringan'),
+(61, 4, 'ARSIP-OLD-010', 'Melakukan perundungan atau perkelahian', 20, 'Arsip jenis pelanggaran dari katalog lama.', 0, '2026-11-14 12:08:48', '2026-11-14 12:08:48', 'Sedang'),
+(62, 4, 'ARSIP-OLD-011', 'Membawa barang yang dilarang sekolah', 10, 'Arsip jenis pelanggaran dari katalog lama.', 0, '2026-11-14 12:08:48', '2026-11-14 12:08:48', 'Ringan'),
+(63, 4, 'ARSIP-OLD-012', 'Mengganggu kegiatan sekolah', 5, 'Arsip jenis pelanggaran dari katalog lama.', 0, '2026-11-14 12:08:48', '2026-11-14 12:08:48', 'Ringan'),
+(64, 5, 'ARSIP-OLD-013', 'Membiarkan meja dan kursi tidak rapi', 2, 'Arsip jenis pelanggaran dari katalog lama.', 0, '2026-11-14 12:08:48', '2026-11-14 12:08:48', 'Ringan');
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `t_pelanggaran_kategori`
+-- Table structure for table `t_pelanggaran_kategori`
 --
 
 CREATE TABLE `t_pelanggaran_kategori` (
@@ -414,7 +508,7 @@ CREATE TABLE `t_pelanggaran_kategori` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `t_pelanggaran_kategori`
+-- Dumping data for table `t_pelanggaran_kategori`
 --
 
 INSERT INTO `t_pelanggaran_kategori` (`id`, `nama`, `deskripsi`, `status_aktif`, `created_at`, `updated_at`) VALUES
@@ -467,12 +561,13 @@ INSERT INTO `t_pelanggaran_kategori` (`id`, `nama`, `deskripsi`, `status_aktif`,
 (47, 'Kehadiran 47', 'Pelanggaran yang berkaitan dengan kehadiran, ketepatan waktu, dan partisipasi siswa dalam kegiatan sekolah.', 0, '2026-09-23 03:53:54', '2026-09-23 03:53:54'),
 (48, 'Seragam 48', 'Pelanggaran yang berkaitan dengan penggunaan seragam dan atribut sekolah yang tidak sesuai dengan ketentuan.', 0, '2026-09-23 03:53:54', '2026-09-23 03:53:54'),
 (49, 'Ketertiban 49', 'Pelanggaran yang berkaitan dengan ketertiban siswa selama berada di lingkungan sekolah dan saat kegiatan pembelajaran.', 0, '2026-09-23 03:53:54', '2026-09-23 03:53:54'),
-(50, 'Kebersihan 50', 'Pelanggaran yang berkaitan dengan kebersihan diri, kelas, dan lingkungan sekolah.', 0, '2026-09-23 03:53:54', '2026-09-23 03:53:54');
+(50, 'Kebersihan 50', 'Pelanggaran yang berkaitan dengan kebersihan diri, kelas, dan lingkungan sekolah.', 0, '2026-09-23 03:53:54', '2026-09-23 03:53:54'),
+(53, 'Mabok Mabokan', 'rtyy', 0, NULL, NULL);
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `t_pelanggaran_siswa`
+-- Table structure for table `t_pelanggaran_siswa`
 --
 
 CREATE TABLE `t_pelanggaran_siswa` (
@@ -497,170 +592,171 @@ CREATE TABLE `t_pelanggaran_siswa` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `t_pelanggaran_siswa`
+-- Dumping data for table `t_pelanggaran_siswa`
 --
 
 INSERT INTO `t_pelanggaran_siswa` (`id`, `tahun_ajaran_id`, `siswa_id`, `nama_siswa`, `pelanggaran_id`, `nama_pelanggaran`, `pelanggaran_kategori_id`, `guru_id`, `nama_guru`, `tanggal`, `keterangan`, `poin`, `tindakan`, `status`, `created_at`, `updated_at`, `kelas_id`, `nama_kelas`) VALUES
-(1, 50, 1, 'Adit Pratama', 1, 'Tidak membawa perlengkapan belajar', 1, 1, 'Wawan Kurniawan, S.Pd.I', '2025-01-01', 'Pelanggaran tercatat pada kegiatan sekolah.', 2, 'Teguran lisanmj.lm,.', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 1, 'X RPL 1'),
-(2, 50, 2, 'Aulia Rahma', 2, 'Tidak mengerjakan tugas', 1, 2, 'Ai Nuryaidah, S.Pd', '2025-02-02', 'Pelanggaran tercatat pada kegiatan sekolah.', 2, 'Peringatan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 2, 'XI TKJ 1'),
-(3, 50, 3, 'Bagas Saputra', 3, 'Tidur saat pembelajaran', 1, 3, 'Maya Permata Endah, S. Pd', '2025-03-03', 'Pelanggaran tercatat pada kegiatan sekolah.', 3, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 3, 'XII BD 1'),
-(4, 50, 4, 'Citra Lestari', 4, 'Tidak melaksanakan piket sesuai jadwal', 1, 4, 'Dody Jaenudin, S.Pd.', '2025-04-04', 'Pelanggaran tercatat pada kegiatan sekolah.', 3, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 4, 'X TKR 1'),
-(5, 50, 5, 'Daffa Ramadhan', 5, 'Mengabaikan instruksi guru', 1, 5, 'Dedi Kardiman, S. Pd', '2025-05-05', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 5, 'XI TSM 1'),
-(6, 50, 6, 'Elsa Putri', 6, 'Tidak mematuhi tata tertib sekolah', 1, 6, 'Uca Musa Yusenda, S.Pd', '2025-06-06', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 6, 'XII RPL 1'),
-(7, 50, 7, 'Fajar Nugraha', 7, 'Tidak mengikuti kegiatan sekolah tanpa alasan jelas', 1, 7, 'Drs. Ahmad Nur Mukhlis', '2025-07-07', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 7, 'X TKJ 1'),
-(8, 50, 8, 'Gina Maharani', 8, 'Menyontek saat ulangan', 1, 8, 'Drs. Heri', '2025-08-08', 'Pelanggaran tercatat pada kegiatan sekolah.', 10, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 8, 'XI BD 1'),
-(9, 50, 9, 'Hafiz Akbar', 9, 'Memalsukan tanda tangan guru atau orang tua', 1, 9, 'Asep Bastaman', '2025-09-09', 'Pelanggaran tercatat pada kegiatan sekolah.', 15, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 9, 'XII TKR 1'),
-(10, 50, 10, 'Intan Permata', 10, 'Mengulangi pelanggaran setelah pembinaan', 1, 10, 'H. Encep Maemun, S.T., M.Pd', '2025-10-10', 'Pelanggaran tercatat pada kegiatan sekolah.', 15, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 10, 'X TSM 1'),
-(11, 50, 11, 'Jovan Setiawan', 11, 'Terlambat datang ke sekolah', 2, 11, 'Opik', '2025-11-11', 'Pelanggaran tercatat pada kegiatan sekolah.', 2, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 11, 'XI RPL 1'),
-(12, 50, 12, 'Kania Salsabila', 12, 'Terlambat masuk kelas setelah istirahat', 2, 12, 'Ida Farida, S. Pd', '2025-12-12', 'Pelanggaran tercatat pada kegiatan sekolah.', 2, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 12, 'XII TKJ 1'),
-(13, 50, 13, 'Lutfi Hakim', 13, 'Terlambat masuk kelas tanpa alasan', 2, 13, 'Idah Mahmudah, S.Pd', '2025-01-13', 'Pelanggaran tercatat pada kegiatan sekolah.', 3, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 13, 'X BD 1'),
-(14, 50, 14, 'Maya Anggraini', 14, 'Tidak masuk kelas tanpa izin', 2, 14, 'Drs. Muhamad Ali', '2025-02-14', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 14, 'XI TKR 1'),
-(15, 50, 15, 'Naufal Rizky', 15, 'Tidak mengikuti pelajaran tanpa izin', 2, 15, 'Helmi Ali Akbar, S.Pd.I', '2025-03-15', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 15, 'XII TSM 1'),
-(16, 50, 16, 'Olivia Amelia', 16, 'Tidak mengikuti upacara tanpa izin', 2, 16, 'Syeni Suswarini, S.Pd', '2025-04-16', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 16, 'X RPL 2'),
-(17, 50, 17, 'Putra Wijaya', 17, 'Membolos pada jam pelajaran', 2, 17, 'Wiwid Yulianti, S.Pd', '2025-05-17', 'Pelanggaran tercatat pada kegiatan sekolah.', 10, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 17, 'XI TKJ 2'),
-(18, 50, 18, 'Qonita Zahra', 18, 'Pulang sebelum waktunya tanpa izin', 2, 18, 'Ansor Muhajir, S.T', '2025-06-18', 'Pelanggaran tercatat pada kegiatan sekolah.', 10, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 3, 'XII BD 1'),
-(19, 50, 19, 'Raka Firmansyah', 19, 'Meninggalkan sekolah tanpa izin', 2, 19, 'Ogi Gaosun Gias, S.Pd.I', '2025-07-19', 'Pelanggaran tercatat pada kegiatan sekolah.', 10, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 19, 'X TKR 2'),
-(20, 50, 20, 'Salsa Nabila', 20, 'Memalsukan surat izin atau surat sakit', 2, 20, 'Sandi Mulyana, S.Pd', '2025-08-20', 'Pelanggaran tercatat pada kegiatan sekolah.', 15, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 20, 'XI TSM 2'),
-(22, 50, 22, 'Ulfa Nuraini', 22, 'Tidak memakai ikat pinggang sesuai ketentuan', 3, 22, 'Ai Wahidah, S.Ag', '2025-10-22', 'Pelanggaran tercatat pada kegiatan sekolah.', 2, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 22, 'X TKJ 2'),
-(23, 50, 23, 'Vino Alfarizi', 23, 'Kaus kaki tidak sesuai ketentuan', 3, 23, 'Chandra Aditya Yusup, S.Pd', '2025-11-23', 'Pelanggaran tercatat pada kegiatan sekolah.', 2, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 8, 'XI BD 1'),
-(24, 50, 24, 'Wulan Sari', 24, 'Tidak memakai atribut lengkap', 3, 24, 'Arif Kusmawan, S.Pd', '2025-12-24', 'Pelanggaran tercatat pada kegiatan sekolah.', 3, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 24, 'XII TKR 2'),
-(25, 50, 25, 'Yoga Pratama', 25, 'Tidak memakai topi saat upacara', 3, 25, 'Asep Taufiq Hidayat, S.Kom', '2025-01-25', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 25, 'X TSM 2'),
-(26, 50, 26, 'Zahra Aulia', 26, 'Memakai sepatu tidak sesuai ketentuan', 3, 26, 'Rendy Ichsan Kusumah, S.T', '2025-02-26', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 11, 'XI RPL 1'),
-(27, 50, 27, 'Andika Kurnia', 27, 'Memakai seragam tidak sesuai jadwal', 3, 27, 'Feri Rahmawan, S.Pd', '2025-03-27', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 27, 'XII TKJ 2'),
-(28, 50, 28, 'Bella Safitri', 28, 'Mengeluarkan baju saat diwajibkan rapi', 3, 28, 'Ari Sandriana, S.Kom', '2025-04-01', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 13, 'X BD 1'),
-(29, 50, 29, 'Cahyo Aditya', 29, 'Memakai aksesori yang dilarang sekolah', 3, 29, 'Yaneu Nurdian, S.Pd, M.Pd', '2025-05-02', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 29, 'XI TKR 2'),
-(30, 50, 30, 'Dinda Maharani', 30, 'Mengubah model seragam tanpa izin', 3, 30, 'Ucu Muhammad Khoer N, S.Pd', '2025-06-03', 'Pelanggaran tercatat pada kegiatan sekolah.', 10, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 30, 'XII TSM 2'),
-(31, 50, 31, 'Eko Saputra', 31, 'Berbicara saat guru menjelaskan', 4, 31, 'Mira Dwi Rahmawati, S.Ag', '2025-07-04', 'Pelanggaran tercatat pada kegiatan sekolah.', 2, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 16, 'X RPL 2'),
-(32, 50, 32, 'Fitri Handayani', 32, 'Mengganggu teman saat belajar', 4, 32, 'Aldi Maulana, S.Pd', '2025-08-05', 'Pelanggaran tercatat pada kegiatan sekolah.', 3, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 32, 'XI TKJ 3'),
-(33, 50, 33, 'Galih Ramadhan', 33, 'Membuat keributan di kelas', 4, 33, 'Eli Rosliah, S.Pd', '2025-09-06', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 3, 'XII BD 1'),
-(34, 50, 34, 'Hana Aprilia', 34, 'Menggunakan HP tanpa izin saat belajar', 4, 34, 'Isni Nur Fitriani, S.Pd', '2025-10-07', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 34, 'X TKR 3'),
-(35, 50, 35, 'Ilham Fauzan', 35, 'Berkata kasar kepada teman', 4, 35, 'Aanisah Putri Nur Aini, S.Pd', '2025-11-08', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 35, 'XI TSM 3'),
-(37, 50, 37, 'Kevin Setiawan', 37, 'Berbicara tidak sopan kepada guru', 4, 37, 'Lilis Rustandy Mawardi, S.Pd., M.Pd', '2025-01-10', 'Pelanggaran tercatat pada kegiatan sekolah.', 10, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 37, 'X TKJ 3'),
-(38, 50, 38, 'Larasati Putri', 38, 'Membawa barang yang dilarang sekolah', 4, 38, 'Yusrin Noer Sabrina, S.Pd', '2025-02-11', 'Pelanggaran tercatat pada kegiatan sekolah.', 10, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 8, 'XI BD 1'),
-(39, 50, 39, 'Miko Pratama', 39, 'Merusak fasilitas sekolah dengan sengaja', 4, 39, 'Senny Indayani, S.Pd', '2025-03-12', 'Pelanggaran tercatat pada kegiatan sekolah.', 15, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 39, 'XII TKR 3'),
-(40, 50, 40, 'Nadia Safira', 40, 'Melakukan perundungan atau perkelahian', 4, 40, 'Ilma Amalia, S.Pd', '2025-04-13', 'Pelanggaran tercatat pada kegiatan sekolah.', 20, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 40, 'X TSM 3'),
-(41, 50, 41, 'Rian Hidayat', 41, 'Membuang sampah sembarangan', 5, 41, 'Alvira Sofwatunnisa, S.Pd', '2025-05-14', 'Pelanggaran tercatat pada kegiatan sekolah.', 2, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 11, 'XI RPL 1'),
-(42, 50, 42, 'Siti Aisyah', 42, 'Meninggalkan sampah setelah makan', 5, 42, 'Risna Andriyani, S.Pd', '2025-06-15', 'Pelanggaran tercatat pada kegiatan sekolah.', 2, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 42, 'XII TKJ 3'),
-(43, 50, 43, 'Taufik Haryanto', 43, 'Membiarkan meja dan kursi tidak rapi', 5, 43, 'Dra. Tintin Noerhayati', '2025-07-16', 'Pelanggaran tercatat pada kegiatan sekolah.', 2, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 13, 'X BD 1'),
+(1, 50, 1, 'Adit Pratama', 13, 'Tidak membawa perlengkapan belajar', 1, 1, 'Wawan Kurniawan, S.Pd.I', '2025-01-01', 'Pelanggaran tercatat pada kegiatan sekolah.', 3, 'Teguran lisanmj.lm,.', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 1, 'X RPL 1'),
+(2, 50, 2, 'Aulia Rahma', 12, 'Tidak mengerjakan tugas atau PR', 1, 2, 'Ai Nuryaidah, S.Pd', '2025-02-02', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Peringatan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 2, 'XI TKJ 1'),
+(3, 50, 3, 'Bagas Saputra', 9, 'Tidur saat kegiatan belajar mengajar', 4, 3, 'Maya Permata Endah, S. Pd', '2025-03-03', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 3, 'XII BD 1'),
+(4, 50, 4, 'Citra Lestari', 54, 'Tidak melaksanakan piket sesuai jadwal', 1, 4, 'Dody Jaenudin, S.Pd.', '2025-04-04', 'Pelanggaran tercatat pada kegiatan sekolah.', 3, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 4, 'X TKR 1'),
+(5, 50, 5, 'Daffa Ramadhan', 53, 'Mengabaikan instruksi guru', 1, 5, 'Dedi Kardiman, S. Pd', '2025-05-05', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 5, 'XI TSM 1'),
+(6, 50, 6, 'Elsa Putri', 55, 'Tidak mematuhi tata tertib sekolah', 1, 6, 'Uca Musa Yusenda, S.Pd', '2025-06-06', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 6, 'XII RPL 1'),
+(7, 50, 7, 'Fajar Nugraha', 20, 'Tidak mengikuti kegiatan wajib sekolah tanpa izin', 2, 7, 'Drs. Ahmad Nur Mukhlis', '2025-07-07', 'Pelanggaran tercatat pada kegiatan sekolah.', 15, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 7, 'X TKJ 1'),
+(8, 50, 8, 'Gina Maharani', 18, 'Menyontek saat ulangan atau ujian', 4, 8, 'Drs. Heri', '2025-08-08', 'Pelanggaran tercatat pada kegiatan sekolah.', 15, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 8, 'XI BD 1'),
+(9, 50, 9, 'Hafiz Akbar', 52, 'Memalsukan tanda tangan guru atau orang tua', 1, 9, 'Asep Bastaman', '2025-09-09', 'Pelanggaran tercatat pada kegiatan sekolah.', 15, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 9, 'XII TKR 1'),
+(10, 50, 10, 'Intan Permata', 26, 'Mengulangi pelanggaran ringan meskipun sudah ditegur', 1, 10, 'H. Encep Maemun, S.T., M.Pd', '2025-10-10', 'Pelanggaran tercatat pada kegiatan sekolah.', 20, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 10, 'X TSM 1'),
+(11, 50, 11, 'Jovan Setiawan', 1, 'Terlambat datang ke sekolah', 2, 11, 'Opik', '2025-11-11', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 11, 'XI RPL 1'),
+(12, 50, 12, 'Kania Salsabila', 57, 'Terlambat masuk kelas setelah istirahat', 2, 12, 'Ida Farida, S. Pd', '2025-12-12', 'Pelanggaran tercatat pada kegiatan sekolah.', 2, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 12, 'XII TKJ 1'),
+(13, 50, 13, 'Lutfi Hakim', 58, 'Terlambat masuk kelas tanpa alasan', 2, 13, 'Idah Mahmudah, S.Pd', '2025-01-13', 'Pelanggaran tercatat pada kegiatan sekolah.', 3, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 13, 'X BD 1'),
+(14, 50, 14, 'Maya Anggraini', 15, 'Membolos pelajaran', 2, 14, 'Drs. Muhamad Ali', '2025-02-14', 'Pelanggaran tercatat pada kegiatan sekolah.', 15, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 14, 'XI TKR 1'),
+(15, 50, 15, 'Naufal Rizky', 15, 'Membolos pelajaran', 2, 15, 'Helmi Ali Akbar, S.Pd.I', '2025-03-15', 'Pelanggaran tercatat pada kegiatan sekolah.', 15, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 15, 'XII TSM 1'),
+(16, 50, 16, 'Olivia Amelia', 19, 'Tidak mengikuti upacara tanpa alasan jelas', 2, 16, 'Syeni Suswarini, S.Pd', '2025-04-16', 'Pelanggaran tercatat pada kegiatan sekolah.', 15, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 16, 'X RPL 2'),
+(17, 50, 17, 'Putra Wijaya', 15, 'Membolos pelajaran', 2, 17, 'Wiwid Yulianti, S.Pd', '2025-05-17', 'Pelanggaran tercatat pada kegiatan sekolah.', 15, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 17, 'XI TKJ 2'),
+(18, 50, 18, 'Qonita Zahra', 24, 'Meninggalkan lingkungan sekolah tanpa izin', 2, 18, 'Ansor Muhajir, S.T', '2025-06-18', 'Pelanggaran tercatat pada kegiatan sekolah.', 25, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 3, 'XII BD 1'),
+(19, 50, 19, 'Raka Firmansyah', 24, 'Meninggalkan lingkungan sekolah tanpa izin', 2, 19, 'Ogi Gaosun Gias, S.Pd.I', '2025-07-19', 'Pelanggaran tercatat pada kegiatan sekolah.', 25, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 19, 'X TKR 2'),
+(20, 50, 20, 'Salsa Nabila', 56, 'Memalsukan surat izin atau surat sakit', 2, 20, 'Sandi Mulyana, S.Pd', '2025-08-20', 'Pelanggaran tercatat pada kegiatan sekolah.', 15, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 20, 'XI TSM 2'),
+(22, 50, 22, 'Ulfa Nuraini', 3, 'Tidak memakai atribut seragam lengkap', 3, 22, 'Ai Wahidah, S.Ag', '2025-10-22', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 22, 'X TKJ 2'),
+(23, 50, 23, 'Vino Alfarizi', 2, 'Memakai seragam tidak sesuai ketentuan', 3, 23, 'Chandra Aditya Yusup, S.Pd', '2025-11-23', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 8, 'XI BD 1'),
+(24, 50, 24, 'Wulan Sari', 3, 'Tidak memakai atribut seragam lengkap', 3, 24, 'Arif Kusmawan, S.Pd', '2025-12-24', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 24, 'XII TKR 2'),
+(25, 50, 25, 'Yoga Pratama', 3, 'Tidak memakai atribut seragam lengkap', 3, 25, 'Asep Taufiq Hidayat, S.Kom', '2025-01-25', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 25, 'X TSM 2'),
+(26, 50, 26, 'Zahra Aulia', 2, 'Memakai seragam tidak sesuai ketentuan', 3, 26, 'Rendy Ichsan Kusumah, S.T', '2025-02-26', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 11, 'XI RPL 1'),
+(27, 50, 27, 'Andika Kurnia', 2, 'Memakai seragam tidak sesuai ketentuan', 3, 27, 'Feri Rahmawan, S.Pd', '2025-03-27', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 27, 'XII TKJ 2'),
+(28, 50, 28, 'Bella Safitri', 2, 'Memakai seragam tidak sesuai ketentuan', 3, 28, 'Ari Sandriana, S.Kom', '2025-04-01', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 13, 'X BD 1'),
+(29, 50, 29, 'Cahyo Aditya', 5, 'Memakai perhiasan atau aksesori yang dilarang', 3, 29, 'Yaneu Nurdian, S.Pd, M.Pd', '2025-05-02', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 29, 'XI TKR 2'),
+(30, 50, 30, 'Dinda Maharani', 59, 'Mengubah model seragam tanpa izin', 3, 30, 'Ucu Muhammad Khoer N, S.Pd', '2025-06-03', 'Pelanggaran tercatat pada kegiatan sekolah.', 10, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 30, 'XII TSM 2'),
+(31, 50, 31, 'Eko Saputra', 11, 'Membuat keributan di kelas', 4, 31, 'Mira Dwi Rahmawati, S.Ag', '2025-07-04', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 16, 'X RPL 2'),
+(32, 50, 32, 'Fitri Handayani', 11, 'Membuat keributan di kelas', 4, 32, 'Aldi Maulana, S.Pd', '2025-08-05', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 32, 'XI TKJ 3'),
+(33, 50, 33, 'Galih Ramadhan', 11, 'Membuat keributan di kelas', 4, 33, 'Eli Rosliah, S.Pd', '2025-09-06', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 3, 'XII BD 1'),
+(34, 50, 34, 'Hana Aprilia', 17, 'Menggunakan HP saat pelajaran tanpa izin', 4, 34, 'Isni Nur Fitriani, S.Pd', '2025-10-07', 'Pelanggaran tercatat pada kegiatan sekolah.', 15, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 34, 'X TKR 3'),
+(35, 50, 35, 'Ilham Fauzan', 21, 'Berkata kasar atau menghina teman', 4, 35, 'Aanisah Putri Nur Aini, S.Pd', '2025-11-08', 'Pelanggaran tercatat pada kegiatan sekolah.', 15, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 35, 'XI TSM 3'),
+(37, 50, 37, 'Kevin Setiawan', 60, 'Berbicara tidak sopan kepada guru', 4, 37, 'Lilis Rustandy Mawardi, S.Pd., M.Pd', '2025-01-10', 'Pelanggaran tercatat pada kegiatan sekolah.', 10, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 37, 'X TKJ 3'),
+(38, 50, 38, 'Larasati Putri', 62, 'Membawa barang yang dilarang sekolah', 4, 38, 'Yusrin Noer Sabrina, S.Pd', '2025-02-11', 'Pelanggaran tercatat pada kegiatan sekolah.', 10, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 8, 'XI BD 1'),
+(39, 50, 39, 'Miko Pratama', 23, 'Merusak fasilitas sekolah dalam skala ringan', 4, 39, 'Senny Indayani, S.Pd', '2025-03-12', 'Pelanggaran tercatat pada kegiatan sekolah.', 20, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 39, 'XII TKR 3'),
+(40, 50, 40, 'Nadia Safira', 61, 'Melakukan perundungan atau perkelahian', 4, 40, 'Ilma Amalia, S.Pd', '2025-04-13', 'Pelanggaran tercatat pada kegiatan sekolah.', 20, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 40, 'X TSM 3'),
+(41, 50, 41, 'Rian Hidayat', 8, 'Membuang sampah sembarangan', 5, 41, 'Alvira Sofwatunnisa, S.Pd', '2025-05-14', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 11, 'XI RPL 1'),
+(42, 50, 42, 'Siti Aisyah', 8, 'Membuang sampah sembarangan', 5, 42, 'Risna Andriyani, S.Pd', '2025-06-15', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 42, 'XII TKJ 3'),
+(43, 50, 43, 'Taufik Haryanto', 64, 'Membiarkan meja dan kursi tidak rapi', 5, 43, 'Dra. Tintin Noerhayati', '2025-07-16', 'Pelanggaran tercatat pada kegiatan sekolah.', 2, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 13, 'X BD 1'),
 (44, 50, 44, 'Vania Putri', 44, 'Meludah sembarangan', 5, 44, 'Rizkia Fahira, S.Pd', '2025-08-17', 'Pelanggaran tercatat pada kegiatan sekolah.', 3, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 44, 'XI TKR 3'),
 (45, 50, 45, 'Wahyu Nugroho', 45, 'Tidak membersihkan area piket', 5, 45, 'Frasetio', '2025-09-18', 'Pelanggaran tercatat pada kegiatan sekolah.', 3, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 45, 'XII TSM 3'),
 (46, 50, 46, 'Yuni Kartika', 46, 'Tidak menjaga kebersihan kelas', 5, 46, 'Ratnaningsih Hatil Aeni, S.Pd.', '2025-10-19', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 16, 'X RPL 2'),
 (47, 50, 47, 'Zaki Firmansyah', 47, 'Tidak menjaga kebersihan toilet', 5, 47, 'Dheny Darajatul Hasani, S.Pd.', '2025-11-20', 'Pelanggaran tercatat pada kegiatan sekolah.', 5, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 47, 'XI TKJ 4'),
 (48, 50, 48, 'Ari Maulana', 48, 'Mengotori fasilitas sekolah dengan sengaja', 5, 48, 'Fahrullah, S.Pd', '2025-12-21', 'Pelanggaran tercatat pada kegiatan sekolah.', 10, 'Pembinaan', 'Ditindaklanjuti', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 3, 'XII BD 1'),
-(49, 50, 49, 'Bima Setiawan', 49, 'Mencoret meja, kursi, atau dinding', 5, 49, 'Aan Andriana, S.T', '2025-01-22', 'Pelanggaran tercatat pada kegiatan sekolah.', 10, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 49, 'X TKR 4'),
-(50, 50, 50, 'Cindy Oktavia', 50, 'Merusak tanaman atau taman sekolah', 5, 50, 'Fitri Fauziah, S.T', '2025-02-23', 'Pelanggaran tercatat pada kegiatan sekolah.', 10, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 35, 'XI TSM 3'),
-(51, 50, 10, 'Intan Permata', 6, 'Tidak mematuhi tata tertib sekolah', 1, 2, 'Ai Nuryaidah, S.Pd', '2026-10-20', 'Tidak Patuh', 5, 'Dipanggil ortu', 'Diproses', '2026-10-20 01:31:15', '2026-10-20 01:31:15', 10, 'X TSM 1'),
-(52, 50, 52, 'Nadia Zulfa Soraya', 26, 'Memakai sepatu tidak sesuai ketentuan', 3, 2, 'Ai Nuryaidah, S.Pd', '2026-10-20', 'Pakai Flastshoes', 5, 'Flastshoes nya diambil', 'Selesai', '2026-10-20 02:30:14', '2026-10-20 02:30:14', 21, 'XII RPL 2'),
-(53, 50, 53, 'Fatir Rizky', 11, 'Terlambat datang ke sekolah', 2, 2, 'Ai Nuryaidah, S.Pd', '2026-11-03', 'Alasan kesiangan', 2, 'Diomongin doang supaya ga telat lagi datang harus lebih awal', 'Selesai', '2026-11-03 04:31:19', '2026-11-03 04:31:19', 39, 'XII TKR 3'),
-(54, 50, 42, 'Siti Aisyah', 22, 'Tidak memakai ikat pinggang sesuai ketentuan', 3, 51, 'Nadia Zulfa', '2026-11-04', 'jkfkl', 2, 'sudah diberi peringatan', 'Ditindaklanjuti', '2026-11-04 04:04:31', '2026-11-04 04:04:31', 42, 'XII TKJ 3'),
-(55, 50, 54, 'Anisa Amirula', 13, 'Terlambat masuk kelas tanpa alasan', 2, 2, 'Ai Nuryaidah, S.Pd', '2026-11-04', 'telat', 3, 'diomongin doang', 'Selesai', '2026-11-04 04:22:06', '2026-11-04 04:22:06', 21, 'XII RPL 2'),
-(56, 50, 2, 'Aulia Rahma', 17, 'Membolos pada jam pelajaran', 2, 4, 'Dody Jaenudin, S.Pd.', '2026-11-05', 'bg', 10, 'gng', 'Selesai', '2026-11-05 02:40:45', '2026-11-05 02:40:45', 2, 'XI TKJ 1'),
-(57, 50, 55, 'Adittia Nur Lantip', 1, 'Tidak membawa perlengkapan belajar', 1, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidak membawa perlengkapan belajar', 2, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(58, 50, 56, 'Agnia Rosya Noerillah', 2, 'Tidak mengerjakan tugas', 1, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidak mengerjakan tugas', 2, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(59, 50, 57, 'Aradea Kandi', 3, 'Tidur saat pembelajaran', 1, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidur saat pembelajaran', 3, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(60, 50, 58, 'Arfa Diesa Okamaleliza', 4, 'Tidak melaksanakan piket sesuai jadwal', 1, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidak melaksanakan piket sesuai jadwal', 3, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(61, 50, 59, 'Fitri Nur Syami', 5, 'Mengabaikan instruksi guru', 1, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Mengabaikan instruksi guru', 5, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(62, 50, 60, 'Junita Putri Nur Rahman', 6, 'Tidak mematuhi tata tertib sekolah', 1, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidak mematuhi tata tertib sekolah', 5, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(63, 50, 61, 'Mohammad Atalarik Ali Syahbana', 7, 'Tidak mengikuti kegiatan sekolah tanpa alasan jelas', 1, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidak mengikuti kegiatan sekolah tanpa alasan jelas', 5, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(64, 50, 62, 'Muhamad Fahril Fahrurozi', 8, 'Menyontek saat ulangan', 1, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Menyontek saat ulangan', 10, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(65, 50, 63, 'Muhammad Adnan Syaeful Islami', 9, 'Memalsukan tanda tangan guru atau orang tua', 1, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Memalsukan tanda tangan guru atau orang tua', 15, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(66, 50, 64, 'Muhammad Zahru Aqila Fikri', 10, 'Mengulangi pelanggaran setelah pembinaan', 1, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Mengulangi pelanggaran setelah pembinaan', 15, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(67, 50, 65, 'Nazril Ilham', 11, 'Terlambat datang ke sekolah', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Terlambat datang ke sekolah', 2, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(68, 50, 66, 'Puspita Dewi', 12, 'Terlambat masuk kelas setelah istirahat', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Terlambat masuk kelas setelah istirahat', 2, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(69, 50, 67, 'Rakha Muhammad Haykal', 14, 'Tidak masuk kelas tanpa izin', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidak masuk kelas tanpa izin', 5, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(70, 50, 68, 'Rani Meilani', 15, 'Tidak mengikuti pelajaran tanpa izin', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidak mengikuti pelajaran tanpa izin', 5, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(71, 50, 69, 'Reihan Muzaki', 16, 'Tidak mengikuti upacara tanpa izin', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidak mengikuti upacara tanpa izin', 5, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(72, 50, 70, 'Resa Juliansah', 17, 'Membolos pada jam pelajaran', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Membolos pada jam pelajaran', 10, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(73, 50, 71, 'Rizki Permata Sugianto', 18, 'Pulang sebelum waktunya tanpa izin', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Pulang sebelum waktunya tanpa izin', 10, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(74, 50, 72, 'Sahira Firaj', 19, 'Meninggalkan sekolah tanpa izin', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Meninggalkan sekolah tanpa izin', 10, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(75, 50, 73, 'Sendi Mardian', 20, 'Memalsukan surat izin atau surat sakit', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Memalsukan surat izin atau surat sakit', 15, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(76, 50, 74, 'Shahaidan Nizzar', 21, 'Seragam kurang rapi', 3, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Seragam kurang rapi', 2, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(77, 50, 75, 'Sherly Satriani', 22, 'Tidak memakai ikat pinggang sesuai ketentuan', 3, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidak memakai ikat pinggang sesuai ketentuan', 2, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(78, 50, 76, 'Sofi Nurjanah', 23, 'Kaus kaki tidak sesuai ketentuan', 3, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Kaus kaki tidak sesuai ketentuan', 2, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(79, 50, 77, 'Suraiya Salsabila Azzahra', 24, 'Tidak memakai atribut lengkap', 3, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidak memakai atribut lengkap', 3, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(80, 50, 78, 'Toni Antonio', 25, 'Tidak memakai topi saat upacara', 3, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidak memakai topi saat upacara', 5, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
-(88, 50, 64, 'Muhammad Zahru Aqila Fikri', 8, 'Menyontek saat ulangan', 1, 4, 'Dody Jaenudin, S.Pd.', '2026-11-09', 'nyontek terus', 10, 'sudah', 'Selesai', '2026-11-09 08:10:13', '2026-11-09 08:10:13', 21, 'XII RPL 2'),
-(89, 50, 52, 'Nadia Zulfa Soraya', 2, 'Tidak mengerjakan tugas', 1, 1, 'Wawan Kurniawan, S.Pd.I', '2026-11-09', 'fghjzhjfg', 2, '', 'Selesai', '2026-11-09 08:27:03', '2026-11-09 08:27:03', 21, 'XII RPL 2'),
-(90, 50, 39, 'Miko Pratama', 39, 'Merusak fasilitas sekolah dengan sengaja', 4, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa sengaja merusak fasilitas milik sekolah.', 15, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(91, 50, 53, 'Fatir Rizky', 3, 'Tidur saat pembelajaran', 1, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa tidur saat proses pembelajaran berlangsung.', 3, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(92, 50, 86, 'Adam Lasmana Nugraha', 36, 'Mengganggu kegiatan sekolah', 4, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa mengganggu pelaksanaan kegiatan resmi sekolah.', 5, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(93, 50, 87, 'Afep Saepul Hidayah', 37, 'Berbicara tidak sopan kepada guru', 4, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa berkata tidak sopan kepada guru.', 10, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(94, 50, 88, 'Agis Pratama', 38, 'Membawa barang yang dilarang sekolah', 4, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa membawa barang yang secara jelas dilarang tata tertib sekolah.', 10, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(95, 50, 89, 'Dawam Ariasa Putra', 39, 'Merusak fasilitas sekolah dengan sengaja', 4, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa sengaja merusak fasilitas milik sekolah.', 15, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(96, 50, 90, 'Dika Aditya', 40, 'Melakukan perundungan atau perkelahian', 4, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa melakukan perundungan atau terlibat perkelahian yang terbukti.', 20, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(97, 50, 91, 'Diki Saputra', 41, 'Membuang sampah sembarangan', 5, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa membuang sampah bukan pada tempat yang disediakan.', 2, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(98, 50, 92, 'Dimas Anugrah Pranatama', 42, 'Meninggalkan sampah setelah makan', 5, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa meninggalkan sampah makanan atau minuman di area sekolah.', 2, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(99, 50, 93, 'Ergi Zulvian Razvi', 43, 'Membiarkan meja dan kursi tidak rapi', 5, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa meninggalkan meja dan kursi dalam keadaan tidak rapi.', 2, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(49, 50, 49, 'Bima Setiawan', 23, 'Merusak fasilitas sekolah dalam skala ringan', 4, 49, 'Aan Andriana, S.T', '2025-01-22', 'Pelanggaran tercatat pada kegiatan sekolah.', 20, 'Teguran lisan', 'Diproses', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 49, 'X TKR 4'),
+(50, 50, 50, 'Cindy Oktavia', 23, 'Merusak fasilitas sekolah dalam skala ringan', 4, 50, 'Fitri Fauziah, S.T', '2025-02-23', 'Pelanggaran tercatat pada kegiatan sekolah.', 20, 'Peringatan', 'Selesai', '2026-09-23 03:54:57', '2026-09-23 03:54:57', 35, 'XI TSM 3'),
+(51, 50, 10, 'Intan Permata', 55, 'Tidak mematuhi tata tertib sekolah', 1, 2, 'Ai Nuryaidah, S.Pd', '2026-10-20', 'Tidak Patuh', 5, 'Dipanggil ortu', 'Diproses', '2026-10-20 01:31:15', '2026-10-20 01:31:15', 10, 'X TSM 1'),
+(52, 50, 52, 'Nadia Zulfa Soraya', 2, 'Memakai seragam tidak sesuai ketentuan', 3, 2, 'Ai Nuryaidah, S.Pd', '2026-10-20', 'Pakai Flastshoes', 5, 'Flastshoes nya diambil', 'Selesai', '2026-10-20 02:30:14', '2026-10-20 02:30:14', 21, 'XII RPL 2'),
+(53, 50, 53, 'Fatir Rizky', 1, 'Terlambat datang ke sekolah', 2, 2, 'Ai Nuryaidah, S.Pd', '2026-11-03', 'Alasan kesiangan', 5, 'Diomongin doang supaya ga telat lagi datang harus lebih awal', 'Selesai', '2026-11-03 04:31:19', '2026-11-03 04:31:19', 39, 'XII TKR 3'),
+(54, 50, 42, 'Siti Aisyah', 3, 'Tidak memakai atribut seragam lengkap', 3, 51, 'Nadia Zulfa', '2026-11-04', 'jkfkl', 5, 'sudah diberi peringatan', 'Ditindaklanjuti', '2026-11-04 04:04:31', '2026-11-04 04:04:31', 42, 'XII TKJ 3'),
+(55, 50, 54, 'Anisa Amirula', 58, 'Terlambat masuk kelas tanpa alasan', 2, 2, 'Ai Nuryaidah, S.Pd', '2026-11-04', 'telat', 3, 'diomongin doang', 'Selesai', '2026-11-04 04:22:06', '2026-11-04 04:22:06', 21, 'XII RPL 2'),
+(56, 50, 2, 'Aulia Rahma', 15, 'Membolos pelajaran', 2, 4, 'Dody Jaenudin, S.Pd.', '2026-11-05', 'bg', 15, 'gng', 'Selesai', '2026-11-05 02:40:45', '2026-11-05 02:40:45', 2, 'XI TKJ 1'),
+(57, 50, 55, 'Adittia Nur Lantip', 13, 'Tidak membawa perlengkapan belajar', 1, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidak membawa perlengkapan belajar', 3, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(58, 50, 56, 'Agnia Rosya Noerillah', 12, 'Tidak mengerjakan tugas atau PR', 1, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidak mengerjakan tugas', 5, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(59, 50, 57, 'Aradea Kandi', 9, 'Tidur saat kegiatan belajar mengajar', 4, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidur saat pembelajaran', 5, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(60, 50, 58, 'Arfa Diesa Okamaleliza', 54, 'Tidak melaksanakan piket sesuai jadwal', 1, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidak melaksanakan piket sesuai jadwal', 3, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(61, 50, 59, 'Fitri Nur Syami', 53, 'Mengabaikan instruksi guru', 1, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Mengabaikan instruksi guru', 5, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(62, 50, 60, 'Junita Putri Nur Rahman', 55, 'Tidak mematuhi tata tertib sekolah', 1, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidak mematuhi tata tertib sekolah', 5, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(63, 50, 61, 'Mohammad Atalarik Ali Syahbana', 20, 'Tidak mengikuti kegiatan wajib sekolah tanpa izin', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidak mengikuti kegiatan sekolah tanpa alasan jelas', 15, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(64, 50, 62, 'Muhamad Fahril Fahrurozi', 18, 'Menyontek saat ulangan atau ujian', 4, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Menyontek saat ulangan', 15, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(65, 50, 63, 'Muhammad Adnan Syaeful Islami', 52, 'Memalsukan tanda tangan guru atau orang tua', 1, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Memalsukan tanda tangan guru atau orang tua', 15, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(66, 50, 64, 'Muhammad Zahru Aqila Fikri', 26, 'Mengulangi pelanggaran ringan meskipun sudah ditegur', 1, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Mengulangi pelanggaran setelah pembinaan', 20, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(67, 50, 65, 'Nazril Ilham', 1, 'Terlambat datang ke sekolah', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Terlambat datang ke sekolah', 5, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(68, 50, 66, 'Puspita Dewi', 57, 'Terlambat masuk kelas setelah istirahat', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Terlambat masuk kelas setelah istirahat', 2, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(69, 50, 67, 'Rakha Muhammad Haykal', 15, 'Membolos pelajaran', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidak masuk kelas tanpa izin', 15, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(70, 50, 68, 'Rani Meilani', 15, 'Membolos pelajaran', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidak mengikuti pelajaran tanpa izin', 15, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(71, 50, 69, 'Reihan Muzaki', 19, 'Tidak mengikuti upacara tanpa alasan jelas', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidak mengikuti upacara tanpa izin', 15, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(72, 50, 70, 'Resa Juliansah', 15, 'Membolos pelajaran', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Membolos pada jam pelajaran', 15, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(73, 50, 71, 'Rizki Permata Sugianto', 24, 'Meninggalkan lingkungan sekolah tanpa izin', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Pulang sebelum waktunya tanpa izin', 25, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(74, 50, 72, 'Sahira Firaj', 24, 'Meninggalkan lingkungan sekolah tanpa izin', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Meninggalkan sekolah tanpa izin', 25, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(75, 50, 73, 'Sendi Mardian', 56, 'Memalsukan surat izin atau surat sakit', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Memalsukan surat izin atau surat sakit', 15, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(76, 50, 74, 'Shahaidan Nizzar', 2, 'Memakai seragam tidak sesuai ketentuan', 3, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Seragam kurang rapi', 5, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(77, 50, 75, 'Sherly Satriani', 3, 'Tidak memakai atribut seragam lengkap', 3, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidak memakai ikat pinggang sesuai ketentuan', 5, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(78, 50, 76, 'Sofi Nurjanah', 2, 'Memakai seragam tidak sesuai ketentuan', 3, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Kaus kaki tidak sesuai ketentuan', 5, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(79, 50, 77, 'Suraiya Salsabila Azzahra', 3, 'Tidak memakai atribut seragam lengkap', 3, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidak memakai atribut lengkap', 5, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(80, 50, 78, 'Toni Antonio', 3, 'Tidak memakai atribut seragam lengkap', 3, 32, 'Aldi Maulana, S.Pd', '2026-11-09', 'Tidak memakai topi saat upacara', 5, 'Menunggu tindak lanjut wali kelas', 'Diproses', '2026-11-09 07:38:11', '2026-11-09 07:38:11', 21, 'XII RPL 2'),
+(88, 50, 64, 'Muhammad Zahru Aqila Fikri', 18, 'Menyontek saat ulangan atau ujian', 4, 4, 'Dody Jaenudin, S.Pd.', '2026-11-09', 'nyontek terus', 15, 'sudah', 'Selesai', '2026-11-09 08:10:13', '2026-11-09 08:10:13', 21, 'XII RPL 2'),
+(89, 50, 52, 'Nadia Zulfa Soraya', 12, 'Tidak mengerjakan tugas atau PR', 1, 1, 'Wawan Kurniawan, S.Pd.I', '2026-11-09', 'fghjzhjfg', 5, '', 'Selesai', '2026-11-09 08:27:03', '2026-11-09 08:27:03', 21, 'XII RPL 2'),
+(90, 50, 39, 'Miko Pratama', 23, 'Merusak fasilitas sekolah dalam skala ringan', 4, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa sengaja merusak fasilitas milik sekolah.', 20, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(91, 50, 53, 'Fatir Rizky', 9, 'Tidur saat kegiatan belajar mengajar', 4, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa tidur saat proses pembelajaran berlangsung.', 5, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(92, 50, 86, 'Adam Lasmana Nugraha', 63, 'Mengganggu kegiatan sekolah', 4, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa mengganggu pelaksanaan kegiatan resmi sekolah.', 5, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(93, 50, 87, 'Afep Saepul Hidayah', 60, 'Berbicara tidak sopan kepada guru', 4, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa berkata tidak sopan kepada guru.', 10, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(94, 50, 88, 'Agis Pratama', 62, 'Membawa barang yang dilarang sekolah', 4, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa membawa barang yang secara jelas dilarang tata tertib sekolah.', 10, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(95, 50, 89, 'Dawam Ariasa Putra', 23, 'Merusak fasilitas sekolah dalam skala ringan', 4, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa sengaja merusak fasilitas milik sekolah.', 20, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(96, 50, 90, 'Dika Aditya', 61, 'Melakukan perundungan atau perkelahian', 4, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa melakukan perundungan atau terlibat perkelahian yang terbukti.', 20, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(97, 50, 91, 'Diki Saputra', 8, 'Membuang sampah sembarangan', 5, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa membuang sampah bukan pada tempat yang disediakan.', 5, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(98, 50, 92, 'Dimas Anugrah Pranatama', 8, 'Membuang sampah sembarangan', 5, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa meninggalkan sampah makanan atau minuman di area sekolah.', 5, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(99, 50, 93, 'Ergi Zulvian Razvi', 64, 'Membiarkan meja dan kursi tidak rapi', 5, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa meninggalkan meja dan kursi dalam keadaan tidak rapi.', 2, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
 (100, 50, 94, 'Evan Rasendriya', 44, 'Meludah sembarangan', 5, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa meludah bukan pada tempat yang semestinya.', 3, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
 (101, 50, 95, 'Faiz Fauzan Abdurahman', 45, 'Tidak membersihkan area piket', 5, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa tidak membersihkan area yang menjadi tanggung jawab piketnya.', 3, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
 (102, 50, 96, 'Guntur Muhamad Azril', 46, 'Tidak menjaga kebersihan kelas', 5, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa tidak menjaga kebersihan kelas sesuai tanggung jawabnya.', 5, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
 (103, 50, 97, 'Hiban Sa\'ban', 47, 'Tidak menjaga kebersihan toilet', 5, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa mengotori toilet dan tidak menjaga kebersihan fasilitas tersebut.', 5, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
 (104, 50, 98, 'Hilman Sohibul Kiyam', 48, 'Mengotori fasilitas sekolah dengan sengaja', 5, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa sengaja mengotori fasilitas sekolah.', 10, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(105, 50, 99, 'Ijad Rayi Nurfais Ansori', 49, 'Mencoret meja, kursi, atau dinding', 5, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa mencoret fasilitas sekolah tanpa izin.', 10, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(106, 50, 100, 'Iqbal Muharrom', 50, 'Merusak tanaman atau taman sekolah', 5, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa sengaja merusak tanaman atau fasilitas taman sekolah.', 10, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(107, 50, 101, 'Izaz Syakir', 1, 'Tidak membawa perlengkapan belajar', 1, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa tidak membawa perlengkapan belajar yang diperlukan.', 2, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(108, 50, 102, 'Moch Faizal Gilang Permana', 2, 'Tidak mengerjakan tugas', 1, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa tidak menyelesaikan tugas yang diberikan guru.', 2, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(109, 50, 103, 'Muhamad Rizky Gozali', 3, 'Tidur saat pembelajaran', 1, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa tidur saat proses pembelajaran berlangsung.', 3, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(110, 50, 104, 'Muhammad Rikman Nulhakim', 4, 'Tidak melaksanakan piket sesuai jadwal', 1, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa tidak melaksanakan tugas piket sesuai jadwal.', 3, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(111, 50, 105, 'Muhammad Siddiq Ibrahim Sobari', 5, 'Mengabaikan instruksi guru', 1, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa mengabaikan instruksi guru yang berkaitan dengan kegiatan belajar.', 5, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(112, 50, 106, 'Nizar Suryana', 6, 'Tidak mematuhi tata tertib sekolah', 1, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa melanggar ketentuan tata tertib sekolah yang telah disosialisasikan.', 5, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(113, 50, 107, 'Rasya Abdul Basith', 7, 'Tidak mengikuti kegiatan sekolah tanpa alasan jelas', 1, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa tidak mengikuti kegiatan wajib sekolah tanpa keterangan yang dapat dipertanggungjawabkan.', 5, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(114, 50, 108, 'Rausan Vikri', 8, 'Menyontek saat ulangan', 1, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa menggunakan jawaban atau bantuan yang tidak diizinkan saat ulangan.', 10, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(115, 50, 109, 'Revaldi Nurwansah', 9, 'Memalsukan tanda tangan guru atau orang tua', 1, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa memalsukan tanda tangan pada dokumen sekolah.', 15, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(116, 50, 110, 'Revan Rudiansah', 10, 'Mengulangi pelanggaran setelah pembinaan', 1, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa mengulangi pelanggaran setelah menjalani pembinaan resmi.', 15, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(117, 50, 111, 'Rizki Raditya', 11, 'Terlambat datang ke sekolah', 2, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa tiba setelah waktu masuk sekolah yang ditentukan.', 2, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(118, 50, 112, 'Roby Orie Al Rasya', 12, 'Terlambat masuk kelas setelah istirahat', 2, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa terlambat kembali ke kelas setelah waktu istirahat.', 2, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(119, 50, 113, 'Ruly Rudiansah', 13, 'Terlambat masuk kelas tanpa alasan', 2, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa terlambat masuk kelas tanpa alasan yang jelas.', 3, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(120, 50, 114, 'Syahdan Rasdani', 14, 'Tidak masuk kelas tanpa izin', 2, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa tidak berada di kelas saat pembelajaran tanpa izin.', 5, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(121, 50, 115, 'Taba Haerul Salim', 15, 'Tidak mengikuti pelajaran tanpa izin', 2, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa tidak mengikuti kegiatan pembelajaran tanpa izin guru.', 5, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(122, 50, 116, 'Tirta Nur Zamzam', 16, 'Tidak mengikuti upacara tanpa izin', 2, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa tidak mengikuti upacara sekolah tanpa izin atau alasan yang sah.', 5, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(123, 50, 117, 'Zilhad Ayalthuhaq', 17, 'Membolos pada jam pelajaran', 2, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa sengaja menghindari kegiatan belajar pada jam pelajaran.', 10, 'Data simulasi untuk pengujian sistem', 'Selesai', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
-(153, 50, 53, 'Fatir Rizky', 18, 'Pulang sebelum waktunya tanpa izin', 2, 4, 'Dody Jaenudin, S.Pd.', '2026-11-10', 'pulang duluan', 10, 'sudah dikasi tau', 'Selesai', '2026-11-10 02:34:35', '2026-11-10 02:34:35', 39, 'XII TKR 3'),
-(154, 50, 150, 'ALFIN RAHADIAN', 1, 'Tidak membawa perlengkapan belajar', 1, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa tidak membawa perlengkapan belajar yang diperlukan.', 2, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
-(155, 50, 151, 'ALISA RAMADHANI', 11, 'Terlambat datang ke sekolah', 2, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa tiba setelah waktu masuk sekolah yang ditentukan.', 2, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
-(156, 50, 152, 'ALMA AURA LIVIA', 21, 'Seragam kurang rapi', 3, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Seragam tidak dikenakan dengan rapi sesuai ketentuan sekolah.', 2, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
-(157, 50, 153, 'ANIS KHOERUNNISA NUR RAMADANI', 31, 'Berbicara saat guru menjelaskan', 4, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa berbicara sehingga mengganggu proses penjelasan guru.', 2, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
-(158, 50, 154, 'AZMIL AMIRA', 41, 'Membuang sampah sembarangan', 5, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa membuang sampah bukan pada tempat yang disediakan.', 2, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
-(159, 50, 155, 'AZRIL AKBAR FAWJI ABDILLAH', 2, 'Tidak mengerjakan tugas', 1, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa tidak menyelesaikan tugas yang diberikan guru.', 2, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
-(160, 50, 156, 'ERLANGGA SAPUTRA HIDAYAT', 12, 'Terlambat masuk kelas setelah istirahat', 2, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa terlambat kembali ke kelas setelah waktu istirahat.', 2, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
-(161, 50, 157, 'HILMA HUMMA TUNNAJAN', 24, 'Tidak memakai atribut lengkap', 3, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa tidak memakai atribut seragam yang diwajibkan.', 3, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
-(162, 50, 158, 'ILIMA NAJYA', 32, 'Mengganggu teman saat belajar', 4, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa mengganggu teman sehingga menghambat kegiatan belajar.', 3, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
-(163, 50, 159, 'JULIANDA DHARMA PANCESTU', 42, 'Meninggalkan sampah setelah makan', 5, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa meninggalkan sampah makanan atau minuman di area sekolah.', 2, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
-(164, 50, 160, 'KAYILA NUR FADILAN', 3, 'Tidur saat pembelajaran', 1, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa tidur saat proses pembelajaran berlangsung.', 3, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
-(165, 50, 161, 'MOZA DINA NABILLAH', 13, 'Terlambat masuk kelas tanpa alasan', 2, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa terlambat masuk kelas tanpa alasan yang jelas.', 3, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
-(166, 50, 162, 'MUHAMAD ALFARIZ', 25, 'Tidak memakai topi saat upacara', 3, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa tidak memakai topi saat diwajibkan dalam upacara.', 5, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
-(167, 50, 163, 'MUHAMAD FAHRIN ADAM', 33, 'Membuat keributan di kelas', 4, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa membuat keributan yang mengganggu pembelajaran.', 5, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
-(168, 50, 164, 'MUHAMMAD ZIDANE MAULIDAN', 43, 'Membiarkan meja dan kursi tidak rapi', 5, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa meninggalkan meja dan kursi dalam keadaan tidak rapi.', 2, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
-(169, 50, 165, 'MUHAMMAD ZULFAN NURALFANSYAH', 4, 'Tidak melaksanakan piket sesuai jadwal', 1, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa tidak melaksanakan tugas piket sesuai jadwal.', 3, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
-(170, 50, 166, 'NATIYA NUR AZKIYA', 14, 'Tidak masuk kelas tanpa izin', 2, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa tidak berada di kelas saat pembelajaran tanpa izin.', 5, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
-(171, 50, 167, 'NOVITA PUSPITASARI', 26, 'Memakai sepatu tidak sesuai ketentuan', 3, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa menggunakan sepatu yang tidak sesuai aturan sekolah.', 5, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
-(172, 50, 168, 'NUCKY ANDREAS FEBRIAN', 34, 'Menggunakan HP tanpa izin saat belajar', 4, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa menggunakan telepon genggam saat pembelajaran tanpa izin.', 5, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
+(105, 50, 99, 'Ijad Rayi Nurfais Ansori', 23, 'Merusak fasilitas sekolah dalam skala ringan', 4, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa mencoret fasilitas sekolah tanpa izin.', 20, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(106, 50, 100, 'Iqbal Muharrom', 23, 'Merusak fasilitas sekolah dalam skala ringan', 4, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa sengaja merusak tanaman atau fasilitas taman sekolah.', 20, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(107, 50, 101, 'Izaz Syakir', 13, 'Tidak membawa perlengkapan belajar', 1, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa tidak membawa perlengkapan belajar yang diperlukan.', 3, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(108, 50, 102, 'Moch Faizal Gilang Permana', 12, 'Tidak mengerjakan tugas atau PR', 1, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa tidak menyelesaikan tugas yang diberikan guru.', 5, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(109, 50, 103, 'Muhamad Rizky Gozali', 9, 'Tidur saat kegiatan belajar mengajar', 4, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa tidur saat proses pembelajaran berlangsung.', 5, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(110, 50, 104, 'Muhammad Rikman Nulhakim', 54, 'Tidak melaksanakan piket sesuai jadwal', 1, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa tidak melaksanakan tugas piket sesuai jadwal.', 3, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(111, 50, 105, 'Muhammad Siddiq Ibrahim Sobari', 53, 'Mengabaikan instruksi guru', 1, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa mengabaikan instruksi guru yang berkaitan dengan kegiatan belajar.', 5, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(112, 50, 106, 'Nizar Suryana', 55, 'Tidak mematuhi tata tertib sekolah', 1, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa melanggar ketentuan tata tertib sekolah yang telah disosialisasikan.', 5, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(113, 50, 107, 'Rasya Abdul Basith', 20, 'Tidak mengikuti kegiatan wajib sekolah tanpa izin', 2, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa tidak mengikuti kegiatan wajib sekolah tanpa keterangan yang dapat dipertanggungjawabkan.', 15, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(114, 50, 108, 'Rausan Vikri', 18, 'Menyontek saat ulangan atau ujian', 4, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa menggunakan jawaban atau bantuan yang tidak diizinkan saat ulangan.', 15, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(115, 50, 109, 'Revaldi Nurwansah', 52, 'Memalsukan tanda tangan guru atau orang tua', 1, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa memalsukan tanda tangan pada dokumen sekolah.', 15, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(116, 50, 110, 'Revan Rudiansah', 26, 'Mengulangi pelanggaran ringan meskipun sudah ditegur', 1, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa mengulangi pelanggaran setelah menjalani pembinaan resmi.', 20, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(117, 50, 111, 'Rizki Raditya', 1, 'Terlambat datang ke sekolah', 2, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa tiba setelah waktu masuk sekolah yang ditentukan.', 5, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(118, 50, 112, 'Roby Orie Al Rasya', 57, 'Terlambat masuk kelas setelah istirahat', 2, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa terlambat kembali ke kelas setelah waktu istirahat.', 2, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(119, 50, 113, 'Ruly Rudiansah', 58, 'Terlambat masuk kelas tanpa alasan', 2, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa terlambat masuk kelas tanpa alasan yang jelas.', 3, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(120, 50, 114, 'Syahdan Rasdani', 15, 'Membolos pelajaran', 2, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa tidak berada di kelas saat pembelajaran tanpa izin.', 15, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(121, 50, 115, 'Taba Haerul Salim', 15, 'Membolos pelajaran', 2, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa tidak mengikuti kegiatan pembelajaran tanpa izin guru.', 15, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(122, 50, 116, 'Tirta Nur Zamzam', 19, 'Tidak mengikuti upacara tanpa alasan jelas', 2, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa tidak mengikuti upacara sekolah tanpa izin atau alasan yang sah.', 15, 'Data simulasi untuk pengujian sistem', 'Diproses', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(123, 50, 117, 'Zilhad Ayalthuhaq', 15, 'Membolos pelajaran', 2, 42, 'Bu Risna Andriyani, S.Pd', '2026-11-10', 'Siswa sengaja menghindari kegiatan belajar pada jam pelajaran.', 15, 'Data simulasi untuk pengujian sistem', 'Selesai', '2026-11-10 01:59:41', '2026-11-10 01:59:41', 39, 'XII TKR 3'),
+(153, 50, 53, 'Fatir Rizky', 24, 'Meninggalkan lingkungan sekolah tanpa izin', 2, 4, 'Dody Jaenudin, S.Pd.', '2026-11-10', 'pulang duluan', 25, 'sudah dikasi tau', 'Selesai', '2026-11-10 02:34:35', '2026-11-10 02:34:35', 39, 'XII TKR 3'),
+(154, 50, 150, 'ALFIN RAHADIAN', 13, 'Tidak membawa perlengkapan belajar', 1, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa tidak membawa perlengkapan belajar yang diperlukan.', 3, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
+(155, 50, 151, 'ALISA RAMADHANI', 1, 'Terlambat datang ke sekolah', 2, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa tiba setelah waktu masuk sekolah yang ditentukan.', 5, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
+(156, 50, 152, 'ALMA AURA LIVIA', 2, 'Memakai seragam tidak sesuai ketentuan', 3, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Seragam tidak dikenakan dengan rapi sesuai ketentuan sekolah.', 5, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
+(157, 50, 153, 'ANIS KHOERUNNISA NUR RAMADANI', 11, 'Membuat keributan di kelas', 4, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa berbicara sehingga mengganggu proses penjelasan guru.', 5, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
+(158, 50, 154, 'AZMIL AMIRA', 8, 'Membuang sampah sembarangan', 5, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa membuang sampah bukan pada tempat yang disediakan.', 5, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
+(159, 50, 155, 'AZRIL AKBAR FAWJI ABDILLAH', 12, 'Tidak mengerjakan tugas atau PR', 1, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa tidak menyelesaikan tugas yang diberikan guru.', 5, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
+(160, 50, 156, 'ERLANGGA SAPUTRA HIDAYAT', 57, 'Terlambat masuk kelas setelah istirahat', 2, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa terlambat kembali ke kelas setelah waktu istirahat.', 2, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
+(161, 50, 157, 'HILMA HUMMA TUNNAJAN', 3, 'Tidak memakai atribut seragam lengkap', 3, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa tidak memakai atribut seragam yang diwajibkan.', 5, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
+(162, 50, 158, 'ILIMA NAJYA', 11, 'Membuat keributan di kelas', 4, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa mengganggu teman sehingga menghambat kegiatan belajar.', 5, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
+(163, 50, 159, 'JULIANDA DHARMA PANCESTU', 8, 'Membuang sampah sembarangan', 5, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa meninggalkan sampah makanan atau minuman di area sekolah.', 5, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
+(164, 50, 160, 'KAYILA NUR FADILAN', 9, 'Tidur saat kegiatan belajar mengajar', 4, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa tidur saat proses pembelajaran berlangsung.', 5, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
+(165, 50, 161, 'MOZA DINA NABILLAH', 58, 'Terlambat masuk kelas tanpa alasan', 2, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa terlambat masuk kelas tanpa alasan yang jelas.', 3, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
+(166, 50, 162, 'MUHAMAD ALFARIZ', 3, 'Tidak memakai atribut seragam lengkap', 3, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa tidak memakai topi saat diwajibkan dalam upacara.', 5, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
+(167, 50, 163, 'MUHAMAD FAHRIN ADAM', 11, 'Membuat keributan di kelas', 4, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa membuat keributan yang mengganggu pembelajaran.', 5, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
+(168, 50, 164, 'MUHAMMAD ZIDANE MAULIDAN', 64, 'Membiarkan meja dan kursi tidak rapi', 5, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa meninggalkan meja dan kursi dalam keadaan tidak rapi.', 2, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
+(169, 50, 165, 'MUHAMMAD ZULFAN NURALFANSYAH', 54, 'Tidak melaksanakan piket sesuai jadwal', 1, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa tidak melaksanakan tugas piket sesuai jadwal.', 3, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
+(170, 50, 166, 'NATIYA NUR AZKIYA', 15, 'Membolos pelajaran', 2, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa tidak berada di kelas saat pembelajaran tanpa izin.', 15, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
+(171, 50, 167, 'NOVITA PUSPITASARI', 2, 'Memakai seragam tidak sesuai ketentuan', 3, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa menggunakan sepatu yang tidak sesuai aturan sekolah.', 5, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
+(172, 50, 168, 'NUCKY ANDREAS FEBRIAN', 17, 'Menggunakan HP saat pelajaran tanpa izin', 4, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa menggunakan telepon genggam saat pembelajaran tanpa izin.', 15, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
 (173, 50, 169, 'RADITYA JETI PRASETYA', 44, 'Meludah sembarangan', 5, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa meludah bukan pada tempat yang semestinya.', 3, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
-(174, 50, 170, 'RANGGA RAMADIYANTO NURHAKIM', 5, 'Mengabaikan instruksi guru', 1, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa mengabaikan instruksi guru yang berkaitan dengan kegiatan belajar.', 5, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
-(175, 50, 171, 'RISQI MUHAMAD IHWANI', 15, 'Tidak mengikuti pelajaran tanpa izin', 2, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa tidak mengikuti kegiatan pembelajaran tanpa izin guru.', 5, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
-(176, 50, 172, 'SALWA SABILATUL BARKAN', 27, 'Memakai seragam tidak sesuai jadwal', 3, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa memakai seragam yang tidak sesuai jadwal yang ditetapkan.', 5, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
-(177, 50, 173, 'TAZKIA ZAHRA', 35, 'Berkata kasar kepada teman', 4, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa menggunakan kata-kata kasar kepada teman.', 5, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
-(185, 50, 53, 'Fatir Rizky', 26, 'Memakai sepatu tidak sesuai ketentuan', 3, 32, 'Aldi Maulana, S.Pd', '2026-11-10', 'nsjkfkjhnsgf', 5, '', 'Diproses', '2026-11-10 03:28:49', '2026-11-10 03:28:49', 39, 'XII TKR 3'),
-(186, 50, 37, 'Kevin Setiawan', 18, 'Pulang sebelum waktunya tanpa izin', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-10', 'jnk', 10, 'fgf', 'Selesai', '2026-11-10 04:40:27', '2026-11-10 04:40:27', 37, 'X TKJ 3'),
-(187, 50, 19, 'Raka Firmansyah', 1, 'Tidak membawa perlengkapan belajar', 1, 4, 'Dody Jaenudin, S.Pd.', '2026-11-10', 'vhgh', 2, '', 'Diproses', '2026-11-10 04:55:22', '2026-11-10 04:55:22', 19, 'X TKR 2'),
-(188, 50, 53, 'Fatir Rizky', 11, 'Terlambat datang ke sekolah', 2, 4, 'Dody Jaenudin, S.Pd.', '2026-11-10', 'kesiangan wae', 2, '', 'Selesai', '2026-11-10 08:01:23', '2026-11-10 08:01:23', 39, 'XII TKR 3'),
-(189, 50, 53, 'Fatir Rizky', 11, 'Terlambat datang ke sekolah', 2, 4, 'Dody Jaenudin, S.Pd.', '2026-11-10', 'BDBGNBDNNG', 2, 'DIBERIKAN PENGARAHAN', 'Selesai', '2026-11-10 08:58:56', '2026-11-10 08:58:56', 39, 'XII TKR 3'),
-(190, 50, 52, 'Nadia Zulfa Soraya', 12, 'Terlambat masuk kelas setelah istirahat', 2, 42, 'Risna Andriyani, S.Pd', '2026-11-10', 'dgd', 2, 'bjbj', 'Selesai', '2026-11-10 12:49:03', '2026-11-10 12:49:03', 21, 'XII RPL 2'),
-(191, 50, 10, 'Intan Permata', 16, 'Tidak mengikuti upacara tanpa izin', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-11', 'pi', 5, 'oooouhoyu', 'Selesai', '2026-11-11 00:39:42', '2026-11-11 00:39:42', 10, 'X TSM 1'),
-(192, 50, 53, 'Fatir Rizky', 17, 'Membolos pada jam pelajaran', 2, 1, 'Wawan Kurniawan, S.Pd.I', '2026-11-11', 'bhh', 10, '', 'Selesai', '2026-11-11 01:06:39', '2026-11-11 01:06:39', 39, 'XII TKR 3'),
-(193, 50, 38, 'Larasati Putri', 2, 'Tidak mengerjakan tugas', 1, 32, 'Aldi Maulana, S.Pd', '2026-11-11', 'gfh', 2, 'jkj', 'Selesai', '2026-11-11 02:26:22', '2026-11-11 02:26:22', 8, 'XI BD 1'),
-(194, 50, 52, 'Nadia Zulfa Soraya', 9, 'Memalsukan tanda tangan guru atau orang tua', 1, 1, 'Wawan Kurniawan, S.Pd.I', '2026-11-11', 'fdg', 15, 'ahjsfkushfkjzsf', 'Selesai', '2026-11-11 02:31:02', '2026-11-11 02:31:02', 21, 'XII RPL 2'),
-(195, 50, 16, 'Olivia Amelia', 19, 'Meninggalkan sekolah tanpa izin', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-11', 'dgfg', 10, 'dgdfg', 'Selesai', '2026-11-11 04:16:15', '2026-11-11 04:16:15', 16, 'X RPL 2'),
+(174, 50, 170, 'RANGGA RAMADIYANTO NURHAKIM', 53, 'Mengabaikan instruksi guru', 1, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa mengabaikan instruksi guru yang berkaitan dengan kegiatan belajar.', 5, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
+(175, 50, 171, 'RISQI MUHAMAD IHWANI', 15, 'Membolos pelajaran', 2, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa tidak mengikuti kegiatan pembelajaran tanpa izin guru.', 15, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
+(176, 50, 172, 'SALWA SABILATUL BARKAN', 2, 'Memakai seragam tidak sesuai ketentuan', 3, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa memakai seragam yang tidak sesuai jadwal yang ditetapkan.', 5, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
+(177, 50, 173, 'TAZKIA ZAHRA', 21, 'Berkata kasar atau menghina teman', 4, 28, 'Ari Sandriana, S.Kom', '2026-11-10', 'Siswa menggunakan kata-kata kasar kepada teman.', 15, 'Pembinaan dan teguran (simulasi)', 'Selesai', '2026-11-10 02:37:21', '2026-11-10 02:37:21', 6, 'XII RPL 1'),
+(185, 50, 53, 'Fatir Rizky', 2, 'Memakai seragam tidak sesuai ketentuan', 3, 32, 'Aldi Maulana, S.Pd', '2026-11-10', 'nsjkfkjhnsgf', 5, '', 'Diproses', '2026-11-10 03:28:49', '2026-11-10 03:28:49', 39, 'XII TKR 3'),
+(186, 50, 37, 'Kevin Setiawan', 24, 'Meninggalkan lingkungan sekolah tanpa izin', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-10', 'jnk', 25, 'fgf', 'Selesai', '2026-11-10 04:40:27', '2026-11-10 04:40:27', 37, 'X TKJ 3'),
+(187, 50, 19, 'Raka Firmansyah', 13, 'Tidak membawa perlengkapan belajar', 1, 4, 'Dody Jaenudin, S.Pd.', '2026-11-10', 'vhgh', 3, '', 'Diproses', '2026-11-10 04:55:22', '2026-11-10 04:55:22', 19, 'X TKR 2'),
+(188, 50, 53, 'Fatir Rizky', 1, 'Terlambat datang ke sekolah', 2, 4, 'Dody Jaenudin, S.Pd.', '2026-11-10', 'kesiangan wae', 5, '', 'Selesai', '2026-11-10 08:01:23', '2026-11-10 08:01:23', 39, 'XII TKR 3'),
+(189, 50, 53, 'Fatir Rizky', 1, 'Terlambat datang ke sekolah', 2, 4, 'Dody Jaenudin, S.Pd.', '2026-11-10', 'BDBGNBDNNG', 5, 'DIBERIKAN PENGARAHAN', 'Selesai', '2026-11-10 08:58:56', '2026-11-10 08:58:56', 39, 'XII TKR 3'),
+(190, 50, 52, 'Nadia Zulfa Soraya', 57, 'Terlambat masuk kelas setelah istirahat', 2, 42, 'Risna Andriyani, S.Pd', '2026-11-10', 'dgd', 2, 'bjbj', 'Selesai', '2026-11-10 12:49:03', '2026-11-10 12:49:03', 21, 'XII RPL 2'),
+(191, 50, 10, 'Intan Permata', 19, 'Tidak mengikuti upacara tanpa alasan jelas', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-11', 'pi', 15, 'oooouhoyu', 'Selesai', '2026-11-11 00:39:42', '2026-11-11 00:39:42', 10, 'X TSM 1'),
+(192, 50, 53, 'Fatir Rizky', 15, 'Membolos pelajaran', 2, 1, 'Wawan Kurniawan, S.Pd.I', '2026-11-11', 'bhh', 15, '', 'Selesai', '2026-11-11 01:06:39', '2026-11-11 01:06:39', 39, 'XII TKR 3'),
+(193, 50, 38, 'Larasati Putri', 12, 'Tidak mengerjakan tugas atau PR', 1, 32, 'Aldi Maulana, S.Pd', '2026-11-11', 'gfh', 5, 'jkj', 'Selesai', '2026-11-11 02:26:22', '2026-11-11 02:26:22', 8, 'XI BD 1'),
+(194, 50, 52, 'Nadia Zulfa Soraya', 52, 'Memalsukan tanda tangan guru atau orang tua', 1, 1, 'Wawan Kurniawan, S.Pd.I', '2026-11-11', 'fdg', 15, 'ahjsfkushfkjzsf', 'Selesai', '2026-11-11 02:31:02', '2026-11-11 02:31:02', 21, 'XII RPL 2'),
+(195, 50, 16, 'Olivia Amelia', 24, 'Meninggalkan lingkungan sekolah tanpa izin', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-11', 'dgfg', 25, 'dgdfg', 'Selesai', '2026-11-11 04:16:15', '2026-11-11 04:16:15', 16, 'X RPL 2'),
 (196, 50, 66, 'Puspita Dewi', 47, 'Tidak menjaga kebersihan toilet', 5, 1, 'Wawan Kurniawan, S.Pd.I', '2026-11-11', 'hhhhh', 5, 'membersihkan toilet', 'Selesai', '2026-11-11 04:45:39', '2026-11-11 04:45:39', 21, 'XII RPL 2'),
-(197, 50, 52, 'Nadia Zulfa Soraya', 14, 'Tidak masuk kelas tanpa izin', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-11', 'kl', 5, 'jkljljl', 'Selesai', '2026-11-11 05:31:09', '2026-11-11 05:31:09', 21, 'XII RPL 2'),
-(198, 50, 56, 'Agnia Rosya Noerillah', 10, 'Mengulangi pelanggaran setelah pembinaan', 1, 32, 'Aldi Maulana, S.Pd', '2026-11-11', 'DG', 15, 'HKHK', 'Selesai', '2026-11-11 06:32:55', '2026-11-11 06:32:55', 21, 'XII RPL 2'),
-(199, 50, 152, 'ALMA AURA LIVIA', 6, 'Tidak mematuhi tata tertib sekolah', 1, 1, 'Wawan Kurniawan, S.Pd.I', '2026-11-11', 'vnvn', 5, 'fhgfhhhf', 'Selesai', '2026-11-11 06:37:48', '2026-11-11 06:37:48', 6, 'XII RPL 1'),
-(200, 50, 7, 'Fajar Nugraha', 18, 'Pulang sebelum waktunya tanpa izin', 2, 28, 'Ari Sandriana, S.Kom', '2026-11-11', 'gj', 10, '', 'Diproses', '2026-11-11 06:39:48', '2026-11-11 06:39:48', 7, 'X TKJ 1');
+(197, 50, 52, 'Nadia Zulfa Soraya', 15, 'Membolos pelajaran', 2, 32, 'Aldi Maulana, S.Pd', '2026-11-11', 'kl', 15, 'jkljljl', 'Selesai', '2026-11-11 05:31:09', '2026-11-11 05:31:09', 21, 'XII RPL 2'),
+(198, 50, 56, 'Agnia Rosya Noerillah', 26, 'Mengulangi pelanggaran ringan meskipun sudah ditegur', 1, 32, 'Aldi Maulana, S.Pd', '2026-11-11', 'DG', 20, 'HKHK', 'Selesai', '2026-11-11 06:32:55', '2026-11-11 06:32:55', 21, 'XII RPL 2'),
+(199, 50, 152, 'ALMA AURA LIVIA', 55, 'Tidak mematuhi tata tertib sekolah', 1, 1, 'Wawan Kurniawan, S.Pd.I', '2026-11-11', 'vnvn', 5, 'fhgfhhhf', 'Selesai', '2026-11-11 06:37:48', '2026-11-11 06:37:48', 6, 'XII RPL 1'),
+(200, 50, 7, 'Fajar Nugraha', 24, 'Meninggalkan lingkungan sekolah tanpa izin', 2, 28, 'Ari Sandriana, S.Kom', '2026-11-11', 'gj', 25, '', 'Diproses', '2026-11-11 06:39:48', '2026-11-11 06:39:48', 7, 'X TKJ 1'),
+(201, 50, 47, 'Zaki Firmansyah', 4, 'Memakai makeup berlebihan', 3, 32, 'Aldi Maulana, S.Pd', '2026-11-14', 'bmdkfkdg', 5, '', 'Diproses', '2026-11-14 11:55:04', '2026-11-14 11:55:04', 47, 'XI TKJ 4');
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `t_siswa`
+-- Table structure for table `t_siswa`
 --
 
 CREATE TABLE `t_siswa` (
@@ -677,7 +773,7 @@ CREATE TABLE `t_siswa` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `t_siswa`
+-- Dumping data for table `t_siswa`
 --
 
 INSERT INTO `t_siswa` (`id`, `nis`, `nisn`, `nama`, `jenis_kelamin`, `tanggal_lahir`, `alamat`, `status_aktif`, `created_at`, `update_at`) VALUES
@@ -816,7 +912,7 @@ INSERT INTO `t_siswa` (`id`, `nis`, `nisn`, `nama`, `jenis_kelamin`, `tanggal_la
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `t_tahun_ajaran`
+-- Table structure for table `t_tahun_ajaran`
 --
 
 CREATE TABLE `t_tahun_ajaran` (
@@ -830,7 +926,7 @@ CREATE TABLE `t_tahun_ajaran` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `t_tahun_ajaran`
+-- Dumping data for table `t_tahun_ajaran`
 --
 
 INSERT INTO `t_tahun_ajaran` (`id`, `nama`, `tanggal_mulai`, `tanggal_selesai`, `status_aktif`, `created_at`, `update_at`) VALUES
@@ -845,7 +941,7 @@ INSERT INTO `t_tahun_ajaran` (`id`, `nama`, `tanggal_mulai`, `tanggal_selesai`, 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `t_users`
+-- Table structure for table `t_users`
 --
 
 CREATE TABLE `t_users` (
@@ -861,11 +957,11 @@ CREATE TABLE `t_users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `t_users`
+-- Dumping data for table `t_users`
 --
 
 INSERT INTO `t_users` (`id`, `name`, `email`, `email_verified_at`, `password`, `remember_token`, `role`, `created_at`, `updated_at`) VALUES
-(1, 'User 1', 'user1@sekolah.sch.id', NULL, '$2y$10$lTsGN.8RDzA7fRN7q28eMebGrQHNRck8Y6TOQTFQbf/b//omnohlW', NULL, 'admin', '2026-09-23 03:43:52', '2026-09-23 03:43:52'),
+(1, 'User 1', 'user1@sekolah.sch.id', NULL, '$2y$10$u2ASb.b0.Os8h9R5qOZtperJwML/K2ChyWSz1ZLI0L/Y6bUfOA/Gu', NULL, 'admin', '2026-09-23 03:43:52', '2026-09-23 03:43:52'),
 (2, 'Ai Nuryaidah, S.Pd', 'ai.nuryaidah@gmail.com', NULL, '$2y$12$dVcdTVcAUeoX3civzu64sORpUWgod6ZLcne343KinypjBvdr42ID6', NULL, 'guru', '2026-09-23 03:43:52', '2026-11-05 02:34:08'),
 (3, 'Maya Permata Endah, S. Pd', 'maya.permata.endah@gmail.com', NULL, '$2y$12$1iNWgBIlYvLZwM4eCwGdg.J3VqxlS48a3BGb2nXLcadsNmUUGVKmy', NULL, 'guru', '2026-09-23 03:43:52', '2026-11-05 02:34:08'),
 (4, 'Dody Jaenudin, S.Pd.', 'dody.jaenudin@gmail.com', NULL, '$2y$12$hUi2WpyZDpfk0ZYCBXKjVuCAKu5oPF5ayFIICoNgyYhFfuTM9gXfm', NULL, 'guru', '2026-09-23 03:43:52', '2026-11-05 02:34:08'),
@@ -921,12 +1017,16 @@ INSERT INTO `t_users` (`id`, `name`, `email`, `email_verified_at`, `password`, `
 (54, 'Sri Nurrizki Putri Krisnadi, S.Pd', 'sri.nurrizki.putri.krisnadi@gmail.com', NULL, '$2y$12$V99E7fJtkIf44UDuH8j2guhFhh/krO2pEdldyBwbTCZDUOUrxblx2', NULL, 'guru', '2026-11-05 02:34:08', '2026-11-05 02:34:08'),
 (55, 'Riesy Putri Navia, S.Kom', 'riesy.putri.navia@gmail.com', NULL, '$2y$12$AdfEaB/dMwKjSXXQK9NxSOI1Xtk3e2VQdhPw2Rs8TIG6A.IiSuqiO', NULL, 'guru', '2026-11-05 02:34:08', '2026-11-05 02:34:08'),
 (56, 'Rurry Febriani Maryadi, S.Pd', 'rurry.febriani.maryadi@gmail.com', NULL, '$2y$12$rVOxcpXw3pAWVgtlDPxSWuJvaWFzFHo8BsZh.n6JyVKqSv0Piu.BG', NULL, 'guru', '2026-11-05 02:34:08', '2026-11-05 02:34:08'),
-(57, 'Irvan Rizal, S.Pd', 'irvan.rizal@gmail.com', NULL, '$2y$12$yuxu6BnARejFcwVUce/nQepwL3RClSRQ6vcvQykJpA.rlFeBEYUsa', NULL, 'guru', '2026-11-05 02:34:08', '2026-11-05 02:34:08');
+(57, 'Irvan Rizal, S.Pd', 'irvan.rizal@gmail.com', NULL, '$2y$12$yuxu6BnARejFcwVUce/nQepwL3RClSRQ6vcvQykJpA.rlFeBEYUsa', NULL, 'guru', '2026-11-05 02:34:08', '2026-11-05 02:34:08'),
+(58, 'fbg', 'fgfsgfsft@gmail.com', NULL, '$2y$10$ZzvHPpNBuffHhN9YhjxJKuVZHlua1DE9ABUgGszfpvnB9zV8IJBK6', NULL, 'guru', '2026-11-14 03:32:22', '2026-11-14 03:32:22'),
+(59, 'rytttttttt', 'rrrrr@gmail.com', NULL, '$2y$10$sCPyynW0zZ/dOwHR8M6JDuZ3eZBk87Gedkk0WVdTFYH1mzpO2Ok/m', NULL, 'guru', '2026-11-14 03:56:43', '2026-11-14 03:56:43'),
+(60, 'bbbbsf', 'bbbbsf@gmail.com', NULL, '$2y$10$97FctW1LAAj8du1dI0.fEuG5Lk0m3BzSxgkndL4zWSLbv40I2Yw0W', NULL, 'guru', '2026-11-14 04:36:11', '2026-11-14 04:36:11'),
+(61, 'jajaajjaa', 'jaja@gmail.com', NULL, '$2y$10$pD6Aeqe6y3LmYYR7I4NwC.ELQX0ayOOgM7LbdxGM/tRJFG086zJm6', NULL, 'guru', '2026-11-14 11:52:36', '2026-11-14 11:52:36');
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `t_wali_kelas`
+-- Table structure for table `t_wali_kelas`
 --
 
 CREATE TABLE `t_wali_kelas` (
@@ -942,7 +1042,7 @@ CREATE TABLE `t_wali_kelas` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `t_wali_kelas`
+-- Dumping data for table `t_wali_kelas`
 --
 
 INSERT INTO `t_wali_kelas` (`id`, `tahun_ajaran_id`, `kelas_id`, `guru_id`, `tanggal_mulai`, `tanggal_selesai`, `status_aktif`, `created_at`, `update_at`) VALUES
@@ -983,44 +1083,49 @@ INSERT INTO `t_wali_kelas` (`id`, `tahun_ajaran_id`, `kelas_id`, `guru_id`, `tan
 (35, 50, 19, 56, '2026-07-01', NULL, 1, '2026-09-23 03:53:40', '2026-09-23 03:53:40'),
 (36, 50, 34, 44, '2026-07-01', NULL, 1, '2026-09-23 03:53:40', '2026-09-23 03:53:40'),
 (37, 50, 14, 31, '2026-07-01', NULL, 1, '2026-09-23 03:53:40', '2026-09-23 03:53:40'),
-(38, 50, 49, 24, '2026-07-01', NULL, 1, '2026-09-23 03:53:40', '2026-09-23 03:53:40');
+(38, 50, 65, 24, '2026-07-01', NULL, 1, '2026-09-23 03:53:40', '2026-09-23 03:53:40'),
+(53, 4, 8, 49, '2026-07-01', '2027-06-30', 0, '2026-11-14 03:36:00', '2026-11-14 03:36:00'),
+(54, 4, 13, 11, '2026-07-01', '2026-11-14', 0, '2026-11-14 03:50:28', '2026-11-14 03:50:28'),
+(55, 4, 66, 58, '2023-07-01', '2024-06-30', 1, '2026-11-14 03:57:42', '2026-11-14 03:57:42'),
+(56, 50, 66, 59, '2026-07-01', '2027-06-30', 1, '2026-11-14 04:36:43', '2026-11-14 04:36:43'),
+(57, 50, 66, 60, '2026-07-01', '2027-06-30', 1, '2026-11-14 11:53:01', '2026-11-14 11:53:01');
 
 --
 -- Indexes for dumped tables
 --
 
 --
--- Indeks untuk tabel `t_guru`
+-- Indexes for table `t_guru`
 --
 ALTER TABLE `t_guru`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indeks untuk tabel `t_kelas`
+-- Indexes for table `t_kelas`
 --
 ALTER TABLE `t_kelas`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indeks untuk tabel `t_kelas_siswa`
+-- Indexes for table `t_kelas_siswa`
 --
 ALTER TABLE `t_kelas_siswa`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indeks untuk tabel `t_pelanggaran`
+-- Indexes for table `t_pelanggaran`
 --
 ALTER TABLE `t_pelanggaran`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indeks untuk tabel `t_pelanggaran_kategori`
+-- Indexes for table `t_pelanggaran_kategori`
 --
 ALTER TABLE `t_pelanggaran_kategori`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indeks untuk tabel `t_pelanggaran_siswa`
+-- Indexes for table `t_pelanggaran_siswa`
 --
 ALTER TABLE `t_pelanggaran_siswa`
   ADD PRIMARY KEY (`id`),
@@ -1032,99 +1137,99 @@ ALTER TABLE `t_pelanggaran_siswa`
   ADD KEY `kelas_id` (`kelas_id`);
 
 --
--- Indeks untuk tabel `t_siswa`
+-- Indexes for table `t_siswa`
 --
 ALTER TABLE `t_siswa`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indeks untuk tabel `t_tahun_ajaran`
+-- Indexes for table `t_tahun_ajaran`
 --
 ALTER TABLE `t_tahun_ajaran`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indeks untuk tabel `t_users`
+-- Indexes for table `t_users`
 --
 ALTER TABLE `t_users`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indeks untuk tabel `t_wali_kelas`
+-- Indexes for table `t_wali_kelas`
 --
 ALTER TABLE `t_wali_kelas`
   ADD PRIMARY KEY (`id`);
 
 --
--- AUTO_INCREMENT untuk tabel yang dibuang
+-- AUTO_INCREMENT for dumped tables
 --
 
 --
--- AUTO_INCREMENT untuk tabel `t_guru`
+-- AUTO_INCREMENT for table `t_guru`
 --
 ALTER TABLE `t_guru`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
 
 --
--- AUTO_INCREMENT untuk tabel `t_kelas`
+-- AUTO_INCREMENT for table `t_kelas`
 --
 ALTER TABLE `t_kelas`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=67;
+
+--
+-- AUTO_INCREMENT for table `t_kelas_siswa`
+--
+ALTER TABLE `t_kelas_siswa`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=227;
+
+--
+-- AUTO_INCREMENT for table `t_pelanggaran`
+--
+ALTER TABLE `t_pelanggaran`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=65;
 
 --
--- AUTO_INCREMENT untuk tabel `t_kelas_siswa`
---
-ALTER TABLE `t_kelas_siswa`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=223;
-
---
--- AUTO_INCREMENT untuk tabel `t_pelanggaran`
---
-ALTER TABLE `t_pelanggaran`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
-
---
--- AUTO_INCREMENT untuk tabel `t_pelanggaran_kategori`
+-- AUTO_INCREMENT for table `t_pelanggaran_kategori`
 --
 ALTER TABLE `t_pelanggaran_kategori`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=53;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
 
 --
--- AUTO_INCREMENT untuk tabel `t_pelanggaran_siswa`
+-- AUTO_INCREMENT for table `t_pelanggaran_siswa`
 --
 ALTER TABLE `t_pelanggaran_siswa`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=201;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=202;
 
 --
--- AUTO_INCREMENT untuk tabel `t_siswa`
+-- AUTO_INCREMENT for table `t_siswa`
 --
 ALTER TABLE `t_siswa`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=174;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=177;
 
 --
--- AUTO_INCREMENT untuk tabel `t_tahun_ajaran`
+-- AUTO_INCREMENT for table `t_tahun_ajaran`
 --
 ALTER TABLE `t_tahun_ajaran`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
 
 --
--- AUTO_INCREMENT untuk tabel `t_users`
+-- AUTO_INCREMENT for table `t_users`
 --
 ALTER TABLE `t_users`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=62;
+
+--
+-- AUTO_INCREMENT for table `t_wali_kelas`
+--
+ALTER TABLE `t_wali_kelas`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
 
 --
--- AUTO_INCREMENT untuk tabel `t_wali_kelas`
---
-ALTER TABLE `t_wali_kelas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=53;
-
---
--- Ketidakleluasaan untuk tabel pelimpahan (Dumped Tables)
+-- Constraints for dumped tables
 --
 
 --
--- Ketidakleluasaan untuk tabel `t_pelanggaran_siswa`
+-- Constraints for table `t_pelanggaran_siswa`
 --
 ALTER TABLE `t_pelanggaran_siswa`
   ADD CONSTRAINT `t_pelanggaran_siswa_ibfk_1` FOREIGN KEY (`siswa_id`) REFERENCES `t_siswa` (`id`) ON UPDATE CASCADE,

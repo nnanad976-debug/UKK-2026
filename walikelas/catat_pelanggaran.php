@@ -1,3 +1,4 @@
+
 <?php
 include __DIR__ . "/../middleware/auth.php";
 include __DIR__ . "/../config/koneksi.php";
@@ -149,44 +150,91 @@ if (isset($_POST['simpan_tindakan'])) {
 
     } else {
 
+        // Periksa kepemilikan data sebelum memperbarui tindakan.
+
         $stmt = mysqli_prepare(
             $koneksi,
-            "UPDATE t_pelanggaran_siswa
-             SET tindakan = ?, status = ?
+            "SELECT id
+             FROM t_pelanggaran_siswa
              WHERE id = ?
                AND guru_id = ?
                AND tahun_ajaran_id = ?
-               AND COALESCE(status, '') <> 'Selesai'"
+               AND COALESCE(status, '') <> 'Selesai'
+             LIMIT 1"
         );
+
+        $data_valid = false;
 
         if ($stmt) {
 
             mysqli_stmt_bind_param(
                 $stmt,
-                "ssiii",
-                $tindakan_baru,
-                $status_baru,
+                "iii",
                 $pelanggaran_siswa_id,
                 $guru_id,
                 $tahun_ajaran_id
             );
 
-            $berhasil = mysqli_stmt_execute($stmt);
-            $jumlah_diubah = mysqli_stmt_affected_rows($stmt);
+            mysqli_stmt_execute($stmt);
+
+            $data_valid = (bool)mysqli_fetch_assoc(
+                mysqli_stmt_get_result($stmt)
+            );
 
             mysqli_stmt_close($stmt);
+        }
 
-            if ($berhasil && $jumlah_diubah >= 0) {
-                header("Location: catat_pelanggaran.php?tindakan_berhasil=1#riwayat");
-                exit;
-            }
+        if (!$data_valid) {
 
-            $pesan = 'Catatan tidak dapat diperbarui.';
+            $pesan = 'Data pelanggaran tidak ditemukan, bukan milik akun Anda, atau sudah selesai.';
             $jenis_pesan = 'warning';
 
         } else {
-            $pesan = 'Terjadi kesalahan saat menyiapkan perubahan tindakan.';
-            $jenis_pesan = 'danger';
+
+            $stmt = mysqli_prepare(
+                $koneksi,
+                "UPDATE t_pelanggaran_siswa
+                 SET tindakan = ?, status = ?
+                 WHERE id = ?
+                   AND guru_id = ?
+                   AND tahun_ajaran_id = ?
+                   AND COALESCE(status, '') <> 'Selesai'"
+            );
+
+            if ($stmt) {
+
+                mysqli_stmt_bind_param(
+                    $stmt,
+                    "ssiii",
+                    $tindakan_baru,
+                    $status_baru,
+                    $pelanggaran_siswa_id,
+                    $guru_id,
+                    $tahun_ajaran_id
+                );
+
+                $berhasil = mysqli_stmt_execute($stmt);
+
+                mysqli_stmt_close($stmt);
+
+                if ($berhasil) {
+
+                    header(
+                        "Location: catat_pelanggaran.php?tindakan_berhasil=1#riwayat"
+                    );
+                    exit;
+
+                } else {
+
+                    $pesan = 'Tindakan gagal diperbarui. Silakan coba kembali.';
+                    $jenis_pesan = 'danger';
+                }
+
+            } else {
+
+                $pesan = 'Terjadi kesalahan saat menyiapkan perubahan tindakan.';
+                $jenis_pesan = 'danger';
+            }
         }
     }
 }
@@ -574,7 +622,6 @@ if (($_GET['tindakan_berhasil'] ?? '') === '1') {
 
 /* =========================================
    RIWAYAT PENCATATAN WALI KELAS
-   HANYA DATA WALI YANG LOGIN
 ========================================= */
 
 $daftar_riwayat = [];
@@ -1181,7 +1228,6 @@ if ($guru_id > 0 && $tahun_ajaran_id > 0) {
             Data Siswa
         </a>
 
-        <!-- MENU REKAP POIN SISWA -->
         <a href="rekap_poin.php" class="menu-link">
             Rekap Poin Siswa
         </a>
@@ -1241,8 +1287,6 @@ if ($guru_id > 0 && $tahun_ajaran_id > 0) {
 
     <?php endif; ?>
 
-    <!-- FORM TAMBAH PELANGGARAN -->
-
     <section class="panel">
 
         <div class="panel-header">
@@ -1274,9 +1318,7 @@ if ($guru_id > 0 && $tahun_ajaran_id > 0) {
             </div>
 
             <div class="mb-3">
-                <label for="kelas_id" class="form-label">
-                    Kelas
-                </label>
+                <label for="kelas_id" class="form-label">Kelas</label>
 
                 <select
                     id="kelas_id"
@@ -1312,9 +1354,7 @@ if ($guru_id > 0 && $tahun_ajaran_id > 0) {
             </div>
 
             <div class="mb-3">
-                <label for="siswa_id" class="form-label">
-                    Nama Siswa
-                </label>
+                <label for="siswa_id" class="form-label">Nama Siswa</label>
 
                 <select
                     id="siswa_id"
@@ -1364,9 +1404,7 @@ if ($guru_id > 0 && $tahun_ajaran_id > 0) {
             </div>
 
             <div class="mb-3">
-                <label for="tanggal" class="form-label">
-                    Tanggal
-                </label>
+                <label for="tanggal" class="form-label">Tanggal</label>
 
                 <input
                     type="date"
@@ -1379,9 +1417,7 @@ if ($guru_id > 0 && $tahun_ajaran_id > 0) {
             </div>
 
             <div class="mb-4">
-                <label for="keterangan" class="form-label">
-                    Keterangan
-                </label>
+                <label for="keterangan" class="form-label">Keterangan</label>
 
                 <textarea
                     id="keterangan"
@@ -1410,8 +1446,6 @@ if ($guru_id > 0 && $tahun_ajaran_id > 0) {
         </form>
 
     </section>
-
-    <!-- RIWAYAT PELANGGARAN -->
 
     <section class="panel" id="riwayat">
 
@@ -1485,15 +1519,10 @@ if ($guru_id > 0 && $tahun_ajaran_id > 0) {
                             <tr>
 
                                 <td><?= $i + 1 ?></td>
-
                                 <td><?= e($data['tanggal']) ?></td>
-
                                 <td><?= e($data['nama_siswa']) ?></td>
-
                                 <td><?= e($kelas_tampil) ?></td>
-
                                 <td><?= e($data['nama_pelanggaran']) ?></td>
-
                                 <td><?= e($data['nama_guru'] ?? '-') ?></td>
 
                                 <td>
@@ -1525,9 +1554,7 @@ if ($guru_id > 0 && $tahun_ajaran_id > 0) {
                                 <td>
                                     <?php if (strcasecmp($status, 'Selesai') === 0): ?>
 
-                                        <span class="btn-terkunci">
-                                            Selesai
-                                        </span>
+                                        <span class="btn-terkunci">Selesai</span>
 
                                     <?php else: ?>
 

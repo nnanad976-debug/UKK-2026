@@ -235,8 +235,6 @@ function menuAktif(string $file, string $halamanAktifSidebar): string
             text-decoration: none;
         }
 
-        /* LAYOUT */
-
         .layout {
             min-height: 100vh;
         }
@@ -543,27 +541,6 @@ function menuAktif(string $file, string $halamanAktifSidebar): string
             white-space: nowrap;
         }
 
-        /* TOMBOL CATAT */
-
-        .btn-catat {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 9px 13px;
-            background: var(--blue);
-            color: #fff;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 600;
-            white-space: nowrap;
-            transition: .2s ease;
-        }
-
-        .btn-catat:hover {
-            background: var(--blue-dark);
-            color: #fff;
-        }
-
         /* EMPTY STATE */
 
         .empty {
@@ -599,7 +576,7 @@ function menuAktif(string $file, string $halamanAktifSidebar): string
 
         @media (max-width: 1100px) {
             .table {
-                min-width: 1050px;
+                min-width: 850px;
             }
         }
 
@@ -843,7 +820,6 @@ function menuAktif(string $file, string $halamanAktifSidebar): string
                                 <th>Jenis Kelamin</th>
                                 <th>Tanggal Lahir</th>
                                 <th>Alamat</th>
-                                <th>Aksi</th>
                             </tr>
                         </thead>
 
@@ -852,7 +828,7 @@ function menuAktif(string $file, string $halamanAktifSidebar): string
                             <?php if (empty($siswa)): ?>
 
                                 <tr>
-                                    <td colspan="8" class="empty">
+                                    <td colspan="7" class="empty">
                                         Belum ada siswa aktif di kelas ini.
                                     </td>
                                 </tr>
@@ -897,15 +873,6 @@ function menuAktif(string $file, string $halamanAktifSidebar): string
 
                                         <td>
                                             <?= e($row['alamat'] ?: '-') ?>
-                                        </td>
-
-                                        <td>
-                                            <a
-                                                href="catat_pelanggaran.php?siswa_id=<?= (int) $row['id'] ?>&kelas_id=<?= $kelas_id ?>&tahun_ajaran_id=<?= $tahun_ajaran_id ?>"
-                                                class="btn-catat"
-                                            >
-                                                Catat Pelanggaran
-                                            </a>
                                         </td>
 
                                     </tr>
@@ -969,7 +936,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const pesanKosong = document.createElement('tr');
 
     pesanKosong.innerHTML = `
-        <td colspan="8" class="empty">
+        <td colspan="7" class="empty">
             Siswa yang dicari tidak ditemukan.
         </td>
     `;
