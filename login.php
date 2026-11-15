@@ -11,7 +11,7 @@ unset($_SESSION['pesan_error']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Login | SIKET - Sistem Informasi Ketertiban Siswa</title>
+    <title>Login | SIPSI - Sistem Informasi Pelanggaran Siswa</title>
 
     <link
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
@@ -284,10 +284,10 @@ unset($_SESSION['pesan_error']);
                 SMK Muhammadiyah Tasikmalaya
             </p>
 
-            <h1 class="login-title">SIKET</h1>
+            <h1 class="login-title">SIPSI</h1>
 
             <p class="login-description">
-                Sistem Informasi Ketertiban Siswa
+                Sistem Informasi Pelanggaran Siswa
             </p>
 
             <p class="login-subtitle">
@@ -363,7 +363,7 @@ unset($_SESSION['pesan_error']);
                 &copy; <?= date('Y'); ?> Nadia Zulfa
             </span>
             <br>
-            SIKET - Sistem Informasi Ketertiban Siswa
+            SIPSI - Sistem Informasi Pelanggaran Siswa
         </footer>
 
     </main>

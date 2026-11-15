@@ -21,15 +21,30 @@ if (!function_exists('e')) {
 
 function tingkatPelanggaran(int $poin): string
 {
-    if ($poin >= 35) {
-        return 'Berat';
-    }
-
-    if ($poin >= 11) {
-        return 'Sedang';
-    }
-
+    if ($poin >= 35) return 'Berat';
+    if ($poin >= 11) return 'Sedang';
     return 'Ringan';
+}
+
+/* ================= FUNGSI KODE OTOMATIS ================= */
+
+function kodePelanggaranBerikutnya(mysqli $koneksi): string
+{
+    $query = mysqli_query(
+        $koneksi,
+        "SELECT MAX(CAST(SUBSTRING(kode, 5) AS UNSIGNED)) AS nomor
+         FROM t_pelanggaran
+         WHERE kode REGEXP '^PLG-[0-9]+$'"
+    );
+
+    if (!$query) {
+        throw new RuntimeException('Gagal membuat kode pelanggaran otomatis.');
+    }
+
+    $data = mysqli_fetch_assoc($query);
+    $nomor = (int)($data['nomor'] ?? 0) + 1;
+
+    return 'PLG-' . str_pad((string)$nomor, 3, '0', STR_PAD_LEFT);
 }
 
 $pesan = '';
@@ -65,7 +80,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan'])) {
     $bukaForm = true;
 
     $kategori_id = (int)($_POST['pelanggaran_kategori_id'] ?? 0);
-    $kode = strtoupper(trim($_POST['kode'] ?? ''));
+
+    $kode = kodePelanggaranBerikutnya($koneksi);
+
     $nama = trim($_POST['nama'] ?? '');
     $poin = filter_var($_POST['poin'] ?? '', FILTER_VALIDATE_INT);
     $deskripsi = trim($_POST['deskripsi'] ?? '');
@@ -80,8 +97,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan'])) {
         'status_aktif' => $status === false ? '1' : $status
     ];
 
-    if ($kategori_id <= 0 || $kode === '' || $nama === '') {
-        $pesan = 'Kategori, kode, dan nama pelanggaran wajib diisi.';
+    if ($kategori_id <= 0 || $nama === '') {
+        $pesan = 'Kategori dan nama pelanggaran wajib diisi.';
         $jenis_pesan = 'danger';
 
     } elseif ($poin === false || $poin < 1) {
@@ -127,10 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan'])) {
 
             $cekKode = mysqli_prepare(
                 $koneksi,
-                "SELECT id
-                 FROM t_pelanggaran
-                 WHERE kode = ?
-                 LIMIT 1"
+                "SELECT id FROM t_pelanggaran WHERE kode = ? LIMIT 1"
             );
 
             if (!$cekKode) {
@@ -144,7 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan'])) {
                 $hasilKode = mysqli_stmt_get_result($cekKode);
 
                 if ($hasilKode && mysqli_num_rows($hasilKode) > 0) {
-                    $pesan = 'Kode pelanggaran sudah digunakan.';
+                    $pesan = 'Kode pelanggaran sudah digunakan. Silakan coba kembali.';
                     $jenis_pesan = 'danger';
                 }
 
@@ -208,6 +222,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan'])) {
     }
 }
 
+/* ================= KODE UNTUK FORMULIR ================= */
+
+$kodeTampil = $bukaForm && $old['kode'] !== ''
+    ? $old['kode']
+    : kodePelanggaranBerikutnya($koneksi);
+
 /* ================= AMBIL KATEGORI AKTIF ================= */
 
 $query_kategori = mysqli_query(
@@ -223,12 +243,6 @@ if (!$query_kategori) {
 }
 
 /* ================= AMBIL JENIS PELANGGARAN AKTIF ================= */
-/*
-   Hanya tampilkan jenis pelanggaran yang:
-   1. Status jenis pelanggarannya aktif.
-   2. Kategorinya masih aktif.
-   3. Tidak menampilkan data dari kategori yang dinonaktifkan.
-*/
 
 $query_data = mysqli_query(
     $koneksi,
@@ -254,7 +268,7 @@ $query_data = mysqli_query(
             AND p2.pelanggaran_kategori_id = p.pelanggaran_kategori_id
             AND p2.status_aktif = 1
       )
-    ORDER BY p.id DESC"
+    ORDER BY CAST(SUBSTRING(p.kode, 5) AS UNSIGNED) DESC"
 );
 
 if (!$query_data) {
@@ -447,6 +461,13 @@ if (!$query_data) {
         .form-control:focus, .form-select:focus {
             border-color: #8eb5d8;
             box-shadow: 0 0 0 .2rem rgba(87, 143, 190, .14);
+        }
+
+        .form-control[readonly] {
+            background: #f1f6fc;
+            color: #315b82;
+            font-weight: 600;
+            cursor: not-allowed;
         }
 
         textarea.form-control {
@@ -914,10 +935,8 @@ if (!$query_data) {
                                     name="kode"
                                     id="kode"
                                     class="form-control"
-                                    placeholder="Contoh: PLG-052"
-                                    maxlength="30"
-                                    value="<?= e($old['kode']); ?>"
-                                    required>
+                                    value="<?= e($kodeTampil); ?>"
+                                    readonly>
                             </div>
 
                             <div class="mb-3">
@@ -1147,12 +1166,6 @@ if (!$query_data) {
                 perbaruiTingkat();
             });
 
-            const inputKode = document.getElementById('kode');
-
-            inputKode.addEventListener('input', function () {
-                this.value = this.value.toUpperCase();
-            });
-
             const inputPoin = document.getElementById('poin');
             const hasilTingkat = document.getElementById('hasilTingkat');
 
@@ -1206,6 +1219,21 @@ if (!$query_data) {
                     autoWidth: false,
                     renderer: 'bootstrap',
 
+                    // Urutan awal berdasarkan nomor kode pelanggaran.
+                    order: [[1, 'desc']],
+
+                    columnDefs: [
+                        {
+                            targets: 7,
+                            orderable: false,
+                            searchable: false
+                        },
+                        {
+                            targets: 1,
+                            type: 'string'
+                        }
+                    ],
+
                     language: {
                         emptyTable: 'Belum ada data jenis pelanggaran aktif.',
                         zeroRecords: 'Data yang dicari tidak ditemukan.',
@@ -1231,15 +1259,7 @@ if (!$query_data) {
                                 previous: 'Halaman sebelumnya'
                             }
                         }
-                    },
-
-                    columnDefs: [
-                        {
-                            targets: 7,
-                            orderable: false,
-                            searchable: false
-                        }
-                    ]
+                    }
                 });
             }
 
