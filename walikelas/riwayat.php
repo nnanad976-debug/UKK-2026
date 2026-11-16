@@ -4,15 +4,12 @@ include __DIR__ . "/../middleware/auth.php";
 include __DIR__ . "/../config/koneksi.php";
 
 /* =========================================
-   PEMERIKSAAN AKSES WALI KELAS
+   AKSES WALI KELAS
 ========================================= */
 
 $role = strtolower(trim($_SESSION['role'] ?? ''));
 
-if (
-    $role !== 'guru' ||
-    empty($_SESSION['is_wali_kelas'])
-) {
+if ($role !== 'guru' || empty($_SESSION['is_wali_kelas'])) {
     http_response_code(403);
     exit("Anda tidak memiliki akses.");
 }
@@ -23,25 +20,24 @@ if (
 
 function e($value): string
 {
-    return htmlspecialchars(
-        (string)($value ?? ''),
-        ENT_QUOTES,
-        'UTF-8'
-    );
+    return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
+}
+
+function menuAktif(string $file, string $halamanAktif): string
+{
+    return $file === $halamanAktif ? 'active' : '';
 }
 
 /* =========================================
-   IDENTITAS WALI KELAS LOGIN
+   IDENTITAS GURU / WALI KELAS
 ========================================= */
 
 $guru_id = (int)($_SESSION['guru_id'] ?? 0);
 
 if ($guru_id <= 0) {
-
     $user_id = (int)($_SESSION['user_id'] ?? 0);
 
     if ($user_id > 0) {
-
         $stmt = $koneksi->prepare("
             SELECT id
             FROM t_guru
@@ -50,13 +46,11 @@ if ($guru_id <= 0) {
         ");
 
         if ($stmt) {
-
             $stmt->bind_param("i", $user_id);
             $stmt->execute();
 
-            $data_guru = $stmt->get_result()->fetch_assoc();
-
-            $guru_id = (int)($data_guru['id'] ?? 0);
+            $dataGuru = $stmt->get_result()->fetch_assoc();
+            $guru_id = (int)($dataGuru['id'] ?? 0);
 
             $stmt->close();
         }
@@ -67,8 +61,6 @@ if ($guru_id <= 0) {
     http_response_code(403);
     exit("Identitas Wali Kelas tidak ditemukan.");
 }
-
-$nama = $_SESSION['nama'] ?? 'Wali Kelas';
 
 /* =========================================
    TAHUN AJARAN AKTIF
@@ -85,30 +77,24 @@ $stmt = $koneksi->prepare("
 ");
 
 if ($stmt) {
-
     $stmt->execute();
 
-    $data_tahun = $stmt->get_result()->fetch_assoc();
-
-    $tahun_ajaran_id = (int)($data_tahun['id'] ?? 0);
+    $dataTahun = $stmt->get_result()->fetch_assoc();
+    $tahun_ajaran_id = (int)($dataTahun['id'] ?? 0);
 
     $stmt->close();
 }
 
 /* =========================================
-   AMBIL RIWAYAT WALI KELAS LOGIN
-
-   HANYA DATA YANG DICATAT OLEH
-   WALI KELAS YANG SEDANG LOGIN
-
-   HANYA STATUS SELESAI
+   DATA RIWAYAT
+   HANYA CATATAN GURU LOGIN
+   DAN STATUS SELESAI
 ========================================= */
 
 $daftar_riwayat = [];
 
-if ($guru_id > 0 && $tahun_ajaran_id > 0) {
-
-    $sql_riwayat = "
+if ($tahun_ajaran_id > 0) {
+    $stmt = $koneksi->prepare("
         SELECT
             id,
             tanggal,
@@ -125,20 +111,13 @@ if ($guru_id > 0 && $tahun_ajaran_id > 0) {
           AND guru_id = ?
           AND status = 'Selesai'
         ORDER BY tanggal DESC, id DESC
-    ";
-
-    $stmt = $koneksi->prepare($sql_riwayat);
+    ");
 
     if (!$stmt) {
         exit("Query riwayat gagal: " . e($koneksi->error));
     }
 
-    $stmt->bind_param(
-        "ii",
-        $tahun_ajaran_id,
-        $guru_id
-    );
-
+    $stmt->bind_param("ii", $tahun_ajaran_id, $guru_id);
     $stmt->execute();
 
     $hasil = $stmt->get_result();
@@ -150,93 +129,81 @@ if ($guru_id > 0 && $tahun_ajaran_id > 0) {
     $stmt->close();
 }
 
-/* =========================================
-   SIDEBAR AKTIF
-========================================= */
-
 $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
-
-function menuAktif(string $file, string $halamanAktif): string
-{
-    return $file === $halamanAktif ? 'active' : '';
-}
-
 ?>
 
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <title>Riwayat - Sistem Pelanggaran</title>
 
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-    >
-
-    <link
-        href="https://cdn.datatables.net/2.3.4/css/dataTables.bootstrap5.min.css"
-        rel="stylesheet"
-    >
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/2.3.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 
     <style>
-
         :root {
             --blue: #2878cf;
             --blue-dark: #203e68;
             --blue-soft: #eaf3ff;
-            --page: #f6f9fd;
+            --page: #f3f7fc;
             --text: #263f63;
             --muted: #7890ad;
             --line: #dce9f8;
-            --shadow: 0 8px 22px rgba(32,62,104,.07);
+            --shadow: 0 8px 22px rgba(32, 62, 104, .07);
         }
 
         * {
             box-sizing: border-box;
         }
 
-        html,
-        body {
-            width: 100%;
+        html {
             min-height: 100%;
-            margin: 0;
-            overflow-x: hidden;
+            overflow-y: scroll;
+            scrollbar-gutter: stable;
         }
 
         body {
+            width: 100%;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
             background: var(--page);
             color: var(--text);
             font-family: "Segoe UI", Arial, sans-serif;
-            font-size: 14px;
+            font-size: 15px;
+            line-height: 1.5;
         }
 
         a {
             text-decoration: none;
         }
 
-        /* =================================
-           SIDEBAR
-        ================================= */
+        button,
+        input,
+        select,
+        textarea,
+        table {
+            font-family: inherit;
+        }
+
+        /* SIDEBAR */
 
         .sidebar {
             position: fixed;
-            top: 0;
-            left: 0;
+            inset: 0 auto 0 0;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
             width: 282px;
             height: 100vh;
             padding: 25px 14px 16px;
-            display: flex;
-            flex-direction: column;
+            overflow-y: auto;
+            overflow-x: hidden;
             background: #fff;
             border-right: 1px solid var(--line);
-            z-index: 1000;
-            overflow-y: auto;
         }
 
         .brand {
@@ -246,15 +213,17 @@ function menuAktif(string $file, string $halamanAktif): string
         }
 
         .brand-title {
-            color: var(--blue-dark);
-            font-size: 18px;
-            font-weight: 700;
             margin-bottom: 5px;
+            color: var(--blue-dark);
+            font-size: 19px;
+            font-weight: 700;
+            line-height: 1.4;
         }
 
         .brand-subtitle {
             color: var(--muted);
             font-size: 12px;
+            font-weight: 400;
         }
 
         .menu-title {
@@ -280,8 +249,8 @@ function menuAktif(string $file, string $halamanAktif): string
             border-radius: 9px;
             color: #5e7695;
             font-size: 13px;
-            font-weight: 500;
-            transition: .2s;
+            font-weight: 400;
+            line-height: 1.4;
         }
 
         .menu-link:hover {
@@ -310,12 +279,11 @@ function menuAktif(string $file, string $halamanAktif): string
             background: #fff0ef;
         }
 
-        /* =================================
-           KONTEN UTAMA
-        ================================= */
+        /* KONTEN */
 
         .main {
             width: calc(100% - 282px);
+            min-width: 0;
             min-height: 100vh;
             margin-left: 282px;
             padding: 24px 28px 40px;
@@ -328,44 +296,38 @@ function menuAktif(string $file, string $halamanAktif): string
             margin: 0 auto;
         }
 
-        /* =================================
-           HEADER HALAMAN
-        ================================= */
-
         .page-head {
+            padding: 24px 25px;
+            margin-bottom: 22px;
             background: #fff;
             border: 1px solid var(--line);
             border-radius: 11px;
-            padding: 24px 25px;
-            margin-bottom: 22px;
-            box-shadow: 0 3px 12px rgba(32,62,104,.04);
+            box-shadow: 0 3px 12px rgba(32, 62, 104, .04);
         }
 
         .page-head h3 {
+            margin: 0 0 7px;
             color: var(--blue-dark);
             font-size: 28px;
             font-weight: 600;
-            margin: 0 0 7px;
+            line-height: 1.4;
         }
 
         .page-head p {
+            margin: 0;
             color: var(--muted);
             font-size: 13px;
-            margin: 0;
+            font-weight: 400;
         }
 
-        /* =================================
-           PANEL
-        ================================= */
-
         .panel {
+            min-width: 0;
+            padding: 25px;
+            margin-bottom: 22px;
             background: #fff;
             border: 1px solid var(--line);
             border-radius: 16px;
-            padding: 25px;
-            margin-bottom: 22px;
             box-shadow: var(--shadow);
-            min-width: 0;
         }
 
         .panel-header {
@@ -373,21 +335,26 @@ function menuAktif(string $file, string $halamanAktif): string
         }
 
         .panel-header h4 {
+            margin: 0 0 6px;
             color: var(--blue-dark);
             font-size: 17px;
             font-weight: 700;
-            margin: 0 0 6px;
         }
 
         .panel-header p {
+            margin: 0;
             color: var(--muted);
             font-size: 12px;
-            margin: 0;
+            font-weight: 400;
         }
 
-        /* =================================
-           TABEL
-        ================================= */
+        /* AREA TABEL STABIL */
+
+        .table-area {
+            width: 100%;
+            min-width: 0;
+            min-height: 535px;
+        }
 
         .table-responsive {
             width: 100%;
@@ -401,14 +368,22 @@ function menuAktif(string $file, string $halamanAktif): string
         #tabelRiwayat {
             width: 100% !important;
             min-width: 1200px;
-            margin-bottom: 0 !important;
+            margin: 0 !important;
+            table-layout: fixed;
             color: #344b63;
             font-size: 13px;
+            font-weight: 400;
             vertical-align: middle;
         }
 
+        #tabelRiwayat th,
+        #tabelRiwayat td {
+            overflow-wrap: anywhere;
+        }
+
         #tabelRiwayat thead th {
-            padding: 14px 12px;
+            height: 48px;
+            padding: 13px 12px;
             background: #f5f8fc;
             color: #7890ad;
             border-color: var(--line);
@@ -418,10 +393,13 @@ function menuAktif(string $file, string $halamanAktif): string
         }
 
         #tabelRiwayat tbody td {
-            padding: 13px 12px;
+            height: 55px;
+            padding: 12px;
             border-color: #e2eaf3;
-            vertical-align: middle;
+            font-size: 13px;
+            font-weight: 400;
             line-height: 1.5;
+            vertical-align: middle;
         }
 
         #tabelRiwayat tbody tr:hover > * {
@@ -435,22 +413,30 @@ function menuAktif(string $file, string $halamanAktif): string
             text-align: center;
         }
 
-        /* =================================
-           STATUS DAN POIN
-        ================================= */
+        /* LEBAR KOLOM */
+
+        #tabelRiwayat th:nth-child(1) { width: 48px; }
+        #tabelRiwayat th:nth-child(2) { width: 105px; }
+        #tabelRiwayat th:nth-child(3) { width: 175px; }
+        #tabelRiwayat th:nth-child(4) { width: 115px; }
+        #tabelRiwayat th:nth-child(5) { width: 180px; }
+        #tabelRiwayat th:nth-child(6) { width: 65px; }
+        #tabelRiwayat th:nth-child(7) { width: 165px; }
+        #tabelRiwayat th:nth-child(8) { width: 175px; }
+        #tabelRiwayat th:nth-child(9) { width: 155px; }
+        #tabelRiwayat th:nth-child(10) { width: 105px; }
+
+        /* BADGE */
 
         .status-badge {
             display: inline-block;
             padding: 7px 11px;
             border-radius: 20px;
+            background: #e4f3e9;
+            color: #34734b;
             font-size: 12px;
             font-weight: 600;
             white-space: nowrap;
-        }
-
-        .status-selesai {
-            background: #e4f3e9;
-            color: #34734b;
         }
 
         .badge-poin {
@@ -460,18 +446,19 @@ function menuAktif(string $file, string $halamanAktif): string
             border-radius: 7px;
             background: var(--blue-soft);
             color: var(--blue);
+            font-size: 13px;
             font-weight: 700;
             text-align: center;
         }
 
-        /* =================================
-           DATATABLES
-        ================================= */
+        /* DATATABLES */
 
         .dt-container {
             width: 100%;
             min-width: 0;
             color: var(--text);
+            font-family: inherit;
+            font-size: 13px;
         }
 
         .dt-container .dt-layout-row {
@@ -479,6 +466,7 @@ function menuAktif(string $file, string $halamanAktif): string
             align-items: center;
             justify-content: space-between;
             gap: 12px;
+            min-height: 40px;
             margin: 15px 0;
         }
 
@@ -501,17 +489,21 @@ function menuAktif(string $file, string $halamanAktif): string
             margin: 0;
             color: #526b86;
             font-size: 13px;
+            font-weight: 400;
             white-space: nowrap;
         }
 
         .dt-container .dt-length select,
         .dt-container .dt-search input {
             height: 38px;
+            margin: 0;
             border: 1px solid #d7e3ef;
             border-radius: 7px;
             background: #fff;
             color: var(--text);
+            font-family: inherit;
             font-size: 13px;
+            font-weight: 400;
             outline: none;
         }
 
@@ -522,14 +514,13 @@ function menuAktif(string $file, string $halamanAktif): string
 
         .dt-container .dt-search input {
             width: 205px;
-            margin-left: 0 !important;
             padding: 7px 10px;
         }
 
         .dt-container .dt-search input:focus,
         .dt-container .dt-length select:focus {
             border-color: #8eb5d8;
-            box-shadow: 0 0 0 .2rem rgba(87,143,190,.14);
+            box-shadow: 0 0 0 .2rem rgba(87, 143, 190, .14);
         }
 
         .dt-container .dt-paging {
@@ -540,6 +531,7 @@ function menuAktif(string $file, string $halamanAktif): string
 
         .dt-container .dt-paging .dt-paging-button {
             border-radius: 5px !important;
+            font-family: inherit;
             font-size: 13px;
         }
 
@@ -552,50 +544,49 @@ function menuAktif(string $file, string $halamanAktif): string
         .dt-container .dt-info {
             color: #526b86;
             font-size: 13px;
+            font-weight: 400;
         }
 
-        /* =================================
-           DATA KOSONG
-        ================================= */
+        /* KOSONG */
 
         .empty-state {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 300px;
             padding: 35px 15px;
-            color: var(--muted);
-            text-align: center;
             background: #f8fbff;
             border: 1px dashed var(--line);
             border-radius: 9px;
+            color: var(--muted);
+            text-align: center;
         }
 
         .empty-state h5 {
+            margin-bottom: 5px;
             color: var(--blue-dark);
             font-size: 16px;
             font-weight: 600;
-            margin-bottom: 5px;
         }
 
         .empty-state p {
             margin: 0;
             font-size: 13px;
+            font-weight: 400;
         }
-
-        /* =================================
-           FOOTER
-        ================================= */
 
         .page-footer {
+            margin-top: 25px;
             color: #91a5bd;
             font-size: 11px;
+            font-weight: 400;
             text-align: center;
-            margin-top: 25px;
         }
 
-        /* =================================
-           RESPONSIVE
-        ================================= */
+        /* RESPONSIVE */
 
         @media (max-width: 900px) {
-
             .sidebar {
                 position: relative;
                 width: 100%;
@@ -615,7 +606,6 @@ function menuAktif(string $file, string $halamanAktif): string
         }
 
         @media (max-width: 650px) {
-
             .main {
                 padding: 20px 14px 25px;
             }
@@ -630,6 +620,10 @@ function menuAktif(string $file, string $halamanAktif): string
 
             .panel {
                 padding: 17px;
+            }
+
+            .table-area {
+                min-height: 480px;
             }
 
             .dt-container .dt-layout-row {
@@ -648,89 +642,57 @@ function menuAktif(string $file, string $halamanAktif): string
                 width: 150px;
             }
         }
-
     </style>
-
 </head>
 
 <body>
 
-<!-- =====================================
-     SIDEBAR WALI KELAS
-===================================== -->
+<!-- SIDEBAR -->
 
 <aside class="sidebar">
 
     <div class="brand">
-        <div class="brand-title">
-            Sistem Pelanggaran
-        </div>
-
-        <div class="brand-subtitle">
-            SMK Muhammadiyah
-        </div>
+        <div class="brand-title">Sistem Pelanggaran</div>
+        <div class="brand-subtitle">SMK Muhammadiyah</div>
     </div>
 
-    <div class="menu-title">
-        Menu Utama
-    </div>
+    <div class="menu-title">Menu Utama</div>
 
     <nav class="menu">
 
-        <a
-            href="../dashboard.php"
-            class="menu-link"
-        >
+        <a href="../dashboard.php" class="menu-link">
             Dashboard
         </a>
 
-        <a
-            href="catat_pelanggaran.php"
-            class="menu-link"
-        >
+        <a href="catat_pelanggaran.php" class="menu-link">
             Catat Pelanggaran
         </a>
 
         <a
             href="riwayat.php"
-            class="menu-link active"
+            class="menu-link <?= menuAktif('riwayat.php', $halamanAktif); ?>"
             aria-current="page"
         >
             Riwayat
         </a>
 
-        <a
-            href="data_siswa.php"
-            class="menu-link"
-        >
+        <a href="data_siswa.php" class="menu-link">
             Data Siswa
         </a>
 
-        <a
-            href="rekap_poin.php"
-            class="menu-link"
-        >
+        <a href="rekap_poin.php" class="menu-link">
             Rekap Poin Siswa
         </a>
 
-        <a
-            href="rekap_pelanggaran.php"
-            class="menu-link"
-        >
+        <a href="rekap_pelanggaran.php" class="menu-link">
             Rekap Pelanggaran
         </a>
 
-        <a
-            href="cetak_rekap.php"
-            class="menu-link"
-        >
+        <a href="cetak_rekap.php" class="menu-link">
             Laporan
         </a>
 
-        <a
-            href="../about.php"
-            class="menu-link"
-        >
+        <a href="../about.php" class="menu-link">
             About Me
         </a>
 
@@ -744,147 +706,107 @@ function menuAktif(string $file, string $halamanAktif): string
 
 </aside>
 
-<!-- =====================================
-     KONTEN UTAMA
-===================================== -->
+<!-- KONTEN UTAMA -->
 
 <main class="main">
 
     <div class="page-container">
 
-        <!-- HEADER HALAMAN -->
-
         <section class="page-head">
-
             <h3>Riwayat Pelanggaran</h3>
-
             <p>
                 Lihat riwayat pelanggaran yang telah selesai ditindaklanjuti dan dicatat oleh Anda.
             </p>
-
         </section>
-
-        <!-- PANEL RIWAYAT -->
 
         <section class="panel">
 
             <div class="panel-header">
-
                 <h4>Data Riwayat Pelanggaran</h4>
-
                 <p>
                     Daftar pelanggaran yang telah selesai ditindaklanjuti dan dicatat oleh Wali Kelas yang sedang login.
                 </p>
-
             </div>
 
-            <?php if (!empty($daftar_riwayat)): ?>
+            <div class="table-area">
 
-                <div class="table-responsive">
+                <?php if (!empty($daftar_riwayat)): ?>
 
-                    <table
-                        id="tabelRiwayat"
-                        class="table table-bordered table-hover align-middle"
-                    >
+                    <div class="table-responsive">
 
-                        <thead>
-
-                            <tr>
-                                <th>No</th>
-                                <th>Tanggal</th>
-                                <th>Nama Siswa</th>
-                                <th>Kelas</th>
-                                <th>Pelanggaran</th>
-                                <th>Poin</th>
-                                <th>Guru yang Mencatat</th>
-                                <th>Keterangan</th>
-                                <th>Tindakan</th>
-                                <th>Status</th>
-                            </tr>
-
-                        </thead>
-
-                        <tbody>
-
-                            <?php foreach ($daftar_riwayat as $index => $data): ?>
-
-                                <?php
-                                $tanggal = !empty($data['tanggal'])
-                                    ? date('d-m-Y', strtotime($data['tanggal']))
-                                    : '-';
-                                ?>
-
+                        <table
+                            id="tabelRiwayat"
+                            class="table table-bordered table-hover align-middle"
+                        >
+                            <thead>
                                 <tr>
-
-                                    <td>
-                                        <?= $index + 1; ?>
-                                    </td>
-
-                                    <td>
-                                        <?= e($tanggal); ?>
-                                    </td>
-
-                                    <td>
-                                        <?= e($data['nama_siswa']); ?>
-                                    </td>
-
-                                    <td>
-                                        <?= e($data['nama_kelas'] ?: '-'); ?>
-                                    </td>
-
-                                    <td>
-                                        <?= e($data['nama_pelanggaran']); ?>
-                                    </td>
-
-                                    <td>
-                                        <span class="badge-poin">
-                                            <?= (int)$data['poin']; ?>
-                                        </span>
-                                    </td>
-
-                                    <td>
-                                        <?= e($data['nama_guru'] ?: '-'); ?>
-                                    </td>
-
-                                    <td>
-                                        <?= e($data['keterangan'] ?: '-'); ?>
-                                    </td>
-
-                                    <td>
-                                        <?= e(
-                                            trim((string)($data['tindakan'] ?? '')) ?: '-'
-                                        ); ?>
-                                    </td>
-
-                                    <td>
-                                        <span class="status-badge status-selesai">
-                                            Selesai
-                                        </span>
-                                    </td>
-
+                                    <th>No</th>
+                                    <th>Tanggal</th>
+                                    <th>Nama Siswa</th>
+                                    <th>Kelas</th>
+                                    <th>Pelanggaran</th>
+                                    <th>Poin</th>
+                                    <th>Guru yang Mencatat</th>
+                                    <th>Keterangan</th>
+                                    <th>Tindakan</th>
+                                    <th>Status</th>
                                 </tr>
+                            </thead>
 
-                            <?php endforeach; ?>
+                            <tbody>
+                                <?php foreach ($daftar_riwayat as $index => $data): ?>
 
-                        </tbody>
+                                    <?php
+                                    $tanggal = !empty($data['tanggal'])
+                                        ? date('d-m-Y', strtotime($data['tanggal']))
+                                        : '-';
+                                    ?>
 
-                    </table>
+                                    <tr>
+                                        <td><?= $index + 1; ?></td>
+                                        <td><?= e($tanggal); ?></td>
+                                        <td><?= e($data['nama_siswa']); ?></td>
+                                        <td><?= e($data['nama_kelas'] ?: '-'); ?></td>
+                                        <td><?= e($data['nama_pelanggaran']); ?></td>
 
-                </div>
+                                        <td>
+                                            <span class="badge-poin">
+                                                <?= (int)$data['poin']; ?>
+                                            </span>
+                                        </td>
 
-            <?php else: ?>
+                                        <td><?= e($data['nama_guru'] ?: '-'); ?></td>
+                                        <td><?= e($data['keterangan'] ?: '-'); ?></td>
 
-                <div class="empty-state">
+                                        <td>
+                                            <?= e(trim((string)($data['tindakan'] ?? '')) ?: '-'); ?>
+                                        </td>
 
-                    <h5>Belum Ada Riwayat Pelanggaran</h5>
+                                        <td>
+                                            <span class="status-badge">
+                                                <?= e($data['status']); ?>
+                                            </span>
+                                        </td>
+                                    </tr>
 
-                    <p>
-                        Pelanggaran yang Anda catat dan sudah berstatus Selesai akan ditampilkan di sini.
-                    </p>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
 
-                </div>
+                    </div>
 
-            <?php endif; ?>
+                <?php else: ?>
+
+                    <div class="empty-state">
+                        <h5>Belum Ada Riwayat Pelanggaran</h5>
+                        <p>
+                            Pelanggaran yang Anda catat dan sudah berstatus Selesai akan ditampilkan di sini.
+                        </p>
+                    </div>
+
+                <?php endif; ?>
+
+            </div>
 
         </section>
 
@@ -896,61 +818,50 @@ function menuAktif(string $file, string $halamanAktif): string
 
 </main>
 
-<!-- =====================================
-     JAVASCRIPT
-===================================== -->
+<!-- JAVASCRIPT -->
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-
 <script src="https://cdn.datatables.net/2.3.4/js/dataTables.min.js"></script>
-
 <script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
-$(document).ready(function () {
+$(function () {
 
-    const tabel = $('#tabelRiwayat');
+    const tabel = document.getElementById('tabelRiwayat');
 
-    if (tabel.length) {
-
-        tabel.DataTable({
-
-            pageLength: 10,
-
-            lengthMenu: [10, 25, 50, 100],
-
-            order: [],
-
-            autoWidth: false,
-
-            language: {
-
-                search: 'Cari:',
-
-                lengthMenu: 'Tampilkan _MENU_ data',
-
-                info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ riwayat',
-
-                infoEmpty: 'Tidak ada data riwayat',
-
-                infoFiltered: '(disaring dari _MAX_ data)',
-
-                zeroRecords: 'Data riwayat tidak ditemukan',
-
-                emptyTable: 'Belum ada riwayat pelanggaran.',
-
-                paginate: {
-                    previous: 'Sebelumnya',
-                    next: 'Berikutnya'
-                }
-
-            }
-
-        });
-
+    if (!tabel) {
+        return;
     }
+
+    if (DataTable.isDataTable(tabel)) {
+        return;
+    }
+
+    new DataTable(tabel, {
+        pageLength: 10,
+        lengthMenu: [10, 25, 50, 100],
+        order: [],
+        autoWidth: false,
+        deferRender: true,
+        searchDelay: 250,
+        stateSave: false,
+
+        language: {
+            search: 'Cari:',
+            lengthMenu: 'Tampilkan _MENU_ data',
+            info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ riwayat',
+            infoEmpty: 'Tidak ada data riwayat',
+            infoFiltered: '(disaring dari _MAX_ data)',
+            zeroRecords: 'Data riwayat tidak ditemukan',
+            emptyTable: 'Belum ada riwayat pelanggaran.',
+
+            paginate: {
+                previous: 'Sebelumnya',
+                next: 'Berikutnya'
+            }
+        }
+    });
 
 });
 </script>

@@ -1,10 +1,10 @@
 
 <?php
-include "../middleware/auth.php";
-include "../config/koneksi.php";
+include __DIR__ . "/../middleware/auth.php";
+include __DIR__ . "/../config/koneksi.php";
 
 /* =========================================
-   PEMERIKSAAN AKSES WALI KELAS
+   AKSES WALI KELAS
 ========================================= */
 
 $role = strtolower(trim($_SESSION['role'] ?? ''));
@@ -20,11 +20,7 @@ if ($role !== 'guru' || empty($_SESSION['is_wali_kelas'])) {
 
 function e($value): string
 {
-    return htmlspecialchars(
-        (string)($value ?? ''),
-        ENT_QUOTES,
-        'UTF-8'
-    );
+    return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
 /* =========================================
@@ -36,31 +32,27 @@ $guru_id = (int)($_SESSION['guru_id'] ?? 0);
 $nama_wali = $_SESSION['nama'] ?? 'Wali Kelas';
 
 if ($guru_id <= 0 && $user_id > 0) {
-
-    $stmt_guru = mysqli_prepare(
+    $stmt = mysqli_prepare(
         $koneksi,
-        "SELECT id, nama
-         FROM t_guru
-         WHERE user_id = ?
-         LIMIT 1"
+        "SELECT id, nama FROM t_guru WHERE user_id = ? LIMIT 1"
     );
 
-    if (!$stmt_guru) {
+    if (!$stmt) {
         exit("Data guru gagal diproses.");
     }
 
-    mysqli_stmt_bind_param($stmt_guru, "i", $user_id);
-    mysqli_stmt_execute($stmt_guru);
+    mysqli_stmt_bind_param($stmt, "i", $user_id);
+    mysqli_stmt_execute($stmt);
 
-    $hasil_guru = mysqli_stmt_get_result($stmt_guru);
-    $data_guru = mysqli_fetch_assoc($hasil_guru);
+    $hasil = mysqli_stmt_get_result($stmt);
+    $guru = mysqli_fetch_assoc($hasil);
 
-    if ($data_guru) {
-        $guru_id = (int)$data_guru['id'];
-        $nama_wali = $data_guru['nama'];
+    if ($guru) {
+        $guru_id = (int)$guru['id'];
+        $nama_wali = $guru['nama'];
     }
 
-    mysqli_stmt_close($stmt_guru);
+    mysqli_stmt_close($stmt);
 }
 
 if ($guru_id <= 0) {
@@ -76,7 +68,7 @@ $tahun_ajaran_id = 0;
 $nama_tahun = '';
 $pesan_error = '';
 
-$stmt_tahun = mysqli_prepare(
+$stmt = mysqli_prepare(
     $koneksi,
     "SELECT id, nama
      FROM t_tahun_ajaran
@@ -85,40 +77,30 @@ $stmt_tahun = mysqli_prepare(
      LIMIT 1"
 );
 
-if (!$stmt_tahun) {
+if (!$stmt) {
     exit("Data tahun ajaran gagal diproses.");
 }
 
-mysqli_stmt_execute($stmt_tahun);
+mysqli_stmt_execute($stmt);
+$hasil = mysqli_stmt_get_result($stmt);
+$tahun = mysqli_fetch_assoc($hasil);
 
-$hasil_tahun = mysqli_stmt_get_result($stmt_tahun);
-$data_tahun = mysqli_fetch_assoc($hasil_tahun);
-
-if ($data_tahun) {
-    $tahun_ajaran_id = (int)$data_tahun['id'];
-    $nama_tahun = $data_tahun['nama'];
+if ($tahun) {
+    $tahun_ajaran_id = (int)$tahun['id'];
+    $nama_tahun = $tahun['nama'];
 } else {
     $pesan_error = "Belum ada tahun ajaran yang aktif.";
 }
 
-mysqli_stmt_close($stmt_tahun);
+mysqli_stmt_close($stmt);
 
 /* =========================================
    REKAP POIN SELURUH SISWA
-
-   - Menampilkan seluruh siswa yang memiliki
-     catatan pelanggaran.
-   - Mengambil data dari seluruh kelas.
-   - Menghitung catatan dari seluruh guru.
-   - Tidak menggunakan filter guru_id.
-   - Tidak menggunakan filter kelas_id.
-   - Berdasarkan tahun ajaran aktif.
 ========================================= */
 
 $daftar_rekap = [];
 
 if ($pesan_error === '') {
-
     $sql = "
         SELECT
             siswa_id,
@@ -127,57 +109,42 @@ if ($pesan_error === '') {
             nama_kelas,
             COUNT(id) AS jumlah_pelanggaran,
             COALESCE(SUM(poin), 0) AS total_poin
-
         FROM t_pelanggaran_siswa
-
         WHERE tahun_ajaran_id = ?
-
         GROUP BY
             siswa_id,
             nama_siswa,
             kelas_id,
             nama_kelas
-
         ORDER BY
             total_poin DESC,
             jumlah_pelanggaran DESC,
             nama_siswa ASC
     ";
 
-    $stmt_rekap = mysqli_prepare($koneksi, $sql);
+    $stmt = mysqli_prepare($koneksi, $sql);
 
-    if (!$stmt_rekap) {
-
+    if (!$stmt) {
         $pesan_error = "Data rekap poin gagal diproses.";
-
     } else {
+        mysqli_stmt_bind_param($stmt, "i", $tahun_ajaran_id);
 
-        mysqli_stmt_bind_param(
-            $stmt_rekap,
-            "i",
-            $tahun_ajaran_id
-        );
+        if (mysqli_stmt_execute($stmt)) {
+            $hasil = mysqli_stmt_get_result($stmt);
 
-        if (mysqli_stmt_execute($stmt_rekap)) {
-
-            $hasil_rekap = mysqli_stmt_get_result($stmt_rekap);
-
-            while ($data = mysqli_fetch_assoc($hasil_rekap)) {
+            while ($data = mysqli_fetch_assoc($hasil)) {
                 $daftar_rekap[] = $data;
             }
-
         } else {
-
             $pesan_error = "Data rekap poin gagal dimuat.";
-
         }
 
-        mysqli_stmt_close($stmt_rekap);
+        mysqli_stmt_close($stmt);
     }
 }
 
 /* =========================================
-   STATISTIK SELURUH SISWA
+   STATISTIK
 ========================================= */
 
 $total_siswa = count($daftar_rekap);
@@ -185,144 +152,148 @@ $total_pelanggaran = 0;
 $total_poin = 0;
 
 foreach ($daftar_rekap as $data) {
-
     $total_pelanggaran += (int)$data['jumlah_pelanggaran'];
     $total_poin += (int)$data['total_poin'];
-
 }
 
-/* =========================================
-   ACTIVE SIDEBAR
-========================================= */
-
 $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
-
 ?>
 
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <title>Rekap Poin Siswa - Sistem Pelanggaran</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
-
     <link href="https://cdn.datatables.net/2.3.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 
     <style>
-
         :root {
             --blue: #2878cf;
             --blue-dark: #203e68;
             --blue-soft: #eaf3ff;
-            --page: #f6f9fd;
+            --page: #f3f7fc;
             --text: #263f63;
             --muted: #7890ad;
             --line: #dce9f8;
-            --shadow: 0 8px 22px rgba(32, 62, 104, .07);
+            --shadow: 0 8px 22px rgba(32, 62, 104, .06);
         }
 
         * {
             box-sizing: border-box;
         }
 
-        html,
-        body {
-            width: 100%;
+        html {
             min-height: 100%;
-            margin: 0;
-            overflow-x: hidden;
+            overflow-y: scroll;
+            scrollbar-gutter: stable;
         }
 
         body {
+            width: 100%;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
             background: var(--page);
             color: var(--text);
             font-family: "Segoe UI", Arial, sans-serif;
-            font-size: 14px;
+            font-size: 15px;
+            line-height: 1.5;
         }
 
         a {
             text-decoration: none;
         }
 
-        /* SIDEBAR */
+        button,
+        input,
+        select,
+        table {
+            font-family: inherit;
+        }
+
+        /* =================================
+           SIDEBAR - STANDAR WALI KELAS
+        ================================= */
 
         .sidebar {
             position: fixed;
-            left: 0;
             top: 0;
-            width: 282px;
-            min-width: 282px;
-            height: 100vh;
-            overflow-y: auto;
-            background: #fff;
-            border-right: 1px solid var(--line);
-            padding: 25px 14px 16px;
+            left: 0;
+            z-index: 1000;
             display: flex;
             flex-direction: column;
-            z-index: 1000;
+            width: 282px;
+            height: 100vh;
+            padding: 25px 14px 16px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: #fff;
+            border-right: 1px solid var(--line);
         }
 
         .brand {
-            padding: 0 15px 22px;
-            border-bottom: 1px solid var(--line);
+            padding: 0 14px 20px;
             margin-bottom: 22px;
+            border-bottom: 1px solid var(--line);
         }
 
         .brand-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--blue-dark);
             margin-bottom: 5px;
+            color: var(--blue-dark);
+            font-size: 19px;
+            font-weight: 700;
+            line-height: 1.4;
         }
 
         .brand-subtitle {
-            font-size: 12px;
             color: var(--muted);
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 1.4;
         }
 
         .menu-title {
+            margin: 0 14px 11px;
+            color: #91a3b9;
             font-size: 10px;
             font-weight: 700;
-            color: #9aabc0;
             letter-spacing: 1px;
             text-transform: uppercase;
-            margin: 0 15px 10px;
         }
 
         .menu {
             display: flex;
             flex-direction: column;
-            gap: 3px;
+            gap: 5px;
         }
 
         .menu-link {
-            min-height: 42px;
             display: flex;
             align-items: center;
+            min-height: 42px;
             padding: 11px 14px;
             border-radius: 9px;
             color: #5e7695;
             font-size: 13px;
-            transition: background .2s ease, color .2s ease,
-                        padding-left .2s ease;
+            font-weight: 400;
+            line-height: 1.4;
+            background: transparent;
         }
 
         .menu-link:hover {
-            background: var(--blue-soft);
             color: var(--blue);
-            padding-left: 18px;
+            background: var(--blue-soft);
         }
 
         .menu-link.active {
-            background: var(--blue-soft);
             color: var(--blue);
+            background: var(--blue-soft);
             font-weight: 600;
-            box-shadow: inset 4px 0 0 var(--blue);
+            box-shadow: inset 3px 0 0 var(--blue);
         }
 
         .logout {
@@ -336,14 +307,17 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
         }
 
         .logout .menu-link:hover {
-            background: #fff0ef;
             color: #c03935;
+            background: #fff0ef;
         }
 
-        /* KONTEN */
+        /* =================================
+           KONTEN UTAMA
+        ================================= */
 
         .main {
             width: calc(100% - 282px);
+            min-width: 0;
             min-height: 100vh;
             margin-left: 282px;
             padding: 24px 28px 40px;
@@ -357,63 +331,40 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
         }
 
         .page-heading {
+            padding: 24px 25px;
+            margin-bottom: 22px;
             background: #fff;
             border: 1px solid var(--line);
             border-radius: 11px;
-            padding: 24px 25px;
-            margin-bottom: 22px;
             box-shadow: var(--shadow);
         }
 
         .page-heading h1 {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--blue-dark);
             margin: 0 0 7px;
+            color: var(--blue-dark);
+            font-size: 26px;
+            font-weight: 700;
+            line-height: 1.35;
         }
 
         .page-heading p {
+            margin: 0;
+            color: var(--muted);
             font-size: 13px;
-            color: var(--muted);
-            margin: 0;
+            font-weight: 400;
         }
 
-        .panel {
-            background: #fff;
-            border: 1px solid var(--line);
-            border-radius: 16px;
-            padding: 25px;
-            box-shadow: var(--shadow);
-            margin-bottom: 22px;
-            min-width: 0;
-        }
-
-        .panel-header {
-            margin-bottom: 22px;
-        }
-
-        .panel-header h2 {
-            font-size: 17px;
-            font-weight: 700;
-            color: var(--blue-dark);
-            margin: 0 0 6px;
-        }
-
-        .panel-header p {
-            color: var(--muted);
-            font-size: 12px;
-            margin: 0;
-        }
-
-        /* INFORMASI */
+        /* =================================
+           INFORMASI
+        ================================= */
 
         .class-info {
             display: flex;
-            align-items: center;
             flex-wrap: wrap;
+            align-items: center;
             gap: 8px 18px;
-            margin-bottom: 20px;
             padding: 13px 15px;
+            margin-bottom: 20px;
             background: #f5f9ff;
             border: 1px solid var(--line);
             border-radius: 9px;
@@ -426,10 +377,12 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
 
         .class-info-item strong {
             color: var(--blue-dark);
-            font-weight: 700;
+            font-weight: 600;
         }
 
-        /* STATISTIK */
+        /* =================================
+           STATISTIK
+        ================================= */
 
         .summary-grid {
             display: grid;
@@ -439,27 +392,23 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
         }
 
         .summary-card {
-            min-width: 0;
-            min-height: 126px;
             display: flex;
             flex-direction: column;
             justify-content: center;
+            min-width: 0;
+            min-height: 126px;
+            padding: 20px;
             background: #fff;
             border: 1px solid var(--line);
             border-radius: 12px;
-            padding: 20px;
             box-shadow: var(--shadow);
-            transition: .2s ease;
-        }
-
-        .summary-card:hover {
-            border-color: #c8def5;
         }
 
         .summary-label {
+            margin-bottom: 9px;
             color: var(--muted);
             font-size: 13px;
-            margin-bottom: 9px;
+            font-weight: 400;
         }
 
         .summary-value {
@@ -470,12 +419,42 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
         }
 
         .summary-description {
+            margin-top: 7px;
             color: #91a5bd;
             font-size: 12px;
-            margin-top: 7px;
         }
 
-        /* TABEL */
+        /* =================================
+           PANEL TABEL
+        ================================= */
+
+        .panel {
+            min-width: 0;
+            padding: 25px;
+            margin-bottom: 22px;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            box-shadow: var(--shadow);
+        }
+
+        .panel-header {
+            margin-bottom: 22px;
+        }
+
+        .panel-header h2 {
+            margin: 0 0 6px;
+            color: var(--blue-dark);
+            font-size: 17px;
+            font-weight: 700;
+        }
+
+        .panel-header p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 400;
+        }
 
         .table-responsive {
             width: 100%;
@@ -495,8 +474,8 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
 
         #tabelRekap thead th {
             padding: 14px 12px;
-            background: #edf4fb;
             color: #315b82;
+            background: #edf4fb;
             border-color: #dce7f1;
             font-size: 13px;
             font-weight: 600;
@@ -506,8 +485,8 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
         #tabelRekap tbody td {
             padding: 13px 11px;
             border-color: #e2eaf3;
-            vertical-align: middle;
             line-height: 1.45;
+            vertical-align: middle;
         }
 
         #tabelRekap tbody tr {
@@ -541,9 +520,9 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
             display: inline-block;
             min-width: 38px;
             padding: 6px 10px;
-            border-radius: 7px;
-            background: var(--blue-soft);
             color: var(--blue);
+            background: var(--blue-soft);
+            border-radius: 7px;
             font-size: 13px;
             font-weight: 700;
             text-align: center;
@@ -554,13 +533,16 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
             font-weight: 600;
         }
 
-        /* DATATABLES */
+        /* =================================
+           DATATABLES
+        ================================= */
 
         .dt-container {
             width: 100%;
             min-width: 0;
             color: var(--text);
-            font-family: "Segoe UI", Arial, sans-serif;
+            font-family: inherit;
+            font-size: 13px;
         }
 
         .dt-container .dt-layout-row {
@@ -590,16 +572,18 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
             margin: 0;
             color: #526b86;
             font-size: 13px;
+            font-weight: 400;
             white-space: nowrap;
         }
 
         .dt-container .dt-length select,
         .dt-container .dt-search input {
             height: 38px;
+            color: var(--text);
+            background: #fff;
             border: 1px solid #d7e3ef;
             border-radius: 7px;
-            background: #fff;
-            color: var(--text);
+            font-family: inherit;
             font-size: 13px;
             outline: none;
         }
@@ -634,27 +618,31 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
 
         .dt-container .dt-paging .dt-paging-button {
             border-radius: 5px !important;
+            font-family: inherit;
             font-size: 13px;
         }
 
         .dt-container .dt-paging .dt-paging-button.current {
+            color: #fff !important;
             background: var(--blue) !important;
             border-color: var(--blue) !important;
-            color: #fff !important;
         }
 
-        /* DATA KOSONG */
+        /* =================================
+           DATA KOSONG DAN FOOTER
+        ================================= */
 
         .empty-state {
             padding: 35px 15px;
             color: var(--muted);
-            text-align: center;
             background: #f8fbff;
             border: 1px dashed var(--line);
             border-radius: 9px;
+            text-align: center;
         }
 
         .empty-state h5 {
+            margin: 0;
             color: var(--blue-dark);
             font-size: 16px;
             font-weight: 600;
@@ -671,29 +659,28 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
         }
 
         .footer-note {
+            margin-top: 17px;
             color: var(--muted);
             font-size: 12px;
-            margin-top: 17px;
             text-align: right;
         }
 
-        /* RESPONSIVE */
+        /* =================================
+           RESPONSIVE
+        ================================= */
 
         @media (max-width: 1100px) {
-
             .main {
-                padding-left: 20px;
                 padding-right: 20px;
+                padding-left: 20px;
             }
 
             .summary-grid {
                 gap: 12px;
             }
-
         }
 
         @media (max-width: 900px) {
-
             .sidebar {
                 position: relative;
                 width: 100%;
@@ -711,11 +698,9 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
                 margin-left: 0;
                 padding: 20px 18px 30px;
             }
-
         }
 
         @media (max-width: 650px) {
-
             .main {
                 padding: 16px 12px 25px;
             }
@@ -725,7 +710,7 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
             }
 
             .page-heading h1 {
-                font-size: 24px;
+                font-size: 23px;
             }
 
             .panel {
@@ -761,11 +746,8 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
             .dt-container .dt-search input {
                 width: 150px;
             }
-
         }
-
     </style>
-
 </head>
 
 <body>
@@ -840,14 +822,11 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
     <div class="page-container">
 
         <header class="page-heading">
-
             <h1>Rekap Poin Siswa</h1>
-
             <p>
                 Ringkasan jumlah pelanggaran dan total poin seluruh siswa
                 berdasarkan catatan dari semua guru dan wali kelas.
             </p>
-
         </header>
 
         <?php if ($pesan_error !== ''): ?>
@@ -857,8 +836,6 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
             </div>
 
         <?php else: ?>
-
-            <!-- INFORMASI -->
 
             <div class="class-info">
 
@@ -884,51 +861,33 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
             <div class="summary-grid">
 
                 <div class="summary-card">
-
-                    <div class="summary-label">
-                        Jumlah Siswa
-                    </div>
-
+                    <div class="summary-label">Jumlah Siswa</div>
                     <div class="summary-value">
                         <?= number_format($total_siswa, 0, ',', '.'); ?>
                     </div>
-
                     <div class="summary-description">
                         Siswa dengan catatan pelanggaran
                     </div>
-
                 </div>
 
                 <div class="summary-card">
-
-                    <div class="summary-label">
-                        Jumlah Pelanggaran
-                    </div>
-
+                    <div class="summary-label">Jumlah Pelanggaran</div>
                     <div class="summary-value">
                         <?= number_format($total_pelanggaran, 0, ',', '.'); ?>
                     </div>
-
                     <div class="summary-description">
                         Catatan dari seluruh pencatat
                     </div>
-
                 </div>
 
                 <div class="summary-card">
-
-                    <div class="summary-label">
-                        Total Poin
-                    </div>
-
+                    <div class="summary-label">Total Poin</div>
                     <div class="summary-value">
                         <?= number_format($total_poin, 0, ',', '.'); ?>
                     </div>
-
                     <div class="summary-description">
                         Akumulasi poin seluruh siswa
                     </div>
-
                 </div>
 
             </div>
@@ -938,14 +897,11 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
             <section class="panel">
 
                 <div class="panel-header">
-
                     <h2>Data Rekap Poin</h2>
-
                     <p>
                         Daftar akumulasi poin setiap siswa dari seluruh kelas
                         berdasarkan tahun ajaran aktif.
                     </p>
-
                 </div>
 
                 <?php if (!empty($daftar_rekap)): ?>
@@ -956,7 +912,6 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
                                class="table table-bordered table-hover align-middle">
 
                             <thead>
-
                                 <tr>
                                     <th>No.</th>
                                     <th>Nama Siswa</th>
@@ -964,7 +919,6 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
                                     <th>Jumlah Pelanggaran</th>
                                     <th>Total Poin</th>
                                 </tr>
-
                             </thead>
 
                             <tbody>
@@ -972,10 +926,7 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
                                 <?php foreach ($daftar_rekap as $index => $data): ?>
 
                                     <tr>
-
-                                        <td>
-                                            <?= $index + 1; ?>
-                                        </td>
+                                        <td><?= $index + 1; ?></td>
 
                                         <td class="nama-siswa">
                                             <?= e($data['nama_siswa']); ?>
@@ -1006,7 +957,6 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
                                                 ); ?>
                                             </span>
                                         </td>
-
                                     </tr>
 
                                 <?php endforeach; ?>
@@ -1020,14 +970,11 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
                 <?php else: ?>
 
                     <div class="empty-state">
-
                         <h5>Belum Ada Data Rekap Poin</h5>
-
                         <p>
                             Belum ada catatan pelanggaran siswa pada
                             tahun ajaran aktif.
                         </p>
-
                     </div>
 
                 <?php endif; ?>
@@ -1037,7 +984,7 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
         <?php endif; ?>
 
         <div class="footer-note">
-            SIKET — Sistem Informasi Ketertiban Siswa
+            SIPSI — Sistem Informasi Pelanggaran Siswa
         </div>
 
     </div>
@@ -1047,62 +994,45 @@ $halamanAktifSidebar = basename($_SERVER['PHP_SELF'] ?? '');
 <!-- JAVASCRIPT -->
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-
 <script src="https://cdn.datatables.net/2.3.4/js/dataTables.min.js"></script>
-
 <script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
+$(function () {
 
-$(document).ready(function () {
+    const tabel = document.getElementById('tabelRekap');
 
-    const tabel = $('#tabelRekap');
-
-    if (tabel.length) {
-
-        tabel.DataTable({
-
-            pageLength: 10,
-
-            lengthMenu: [10, 25, 50, 100],
-
-            order: [],
-
-            autoWidth: false,
-
-            language: {
-
-                search: 'Cari:',
-
-                searchPlaceholder: '',
-
-                lengthMenu: 'Tampilkan _MENU_ data',
-
-                info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
-
-                infoEmpty: 'Tidak ada data rekap poin',
-
-                infoFiltered: '(disaring dari _MAX_ data)',
-
-                zeroRecords: 'Data rekap poin tidak ditemukan',
-
-                emptyTable: 'Belum ada data rekap poin.',
-
-                paginate: {
-                    previous: 'Sebelumnya',
-                    next: 'Berikutnya'
-                }
-
-            }
-
-        });
-
+    if (!tabel) {
+        return;
     }
 
-});
+    if ($.fn.DataTable.isDataTable(tabel)) {
+        return;
+    }
 
+    $('#tabelRekap').DataTable({
+        pageLength: 10,
+        lengthMenu: [10, 25, 50, 100],
+        order: [],
+        autoWidth: false,
+        language: {
+            search: 'Cari:',
+            searchPlaceholder: '',
+            lengthMenu: 'Tampilkan _MENU_ data',
+            info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
+            infoEmpty: 'Tidak ada data rekap poin',
+            infoFiltered: '(disaring dari _MAX_ data)',
+            zeroRecords: 'Data rekap poin tidak ditemukan',
+            emptyTable: 'Belum ada data rekap poin.',
+            paginate: {
+                previous: 'Sebelumnya',
+                next: 'Berikutnya'
+            }
+        }
+    });
+
+});
 </script>
 
 </body>

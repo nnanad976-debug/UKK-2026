@@ -143,7 +143,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['selesai'])) {
         } else {
 
             // UBAH STATUS MENJADI SELESAI
-            // TINDAKAN YANG SUDAH DIISI TETAP DISIMPAN
             $stmt = mysqli_prepare(
                 $koneksi,
                 "UPDATE t_pelanggaran_siswa
@@ -214,9 +213,11 @@ if ($guru_id > 0) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <title>Tindakan Pelanggaran</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+
     <link href="https://cdn.datatables.net/2.3.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 
     <style>
@@ -428,15 +429,6 @@ if ($guru_id > 0) {
             background: #34734b;
             border-color: #34734b;
             color: #fff;
-        }
-
-        .back-button {
-            margin-bottom: 17px;
-        }
-
-        .back-button .btn {
-            font-size: 13px;
-            padding: 8px 15px;
         }
 
         /* AKSI TABEL */
@@ -776,12 +768,6 @@ if ($guru_id > 0) {
 <main class="main">
 
     <div class="page-container">
-
-        <div class="back-button">
-            <a href="../dashboard.php" class="btn btn-secondary">
-                &larr; Kembali ke Dashboard
-            </a>
-        </div>
 
         <!-- JUDUL HALAMAN -->
         <section class="card mb-4">

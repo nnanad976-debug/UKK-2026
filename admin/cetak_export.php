@@ -388,18 +388,6 @@ if ($data_siswa && !$error) {
             --bs-btn-hover-color: #234e78;
         }
 
-        .btn-export {
-            background: #fff;
-            color: #315b82;
-            border: 1px solid #cbddeb;
-        }
-
-        .btn-export:hover {
-            background: var(--blue-soft);
-            color: var(--blue-dark);
-            border-color: #b6d2ee;
-        }
-
         /* TABEL */
 
         .table-responsive {
@@ -525,7 +513,7 @@ if ($data_siswa && !$error) {
             }
         }
 
-        /* CETAK DAN EXPORT PDF */
+        /* PENGATURAN CETAK LAPORAN */
 
         @media print {
             html,
@@ -679,7 +667,7 @@ if ($data_siswa && !$error) {
                 <h2 class="judul mb-1">Laporan Pelanggaran Siswa</h2>
 
                 <p class="text-muted mb-4">
-                    Pilih siswa untuk melihat laporan dan mencetak atau menyimpannya sebagai PDF.
+                    Pilih siswa untuk melihat laporan, lalu cetak atau simpan sebagai PDF melalui jendela cetak.
                 </p>
 
                 <?php if ($query_siswa): ?>
@@ -994,14 +982,6 @@ if ($data_siswa && !$error) {
                             Cetak Laporan
                         </button>
 
-                        <button
-                            type="button"
-                            class="btn btn-export"
-                            onclick="exportPDF()"
-                        >
-                            Export PDF
-                        </button>
-
                     </div>
 
                 </div>
@@ -1032,17 +1012,6 @@ function cetakLaporan() {
 
 }
 
-/* =========================
-   EXPORT PDF
-   PILIH SAVE AS PDF
-   PADA DIALOG CETAK
-========================= */
-
-function exportPDF() {
-
-    window.print();
-
-}
 </script>
 
 </body>

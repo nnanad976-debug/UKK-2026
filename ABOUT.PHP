@@ -85,6 +85,15 @@ $waliDashboard = findPage(['dashboard.php']);
 $waliCatat = findPage(['walikelas/catat_pelanggaran.php']);
 $waliRiwayat = findPage(['walikelas/riwayat.php']);
 $waliDataSiswa = findPage(['walikelas/data_siswa.php']);
+
+/* REKAP POIN SISWA */
+$waliRekapPoin = findPage([
+    'walikelas/rekap_poin_siswa.php',
+    'walikelas/rekap_poin.php',
+    'walikelas/rekap-poin.php',
+    'walikelas/rekap_point.php'
+]);
+
 $waliRekap = findPage(['walikelas/rekap_pelanggaran.php']);
 $waliCetak = findPage(['walikelas/cetak_rekap.php']);
 
@@ -112,7 +121,7 @@ $logoutUrl = findPage(['logout.php']);
             --blue: #2878cf;
             --blue-dark: #203e68;
             --blue-soft: #eaf3ff;
-            --page: #f6f9fd;
+            --page: #f3f7fc;
             --white: #ffffff;
             --text: #263f63;
             --muted: #7890ad;
@@ -124,16 +133,33 @@ $logoutUrl = findPage(['logout.php']);
             box-sizing: border-box;
         }
 
+        html {
+            min-height: 100%;
+            overflow-y: scroll;
+            scrollbar-gutter: stable;
+        }
+
         body {
+            width: 100%;
+            min-height: 100vh;
             margin: 0;
+            overflow-x: hidden;
             background: var(--page);
             color: var(--text);
             font-family: "Segoe UI", Arial, sans-serif;
-            font-size: 14px;
+            font-size: 15px;
+            line-height: 1.5;
         }
 
         a {
             text-decoration: none;
+        }
+
+        button,
+        input,
+        select,
+        textarea {
+            font-family: inherit;
         }
 
         /* SIDEBAR */
@@ -145,30 +171,32 @@ $logoutUrl = findPage(['logout.php']);
             min-width: 282px;
             height: 100vh;
             overflow-y: auto;
+            overflow-x: hidden;
             background: var(--white);
             border-right: 1px solid var(--line);
             padding: 25px 14px 16px;
             display: flex;
             flex-direction: column;
             z-index: 1000;
-            transition: transform .3s ease;
         }
 
         .brand {
-            padding: 0 15px 22px;
+            padding: 0 14px 20px;
             border-bottom: 1px solid var(--line);
             margin-bottom: 22px;
         }
 
         .brand-title {
-            font-size: 18px;
+            font-size: 19px;
             font-weight: 700;
+            line-height: 1.4;
             color: var(--blue-dark);
             margin-bottom: 5px;
         }
 
         .brand-subtitle {
             font-size: 12px;
+            font-weight: 400;
             color: var(--muted);
         }
 
@@ -178,13 +206,13 @@ $logoutUrl = findPage(['logout.php']);
             color: #9aabc0;
             letter-spacing: 1px;
             text-transform: uppercase;
-            margin: 0 15px 10px;
+            margin: 0 14px 11px;
         }
 
         .menu {
             display: flex;
             flex-direction: column;
-            gap: 3px;
+            gap: 5px;
         }
 
         .menu-link {
@@ -195,21 +223,20 @@ $logoutUrl = findPage(['logout.php']);
             border-radius: 9px;
             color: #5e7695;
             font-size: 13px;
-            transition: background .2s ease, color .2s ease,
-                        padding-left .2s ease;
+            font-weight: 400;
+            line-height: 1.4;
         }
 
         .menu-link:hover {
             background: var(--blue-soft);
             color: var(--blue);
-            padding-left: 18px;
         }
 
         .menu-link.active {
             background: var(--blue-soft);
             color: var(--blue);
             font-weight: 600;
-            box-shadow: inset 4px 0 0 var(--blue);
+            box-shadow: inset 3px 0 0 var(--blue);
         }
 
         .menu-link.disabled {
@@ -235,6 +262,8 @@ $logoutUrl = findPage(['logout.php']);
 
         /* KONTEN UTAMA */
         .main {
+            width: calc(100% - 282px);
+            min-width: 0;
             margin-left: 282px;
             min-height: 100vh;
             padding: 24px 28px 40px;
@@ -244,7 +273,14 @@ $logoutUrl = findPage(['logout.php']);
             display: none;
         }
 
-        /* HEADER SAMA DENGAN CATAT PELANGGARAN */
+        .page-container {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            margin: 0 auto;
+        }
+
+        /* HEADER */
         .page-heading {
             background: var(--white);
             border: 1px solid var(--line);
@@ -263,6 +299,7 @@ $logoutUrl = findPage(['logout.php']);
 
         .page-heading p {
             font-size: 13px;
+            font-weight: 400;
             color: var(--muted);
             margin: 0;
         }
@@ -446,7 +483,6 @@ $logoutUrl = findPage(['logout.php']);
             color: #34577f;
             font-size: 11px;
             background: #fbfcfe;
-            transition: .2s ease;
             cursor: default;
         }
 
@@ -481,7 +517,6 @@ $logoutUrl = findPage(['logout.php']);
             padding: 9px 14px;
             font-size: 12px;
             cursor: pointer;
-            transition: .2s ease;
         }
 
         .detail-button:hover {
@@ -507,6 +542,7 @@ $logoutUrl = findPage(['logout.php']);
         @media (max-width: 900px) {
             .sidebar {
                 transform: translateX(-100%);
+                transition: transform .2s ease;
                 box-shadow: none;
             }
 
@@ -528,6 +564,7 @@ $logoutUrl = findPage(['logout.php']);
             }
 
             .main {
+                width: 100%;
                 margin-left: 0;
                 padding: 18px 18px 30px;
             }
@@ -653,6 +690,7 @@ $logoutUrl = findPage(['logout.php']);
             <?= menuPageLink($waliCatat, 'Catat Pelanggaran') ?>
             <?= menuPageLink($waliRiwayat, 'Riwayat') ?>
             <?= menuPageLink($waliDataSiswa, 'Data Siswa') ?>
+            <?= menuPageLink($waliRekapPoin, 'Rekap Poin Siswa') ?>
             <?= menuPageLink($waliRekap, 'Rekap Pelanggaran') ?>
             <?= menuPageLink($waliCetak, 'Laporan') ?>
             <?= menuPageLink(appUrl('about.php'), 'About Me', true) ?>
@@ -705,144 +743,148 @@ $logoutUrl = findPage(['logout.php']);
         <div class="mobile-brand">Sistem Pelanggaran</div>
     </div>
 
-    <header class="page-heading">
-        <h1>About Me</h1>
-        <p>Profil pengembang dan informasi proyek UKK.</p>
-    </header>
+    <div class="page-container">
 
-    <section class="profile-card">
-        <div class="profile-information">
-            <div class="profile-label">Perkenalkan, saya</div>
+        <header class="page-heading">
+            <h1>About Me</h1>
+            <p>Profil pengembang dan informasi proyek UKK.</p>
+        </header>
 
-            <h2>Nadia Zulfa Soraya</h2>
+        <section class="profile-card">
+            <div class="profile-information">
+                <div class="profile-label">Perkenalkan, saya</div>
 
-            <p class="profile-description">
-                Siswi Rekayasa Perangkat Lunak yang mempelajari pemrograman,
-                pengembangan website, dan perancangan aplikasi yang mudah digunakan.
-            </p>
+                <h2>Nadia Zulfa Soraya</h2>
 
-            <span class="school-label">
-                SMK Muhammadiyah Kota Tasikmalaya
-            </span>
+                <p class="profile-description">
+                    Siswi Rekayasa Perangkat Lunak yang mempelajari pemrograman,
+                    pengembangan website, dan perancangan aplikasi yang mudah digunakan.
+                </p>
+
+                <span class="school-label">
+                    SMK Muhammadiyah Kota Tasikmalaya
+                </span>
+            </div>
+
+            <div class="photo-wrapper">
+                <img
+                    src="<?= e($fotoUrl) ?>"
+                    alt="Foto pengembang"
+                    class="profile-photo"
+                    id="profilePhoto"
+                >
+
+                <div class="photo-status" id="photoStatus">
+                    Profil Pengembang
+                </div>
+            </div>
+        </section>
+
+        <div class="info-grid">
+
+            <section class="info-card">
+                <h3 class="section-title">Informasi Proyek</h3>
+
+                <p class="section-subtitle">
+                    Gambaran aplikasi yang dikembangkan.
+                </p>
+
+                <div class="project-name">
+                    Sistem Informasi Pelanggaran Siswa
+                </div>
+
+                <p class="body-text">
+                    Aplikasi berbasis web untuk membantu pencatatan kejadian
+                    pelanggaran dan pemantauan kedisiplinan siswa di sekolah.
+                </p>
+
+                <hr class="divider">
+
+                <div class="details-grid">
+                    <div>
+                        <div class="detail-label">Platform</div>
+                        <div class="detail-value">Website</div>
+                    </div>
+
+                    <div>
+                        <div class="detail-label">Basis Data</div>
+                        <div class="detail-value">MySQL</div>
+                    </div>
+
+                    <div>
+                        <div class="detail-label">Pengguna</div>
+                        <div class="detail-value">Admin, Guru, dan Wali Kelas</div>
+                    </div>
+
+                    <div>
+                        <div class="detail-label">Bidang</div>
+                        <div class="detail-value">Administrasi Sekolah</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="info-card">
+                <h3 class="section-title">Tujuan Proyek</h3>
+
+                <p class="section-subtitle">
+                    Fungsi utama yang ingin dicapai.
+                </p>
+
+                <div class="goal-text body-text">
+                    Membantu guru dan admin mencatat serta memantau riwayat
+                    pelanggaran siswa dengan lebih teratur dan efisien.
+                </div>
+
+                <hr class="divider">
+
+                <p class="body-text">
+                    Proyek ini menerapkan keterampilan pemrograman PHP Native,
+                    pengelolaan basis data, dan perancangan antarmuka website
+                    yang dipelajari di jurusan RPL.
+                </p>
+            </section>
+
         </div>
 
-        <div class="photo-wrapper">
-            <img
-                src="<?= e($fotoUrl) ?>"
-                alt="Foto pengembang"
-                class="profile-photo"
-                id="profilePhoto"
+        <section class="technology-card">
+            <div class="technology-heading">
+                <h3>Teknologi yang Digunakan</h3>
+                <span>Perangkat pengembangan aplikasi</span>
+            </div>
+
+            <div class="tech-list">
+                <span class="tech-item" title="Struktur halaman website">HTML</span>
+                <span class="tech-item" title="Tampilan dan tata letak">CSS</span>
+                <span class="tech-item" title="Pemrosesan aplikasi">PHP Native</span>
+                <span class="tech-item" title="Penyimpanan data">MySQL</span>
+                <span class="tech-item" title="Komponen antarmuka">Bootstrap 5.3</span>
+                <span class="tech-item" title="Interaksi halaman">JavaScript</span>
+            </div>
+
+            <button
+                type="button"
+                class="detail-button"
+                id="detailButton"
+                aria-expanded="false"
+                aria-controls="techDetail"
             >
+                Lihat penjelasan teknologi
+            </button>
 
-            <div class="photo-status" id="photoStatus">
-                Profil Pengembang
-            </div>
-        </div>
-    </section>
-
-    <div class="info-grid">
-
-        <section class="info-card">
-            <h3 class="section-title">Informasi Proyek</h3>
-
-            <p class="section-subtitle">
-                Gambaran aplikasi yang dikembangkan.
-            </p>
-
-            <div class="project-name">
-                Sistem Informasi Pelanggaran Siswa
-            </div>
-
-            <p class="body-text">
-                Aplikasi berbasis web untuk membantu pencatatan kejadian
-                pelanggaran dan pemantauan kedisiplinan siswa di sekolah.
-            </p>
-
-            <hr class="divider">
-
-            <div class="details-grid">
-                <div>
-                    <div class="detail-label">Platform</div>
-                    <div class="detail-value">Website</div>
-                </div>
-
-                <div>
-                    <div class="detail-label">Basis Data</div>
-                    <div class="detail-value">MySQL</div>
-                </div>
-
-                <div>
-                    <div class="detail-label">Pengguna</div>
-                    <div class="detail-value">Admin, Guru, dan Wali Kelas</div>
-                </div>
-
-                <div>
-                    <div class="detail-label">Bidang</div>
-                    <div class="detail-value">Administrasi Sekolah</div>
-                </div>
+            <div class="tech-detail" id="techDetail">
+                <strong>HTML</strong> membentuk struktur halaman.<br>
+                <strong>CSS</strong> mengatur warna, ukuran, dan tata letak.<br>
+                <strong>PHP Native</strong> menangani proses aplikasi di server.<br>
+                <strong>MySQL</strong> menyimpan data siswa dan pelanggaran.<br>
+                <strong>Bootstrap</strong> membantu menyusun komponen antarmuka.<br>
+                <strong>JavaScript</strong> menambahkan interaksi pada halaman.
             </div>
         </section>
 
-        <section class="info-card">
-            <h3 class="section-title">Tujuan Proyek</h3>
-
-            <p class="section-subtitle">
-                Fungsi utama yang ingin dicapai.
-            </p>
-
-            <div class="goal-text body-text">
-                Membantu guru dan admin mencatat serta memantau riwayat
-                pelanggaran siswa dengan lebih teratur dan efisien.
-            </div>
-
-            <hr class="divider">
-
-            <p class="body-text">
-                Proyek ini menerapkan keterampilan pemrograman PHP Native,
-                pengelolaan basis data, dan perancangan antarmuka website
-                yang dipelajari di jurusan RPL.
-            </p>
-        </section>
-
-    </div>
-
-    <section class="technology-card">
-        <div class="technology-heading">
-            <h3>Teknologi yang Digunakan</h3>
-            <span>Perangkat pengembangan aplikasi</span>
+        <div class="footer-note">
+            Sistem Informasi Pelanggaran Siswa
         </div>
 
-        <div class="tech-list">
-            <span class="tech-item" title="Struktur halaman website">HTML</span>
-            <span class="tech-item" title="Tampilan dan tata letak">CSS</span>
-            <span class="tech-item" title="Pemrosesan aplikasi">PHP Native</span>
-            <span class="tech-item" title="Penyimpanan data">MySQL</span>
-            <span class="tech-item" title="Komponen antarmuka">Bootstrap 5.3</span>
-            <span class="tech-item" title="Interaksi halaman">JavaScript</span>
-        </div>
-
-        <button
-            type="button"
-            class="detail-button"
-            id="detailButton"
-            aria-expanded="false"
-            aria-controls="techDetail"
-        >
-            Lihat penjelasan teknologi
-        </button>
-
-        <div class="tech-detail" id="techDetail">
-            <strong>HTML</strong> membentuk struktur halaman.<br>
-            <strong>CSS</strong> mengatur warna, ukuran, dan tata letak.<br>
-            <strong>PHP Native</strong> menangani proses aplikasi di server.<br>
-            <strong>MySQL</strong> menyimpan data siswa dan pelanggaran.<br>
-            <strong>Bootstrap</strong> membantu menyusun komponen antarmuka.<br>
-            <strong>JavaScript</strong> menambahkan interaksi pada halaman.
-        </div>
-    </section>
-
-    <div class="footer-note">
-        Sistem Informasi Pelanggaran Siswa
     </div>
 
 </main>

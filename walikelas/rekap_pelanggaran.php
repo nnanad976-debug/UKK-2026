@@ -6,7 +6,6 @@ include __DIR__ . "/../config/koneksi.php";
 /* =========================================
    AKSES WALI KELAS
 ========================================= */
-
 $role = strtolower(trim($_SESSION['role'] ?? ''));
 
 if ($role !== 'guru' || empty($_SESSION['is_wali_kelas'])) {
@@ -17,7 +16,6 @@ if ($role !== 'guru' || empty($_SESSION['is_wali_kelas'])) {
 /* =========================================
    FUNGSI BANTU
 ========================================= */
-
 function e($value): string
 {
     return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
@@ -25,16 +23,11 @@ function e($value): string
 
 function tanggalValid($tanggal): bool
 {
-    if ($tanggal === '') {
-        return false;
-    }
-
-    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal)) {
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$tanggal)) {
         return false;
     }
 
     [$tahun, $bulan, $hari] = array_map('intval', explode('-', $tanggal));
-
     return checkdate($bulan, $hari, $tahun);
 }
 
@@ -84,24 +77,21 @@ function hariIndonesia($tanggal): string
 /* =========================================
    IDENTITAS GURU
 ========================================= */
-
 $user_id = (int)($_SESSION['user_id'] ?? 0);
 $guru_id = (int)($_SESSION['guru_id'] ?? 0);
 
 if ($guru_id <= 0 && $user_id > 0) {
-    $stmt_guru = mysqli_prepare(
+    $stmt = mysqli_prepare(
         $koneksi,
         "SELECT id FROM t_guru WHERE user_id = ? LIMIT 1"
     );
 
-    if ($stmt_guru) {
-        mysqli_stmt_bind_param($stmt_guru, "i", $user_id);
-        mysqli_stmt_execute($stmt_guru);
-
-        $data_guru = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_guru));
-        $guru_id = (int)($data_guru['id'] ?? 0);
-
-        mysqli_stmt_close($stmt_guru);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $user_id);
+        mysqli_stmt_execute($stmt);
+        $hasil = mysqli_stmt_get_result($stmt);
+        $guru_id = (int)(mysqli_fetch_assoc($hasil)['id'] ?? 0);
+        mysqli_stmt_close($stmt);
     }
 }
 
@@ -112,25 +102,22 @@ if ($guru_id <= 0) {
 
 $nama_login = $_SESSION['nama'] ?? 'Wali Kelas';
 
-$stmt_nama = mysqli_prepare(
+$stmt = mysqli_prepare(
     $koneksi,
     "SELECT nama FROM t_guru WHERE id = ? LIMIT 1"
 );
 
-if ($stmt_nama) {
-    mysqli_stmt_bind_param($stmt_nama, "i", $guru_id);
-    mysqli_stmt_execute($stmt_nama);
-
-    $data_nama = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_nama));
-    $nama_login = $data_nama['nama'] ?? $nama_login;
-
-    mysqli_stmt_close($stmt_nama);
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, "i", $guru_id);
+    mysqli_stmt_execute($stmt);
+    $hasil = mysqli_stmt_get_result($stmt);
+    $nama_login = mysqli_fetch_assoc($hasil)['nama'] ?? $nama_login;
+    mysqli_stmt_close($stmt);
 }
 
 /* =========================================
    TAHUN AJARAN AKTIF
 ========================================= */
-
 $query_tahun = mysqli_query(
     $koneksi,
     "SELECT id, nama
@@ -145,18 +132,15 @@ if (!$query_tahun) {
 }
 
 $tahun_aktif = mysqli_fetch_assoc($query_tahun);
-
 $tahun_ajaran_id = (int)($tahun_aktif['id'] ?? 0);
 $nama_tahun_ajaran = $tahun_aktif['nama'] ?? '-';
 
 /* =========================================
    FILTER
 ========================================= */
-
 $filter_kelas = max(0, (int)($_GET['kelas_id'] ?? 0));
 $tanggal_mulai = trim($_GET['tanggal_mulai'] ?? '');
 $tanggal_selesai = trim($_GET['tanggal_selesai'] ?? '');
-
 $pesan_filter = '';
 
 if (
@@ -181,7 +165,6 @@ if (
 /* =========================================
    DAFTAR KELAS WALI
 ========================================= */
-
 $daftar_kelas = [];
 
 if ($tahun_ajaran_id > 0) {
@@ -202,28 +185,26 @@ if ($tahun_ajaran_id > 0) {
         ORDER BY nama_kelas ASC
     ";
 
-    $stmt_kelas = mysqli_prepare($koneksi, $sql_kelas);
+    $stmt = mysqli_prepare($koneksi, $sql_kelas);
 
-    if (!$stmt_kelas) {
+    if (!$stmt) {
         exit("Gagal menyiapkan daftar kelas: " . e(mysqli_error($koneksi)));
     }
 
-    mysqli_stmt_bind_param($stmt_kelas, "ii", $guru_id, $tahun_ajaran_id);
-    mysqli_stmt_execute($stmt_kelas);
+    mysqli_stmt_bind_param($stmt, "ii", $guru_id, $tahun_ajaran_id);
+    mysqli_stmt_execute($stmt);
+    $hasil = mysqli_stmt_get_result($stmt);
 
-    $result_kelas = mysqli_stmt_get_result($stmt_kelas);
-
-    while ($row = mysqli_fetch_assoc($result_kelas)) {
+    while ($row = mysqli_fetch_assoc($hasil)) {
         $daftar_kelas[] = $row;
     }
 
-    mysqli_stmt_close($stmt_kelas);
+    mysqli_stmt_close($stmt);
 }
 
 /* =========================================
    VALIDASI FILTER KELAS
 ========================================= */
-
 $kelas_valid = false;
 
 foreach ($daftar_kelas as $kelas) {
@@ -240,7 +221,6 @@ if ($filter_kelas > 0 && !$kelas_valid) {
 /* =========================================
    DATA REKAP
 ========================================= */
-
 $data_rekap = [];
 
 if ($tahun_ajaran_id > 0 && count($daftar_kelas) > 0) {
@@ -251,16 +231,13 @@ if ($tahun_ajaran_id > 0 && count($daftar_kelas) > 0) {
             COALESCE(s.nis, '-') AS nis,
             COALESCE(s.nisn, '-') AS nisn,
             COALESCE(s.nama, ps.nama_siswa, '-') AS nama_siswa,
-
             COALESCE(
                 k.nama,
                 MAX(NULLIF(ps.nama_kelas, '')),
                 CONCAT('Kelas ID ', ps.kelas_id)
             ) AS nama_kelas,
-
             COUNT(ps.id) AS jumlah_pelanggaran,
             COALESCE(SUM(ps.poin), 0) AS total_poin,
-
             GROUP_CONCAT(
                 CONCAT(
                     COALESCE(NULLIF(ps.nama_pelanggaran, ''), 'Pelanggaran'),
@@ -274,17 +251,12 @@ if ($tahun_ajaran_id > 0 && count($daftar_kelas) > 0) {
                 ORDER BY ps.tanggal ASC, ps.id ASC
                 SEPARATOR '\n'
             ) AS daftar_pelanggaran,
-
             MAX(ps.tanggal) AS tanggal_terakhir
-
         FROM t_pelanggaran_siswa ps
-
         LEFT JOIN t_siswa s ON s.id = ps.siswa_id
         LEFT JOIN t_kelas k ON k.id = ps.kelas_id
         LEFT JOIN t_guru g ON g.id = ps.guru_id
-
         WHERE ps.tahun_ajaran_id = ?
-
           AND EXISTS (
                 SELECT 1
                 FROM t_wali_kelas wk
@@ -298,7 +270,6 @@ if ($tahun_ajaran_id > 0 && count($daftar_kelas) > 0) {
                         OR wk.tanggal_selesai >= CURDATE()
                   )
           )
-
           AND EXISTS (
                 SELECT 1
                 FROM t_kelas_siswa ks
@@ -312,11 +283,9 @@ if ($tahun_ajaran_id > 0 && count($daftar_kelas) > 0) {
                         OR ks.tanggal_selesai >= CURDATE()
                   )
           )
-
           AND (? = 0 OR ps.kelas_id = ?)
           AND (? = '' OR ps.tanggal >= ?)
           AND (? = '' OR ps.tanggal <= ?)
-
         GROUP BY
             ps.siswa_id,
             ps.kelas_id,
@@ -325,18 +294,17 @@ if ($tahun_ajaran_id > 0 && count($daftar_kelas) > 0) {
             s.nama,
             ps.nama_siswa,
             k.nama
-
         ORDER BY total_poin DESC, nama_siswa ASC
     ";
 
-    $stmt_rekap = mysqli_prepare($koneksi, $sql_rekap);
+    $stmt = mysqli_prepare($koneksi, $sql_rekap);
 
-    if (!$stmt_rekap) {
+    if (!$stmt) {
         exit("Gagal menyiapkan data rekap: " . e(mysqli_error($koneksi)));
     }
 
     mysqli_stmt_bind_param(
-        $stmt_rekap,
+        $stmt,
         "iiiiiissss",
         $tahun_ajaran_id,
         $guru_id,
@@ -350,34 +318,34 @@ if ($tahun_ajaran_id > 0 && count($daftar_kelas) > 0) {
         $tanggal_selesai
     );
 
-    mysqli_stmt_execute($stmt_rekap);
+    mysqli_stmt_execute($stmt);
+    $hasil = mysqli_stmt_get_result($stmt);
 
-    $result_rekap = mysqli_stmt_get_result($stmt_rekap);
-
-    while ($row = mysqli_fetch_assoc($result_rekap)) {
+    while ($row = mysqli_fetch_assoc($hasil)) {
         $data_rekap[] = $row;
     }
 
-    mysqli_stmt_close($stmt_rekap);
+    mysqli_stmt_close($stmt);
 }
 
 /* =========================================
    PROSES SURAT PEMANGGILAN
-   TERINTEGRASI DI HALAMAN REKAP
 ========================================= */
-
 $surat_data = null;
 $pesan_surat = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'buat_surat') {
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST' &&
+    ($_POST['aksi'] ?? '') === 'buat_surat'
+) {
     $siswa_id_post = (int)($_POST['siswa_id'] ?? 0);
     $kelas_id_post = (int)($_POST['kelas_id'] ?? 0);
     $tanggal_pemanggilan = trim($_POST['tanggal_pemanggilan'] ?? '');
     $waktu_pemanggilan = trim($_POST['waktu_pemanggilan'] ?? '');
     $keperluan = trim($_POST['keperluan'] ?? '');
 
-    // Pastikan kelas yang dikirim memang kelas yang sedang menjadi tanggung jawab wali.
     $kelas_milik_wali = false;
+
     foreach ($daftar_kelas as $kelas_wali) {
         if ((int)$kelas_wali['kelas_id'] === $kelas_id_post) {
             $kelas_milik_wali = true;
@@ -385,7 +353,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'buat_su
         }
     }
 
-    if ($siswa_id_post <= 0 || $kelas_id_post <= 0 || !$kelas_milik_wali) {
+    if ($siswa_id_post <= 0 || !$kelas_milik_wali) {
         $pesan_surat = 'Data siswa atau kelas tidak valid untuk akun Wali Kelas ini.';
     } elseif (!tanggalValid($tanggal_pemanggilan)) {
         $pesan_surat = 'Tanggal pemanggilan tidak valid.';
@@ -394,27 +362,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'buat_su
     } elseif ($keperluan === '') {
         $pesan_surat = 'Keperluan pemanggilan harus diisi.';
     } else {
-        /*
-         * Ambil ulang data langsung dari database berdasarkan ID siswa dan kelas.
-         * Tidak bergantung pada isi array $data_rekap, sehingga proses surat tidak
-         * gagal hanya karena filter tabel, pencarian DataTables, atau halaman tabel.
-         * Pembatasan akses tetap dijaga melalui pemeriksaan penugasan wali kelas.
-         */
         $sql_surat = "
             SELECT
                 ps.siswa_id,
                 ps.kelas_id,
                 COALESCE(s.nis, '-') AS nis,
                 COALESCE(s.nisn, '-') AS nisn,
-                COALESCE(NULLIF(s.nama, ''), MAX(NULLIF(ps.nama_siswa, '')), '-') AS nama_siswa,
-                COALESCE(NULLIF(k.nama, ''), MAX(NULLIF(ps.nama_kelas, '')), CONCAT('Kelas ID ', ps.kelas_id)) AS nama_kelas,
+                COALESCE(
+                    NULLIF(s.nama, ''),
+                    MAX(NULLIF(ps.nama_siswa, '')),
+                    '-'
+                ) AS nama_siswa,
+                COALESCE(
+                    NULLIF(k.nama, ''),
+                    MAX(NULLIF(ps.nama_kelas, '')),
+                    CONCAT('Kelas ID ', ps.kelas_id)
+                ) AS nama_kelas,
                 COUNT(ps.id) AS jumlah_pelanggaran,
                 COALESCE(SUM(ps.poin), 0) AS total_poin,
                 GROUP_CONCAT(
                     CONCAT(
                         COALESCE(NULLIF(ps.nama_pelanggaran, ''), 'Pelanggaran'),
                         ' — Dicatat oleh: ',
-                        COALESCE(NULLIF(ps.nama_guru, ''), NULLIF(g.nama, ''), 'Tidak diketahui')
+                        COALESCE(
+                            NULLIF(ps.nama_guru, ''),
+                            NULLIF(g.nama, ''),
+                            'Tidak diketahui'
+                        )
                     )
                     ORDER BY ps.tanggal ASC, ps.id ASC
                     SEPARATOR '\n'
@@ -435,7 +409,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'buat_su
                       AND wk.tahun_ajaran_id = ?
                       AND wk.status_aktif = 1
                       AND wk.tanggal_mulai <= CURDATE()
-                      AND (wk.tanggal_selesai IS NULL OR wk.tanggal_selesai >= CURDATE())
+                      AND (
+                            wk.tanggal_selesai IS NULL
+                            OR wk.tanggal_selesai >= CURDATE()
+                      )
+              )
+              AND EXISTS (
+                    SELECT 1
+                    FROM t_kelas_siswa ks
+                    WHERE ks.siswa_id = ps.siswa_id
+                      AND ks.kelas_id = ps.kelas_id
+                      AND ks.tahun_ajaran_id = ?
+                      AND ks.status_aktif = 1
+                      AND ks.tanggal_mulai <= CURDATE()
+                      AND (
+                            ks.tanggal_selesai IS NULL
+                            OR ks.tanggal_selesai >= CURDATE()
+                      )
               )
               AND (? = '' OR ps.tanggal >= ?)
               AND (? = '' OR ps.tanggal <= ?)
@@ -443,18 +433,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'buat_su
             LIMIT 1
         ";
 
-        $stmt_surat = mysqli_prepare($koneksi, $sql_surat);
+        $stmt = mysqli_prepare($koneksi, $sql_surat);
 
-        if (!$stmt_surat) {
+        if (!$stmt) {
             $pesan_surat = 'Gagal menyiapkan data surat: ' . mysqli_error($koneksi);
         } else {
             mysqli_stmt_bind_param(
-                $stmt_surat,
-                'iiiiissss',
+                $stmt,
+                'iiiiiissss',
                 $siswa_id_post,
                 $kelas_id_post,
                 $tahun_ajaran_id,
                 $guru_id,
+                $tahun_ajaran_id,
                 $tahun_ajaran_id,
                 $tanggal_mulai,
                 $tanggal_mulai,
@@ -462,10 +453,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'buat_su
                 $tanggal_selesai
             );
 
-            mysqli_stmt_execute($stmt_surat);
-            $hasil_surat = mysqli_stmt_get_result($stmt_surat);
-            $siswa_ditemukan = $hasil_surat ? mysqli_fetch_assoc($hasil_surat) : null;
-            mysqli_stmt_close($stmt_surat);
+            mysqli_stmt_execute($stmt);
+            $hasil = mysqli_stmt_get_result($stmt);
+            $siswa_ditemukan = $hasil ? mysqli_fetch_assoc($hasil) : null;
+            mysqli_stmt_close($stmt);
 
             if (!$siswa_ditemukan) {
                 $pesan_surat = 'Data pelanggaran siswa tidak ditemukan pada kelas dan tahun ajaran aktif. Pastikan siswa masih memiliki catatan pelanggaran pada filter tanggal yang dipilih.';
@@ -480,9 +471,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'buat_su
 }
 
 /* =========================================
-   RINGKASAN
+   RINGKASAN DAN FILTER
 ========================================= */
-
 $total_siswa = count($data_rekap);
 $total_pelanggaran = 0;
 $total_poin = 0;
@@ -491,10 +481,6 @@ foreach ($data_rekap as $data) {
     $total_pelanggaran += (int)$data['jumlah_pelanggaran'];
     $total_poin += (int)$data['total_poin'];
 }
-
-/* =========================================
-   PARAMETER FILTER
-========================================= */
 
 $parameter_filter = [
     'kelas_id' => $filter_kelas,
@@ -505,7 +491,6 @@ $parameter_filter = [
 /* =========================================
    EKSPOR EXCEL
 ========================================= */
-
 if (isset($_GET['export']) && $_GET['export'] === 'excel') {
     $nama_file = 'rekap-pelanggaran-' . date('Y-m-d') . '.xls';
 
@@ -552,7 +537,6 @@ if (isset($_GET['export']) && $_GET['export'] === 'excel') {
             Tahun Ajaran: <?= e($nama_tahun_ajaran) ?><br>
             Dicetak: <?= date('d-m-Y') ?>
         </p>
-
         <table>
             <thead>
                 <tr>
@@ -568,7 +552,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'excel') {
                 </tr>
             </thead>
             <tbody>
-                <?php if (count($data_rekap) > 0): ?>
+                <?php if ($data_rekap): ?>
                     <?php foreach ($data_rekap as $i => $data): ?>
                         <tr>
                             <td class="center"><?= $i + 1 ?></td>
@@ -583,9 +567,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'excel') {
                         </tr>
                     <?php endforeach; ?>
                 <?php else: ?>
-                    <tr>
-                        <td colspan="9" class="center">Belum ada data pelanggaran.</td>
-                    </tr>
+                    <tr><td colspan="9" class="center">Belum ada data pelanggaran.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
@@ -595,12 +577,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'excel') {
     exit;
 }
 
-/* =========================================
-   HALAMAN AKTIF
-========================================= */
-
 $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
-
 ?>
 
 <!DOCTYPE html>
@@ -608,7 +585,6 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Rekap Pelanggaran - Sistem Pelanggaran</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -619,7 +595,7 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
             --blue: #2878cf;
             --blue-dark: #203e68;
             --blue-soft: #eaf3ff;
-            --page: #f6f9fd;
+            --page: #f3f7fc;
             --white: #fff;
             --text: #263f63;
             --muted: #7890ad;
@@ -627,16 +603,38 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
             --shadow: 0 8px 22px rgba(32, 62, 104, .07);
         }
 
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            min-height: 100%;
+            overflow-y: scroll;
+            scrollbar-gutter: stable;
+        }
 
         body {
+            width: 100%;
+            min-height: 100vh;
             margin: 0;
+            overflow-x: hidden;
             font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 15px;
+            line-height: 1.5;
             background: var(--page);
             color: var(--text);
         }
 
-        a { text-decoration: none; }
+        a {
+            text-decoration: none;
+        }
+
+        button,
+        input,
+        select,
+        textarea {
+            font-family: inherit;
+        }
 
         .sidebar {
             position: fixed;
@@ -646,10 +644,11 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
             padding: 25px 14px 16px;
             display: flex;
             flex-direction: column;
-            background: var(--white);
+            background: #fff;
             border-right: 1px solid var(--line);
             z-index: 1000;
             overflow-y: auto;
+            overflow-x: hidden;
         }
 
         .brand {
@@ -660,7 +659,7 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
 
         .brand-title {
             color: var(--blue-dark);
-            font-size: 18px;
+            font-size: 19px;
             font-weight: 700;
             line-height: 1.4;
             margin-bottom: 5px;
@@ -669,6 +668,7 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
         .brand-subtitle {
             color: var(--muted);
             font-size: 12px;
+            font-weight: 400;
         }
 
         .menu-title {
@@ -680,7 +680,11 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
             text-transform: uppercase;
         }
 
-        .menu { display: flex; flex-direction: column; gap: 5px; }
+        .menu {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
 
         .menu-link {
             display: flex;
@@ -690,11 +694,14 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
             border-radius: 9px;
             color: #5e7695;
             font-size: 13px;
-            font-weight: 500;
-            transition: .2s;
+            font-weight: 400;
+            line-height: 1.4;
         }
 
-        .menu-link:hover { background: #f2f7fd; color: var(--blue); }
+        .menu-link:hover {
+            background: #f2f7fd;
+            color: var(--blue);
+        }
 
         .menu-link.active {
             background: var(--blue-soft);
@@ -709,14 +716,27 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
             border-top: 1px solid var(--line);
         }
 
-        .logout .menu-link { color: #d9534f; }
-        .logout .menu-link:hover { background: #fff0ef; }
+        .logout .menu-link {
+            color: #d9534f;
+        }
+
+        .logout .menu-link:hover {
+            background: #fff0ef;
+        }
 
         .main {
             width: calc(100% - 282px);
+            min-width: 0;
             min-height: 100vh;
             margin-left: 282px;
             padding: 24px 28px 40px;
+        }
+
+        .page-container {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            margin: 0 auto;
         }
 
         .page-head {
@@ -729,10 +749,11 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
         }
 
         .page-head h3 {
-            font-size: 28px;
+            font-size: 26px;
             font-weight: 600;
+            line-height: 1.35;
             color: var(--blue-dark);
-            margin-bottom: 3px;
+            margin: 0 0 5px;
         }
 
         .page-head p {
@@ -756,16 +777,17 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
         .summary-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 22px;
+            gap: 18px;
             margin-bottom: 22px;
         }
 
         .summary-card {
-            background: var(--white);
+            min-width: 0;
+            min-height: 135px;
+            padding: 21px;
+            background: #fff;
             border: 1px solid var(--line);
-            border-radius: 16px;
-            min-height: 145px;
-            padding: 22px;
+            border-radius: 14px;
             box-shadow: var(--shadow);
         }
 
@@ -773,35 +795,40 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
             margin-bottom: 12px;
             color: var(--muted);
             font-size: 12px;
+            font-weight: 400;
         }
 
         .summary-value {
             color: var(--blue-dark);
             font-size: 27px;
             font-weight: 700;
+            line-height: 1.3;
+            font-variant-numeric: tabular-nums;
         }
 
         .panel {
-            background: var(--white);
-            border: 1px solid var(--line);
-            border-radius: 16px;
-            padding: 25px;
-            box-shadow: var(--shadow);
+            min-width: 0;
+            padding: 23px;
             margin-bottom: 22px;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            box-shadow: var(--shadow);
         }
 
         .panel-heading {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            flex-wrap: wrap;
             gap: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 19px;
         }
 
         .panel-title {
             margin: 0;
             color: var(--blue-dark);
-            font-size: 17px;
+            font-size: 16px;
             font-weight: 700;
         }
 
@@ -809,30 +836,38 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
             display: flex;
             flex-wrap: wrap;
             align-items: flex-end;
-            gap: 14px;
+            gap: 13px;
         }
 
-        .form-group { min-width: 180px; flex: 1; }
+        .form-group {
+            min-width: 180px;
+            flex: 1;
+        }
 
         .form-label {
             display: block;
+            margin-bottom: 7px;
             color: #405873;
             font-size: 13px;
             font-weight: 600;
-            margin-bottom: 8px;
         }
 
-        .form-control, .form-select {
+        .form-control,
+        .form-select {
+            width: 100%;
+            min-height: 40px;
+            padding: 9px 12px;
             border: 1px solid var(--line);
-            border-radius: 9px;
-            padding: 10px 13px;
+            border-radius: 8px;
             color: var(--text);
+            background-color: #fff;
             font-family: inherit;
             font-size: 13px;
             box-shadow: none;
         }
 
-        .form-control:focus, .form-select:focus {
+        .form-control:focus,
+        .form-select:focus {
             border-color: var(--blue);
             box-shadow: 0 0 0 3px rgba(40, 120, 207, .10);
         }
@@ -843,87 +878,152 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
             justify-content: center;
             min-height: 38px;
             padding: 0 13px;
-            border: 0;
+            border: 1px solid transparent;
             border-radius: 8px;
             cursor: pointer;
             font-family: inherit;
             font-size: 12px;
             font-weight: 600;
-            transition: .2s;
+            line-height: 1.4;
             white-space: nowrap;
         }
 
-        .button-primary { background: var(--blue); color: #fff; }
-        .button-primary:hover { background: var(--blue-dark); color: #fff; }
+        .button-primary {
+            background: var(--blue);
+            color: #fff;
+        }
+
+        .button-primary:hover {
+            background: var(--blue-dark);
+            color: #fff;
+        }
 
         .button-light {
             background: #edf3fa;
-            border: 1px solid var(--line);
+            border-color: var(--line);
             color: #526b89;
         }
 
-        .button-light:hover { background: #e3edf8; color: var(--blue-dark); }
+        .button-light:hover {
+            background: #e3edf8;
+            color: var(--blue-dark);
+        }
 
-        .button-green { background: #e9f7ef; color: #23844d; }
-        .button-green:hover { background: #d9f0e3; color: #176b3b; }
+        .button-green {
+            background: #e9f7ef;
+            color: #23844d;
+        }
 
-        .button-dark { background: var(--blue-dark); color: #fff; }
-        .button-dark:hover { background: #172f50; color: #fff; }
+        .button-green:hover {
+            background: #d9f0e3;
+            color: #176b3b;
+        }
 
-        .action-group { display: flex; flex-wrap: wrap; gap: 8px; }
+        .button-dark {
+            background: var(--blue-dark);
+            color: #fff;
+        }
 
-        .table-responsive { width: 100%; overflow-x: auto; }
+        .button-dark:hover {
+            background: #172f50;
+            color: #fff;
+        }
 
-        .table {
+        .action-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .table-responsive {
             width: 100%;
+            overflow-x: auto;
+            scrollbar-gutter: stable;
+        }
+
+        #tabelRekap {
+            width: 100% !important;
             margin-bottom: 0;
             border-collapse: collapse;
             vertical-align: middle;
         }
 
-        .table thead th {
+        #tabelRekap thead th {
+            padding: 13px 12px;
             background: #f5f8fc;
             color: #7188a5;
             font-size: 12px;
             font-weight: 700;
-            padding: 14px;
             text-align: left;
             white-space: nowrap;
             border-bottom: 1px solid var(--line);
         }
 
-        .table tbody td {
-            padding: 13px 14px;
-            font-size: 13px;
+        #tabelRekap tbody td {
+            padding: 12px;
             color: #526b89;
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 1.5;
             vertical-align: middle;
             border-bottom: 1px solid #edf2f8;
         }
 
-        .table tbody tr:hover { background: #fafcff; }
+        #tabelRekap tbody tr:hover {
+            background: #fafcff;
+        }
 
-        .student-name { color: var(--blue-dark); font-weight: 600; }
-        .point-value { color: #d17a25; font-weight: 700; }
+        .student-name {
+            color: var(--blue-dark);
+            font-weight: 600;
+        }
+
+        .point-value {
+            color: #d17a25;
+            font-weight: 700;
+        }
 
         .violation-list {
             min-width: 250px;
             max-width: 380px;
             white-space: normal;
             overflow-wrap: anywhere;
-            line-height: 1.8;
+            line-height: 1.7;
         }
 
         .empty-state {
-            text-align: center;
-            padding: 28px;
-            color: #8498b1;
+            padding: 28px !important;
+            color: #8498b1 !important;
+            font-size: 13px !important;
+            text-align: center !important;
+        }
+
+        /* DATATABLES */
+        .dt-container {
+            width: 100%;
+            color: var(--muted);
+            font-family: inherit;
             font-size: 13px;
         }
 
-        .dt-container { font-size: 13px; color: var(--muted); }
-        .dt-container .dt-layout-row { margin: 13px 0; gap: 12px; }
-        .dt-container .dt-layout-row:first-child { margin-top: 20px; }
-        .dt-container .dt-layout-cell { display: flex; align-items: center; }
+        .dt-container .dt-layout-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 13px 0;
+        }
+
+        .dt-container .dt-layout-row:first-child {
+            margin-top: 18px;
+        }
+
+        .dt-container .dt-layout-cell {
+            min-width: 0;
+            display: flex;
+            align-items: center;
+        }
 
         .dt-container .dt-length,
         .dt-container .dt-search {
@@ -938,6 +1038,7 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
             align-items: center;
             gap: 8px;
             margin: 0;
+            color: var(--muted);
             font-size: 12px;
             white-space: nowrap;
         }
@@ -951,16 +1052,21 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
             border-radius: 8px;
             background: #fff;
             color: var(--text);
+            font-family: inherit;
+            font-size: 12px;
         }
 
         .dt-container .dt-search input {
             width: 190px;
             height: 36px;
             padding: 7px 11px;
+            margin-left: 0 !important;
             border: 1px solid var(--line);
             border-radius: 8px;
-            margin-left: 0 !important;
             color: var(--text);
+            background: #fff;
+            font-family: inherit;
+            font-size: 12px;
         }
 
         .dt-container .dt-search input:focus,
@@ -970,10 +1076,15 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
             box-shadow: 0 0 0 3px rgba(40, 120, 207, .10);
         }
 
-        .dt-container .dt-info { font-size: 12px; color: var(--muted); }
+        .dt-container .dt-info {
+            color: var(--muted);
+            font-size: 12px;
+        }
 
         .dt-container .dt-paging .dt-paging-button {
+            min-width: 32px;
             border-radius: 7px !important;
+            font-family: inherit;
             font-size: 12px;
         }
 
@@ -984,19 +1095,19 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
         }
 
         .footer {
-            text-align: center;
             margin-top: 28px;
             color: #9aabc0;
-            font-size: 10px;
+            font-size: 11px;
+            text-align: center;
         }
 
         /* SURAT PEMANGGILAN */
-
         .surat-area {
+            width: 100%;
             max-width: 900px;
             margin: 0 auto;
-            background: #fff;
             padding: 35px 45px;
+            background: #fff;
             border: 1px solid var(--line);
             border-radius: 12px;
             box-shadow: var(--shadow);
@@ -1008,26 +1119,28 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
             align-items: center;
             justify-content: center;
             gap: 18px;
-            text-align: center;
             padding-bottom: 12px;
-            border-bottom: 3px double #222;
             margin-bottom: 18px;
+            border-bottom: 3px double #222;
+            text-align: center;
         }
 
         .surat-logo {
             width: 82px;
             height: 82px;
-            object-fit: contain;
             flex: 0 0 82px;
+            object-fit: contain;
         }
 
-        .surat-kop-text { flex: 1; }
+        .surat-kop-text {
+            flex: 1;
+        }
 
         .surat-kop h2 {
-            font-size: 19px;
-            font-weight: 700;
             margin: 0 0 5px;
             color: #172f50;
+            font-size: 19px;
+            font-weight: 700;
         }
 
         .surat-kop p {
@@ -1037,15 +1150,15 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
         }
 
         .surat-judul {
-            text-align: center;
             margin: 22px 0;
+            text-align: center;
         }
 
         .surat-judul h3 {
+            margin-bottom: 5px;
             font-size: 17px;
             font-weight: 700;
             text-decoration: underline;
-            margin-bottom: 5px;
         }
 
         .surat-isi {
@@ -1065,15 +1178,15 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
 
         .surat-detail {
             width: 100%;
-            border-collapse: collapse;
             margin: 15px 0;
+            border-collapse: collapse;
             font-size: 12px;
         }
 
         .surat-detail th,
         .surat-detail td {
-            border: 1px solid #888;
             padding: 7px;
+            border: 1px solid #888;
             vertical-align: top;
         }
 
@@ -1085,9 +1198,9 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
         .surat-ttd {
             width: 260px;
             margin: 30px 0 0 auto;
-            text-align: center;
             font-size: 13px;
             line-height: 1.6;
+            text-align: center;
         }
 
         .surat-ttd .nama-ttd {
@@ -1097,15 +1210,18 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
         }
 
         .surat-toolbar {
+            width: 100%;
             max-width: 900px;
-            margin: 0 auto 15px;
             display: flex;
             justify-content: space-between;
             gap: 10px;
+            margin: 0 auto 15px;
         }
 
         @media (max-width: 1100px) {
-            .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .summary-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
         }
 
         @media (max-width: 900px) {
@@ -1115,7 +1231,9 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
                 height: auto;
             }
 
-            .logout { margin-top: 15px; }
+            .logout {
+                margin-top: 15px;
+            }
 
             .main {
                 width: 100%;
@@ -1124,17 +1242,69 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
         }
 
         @media (max-width: 650px) {
-            .main { padding: 18px 14px 30px; }
-            .page-head { padding: 20px; }
-            .page-head h3 { font-size: 24px; }
-            .summary-grid { grid-template-columns: 1fr; }
-            .panel { padding: 18px; }
-            .panel-heading { align-items: flex-start; flex-direction: column; }
-            .filter-form .form-group { min-width: 100%; }
-            .filter-form button, .filter-form a { flex: 1; }
-            .dt-container .dt-search input { width: 140px; }
-            .surat-area { padding: 22px 18px; }
-            .surat-toolbar { flex-wrap: wrap; }
+            .main {
+                padding: 18px 14px 30px;
+            }
+
+            .page-head {
+                padding: 20px;
+            }
+
+            .page-head h3 {
+                font-size: 23px;
+            }
+
+            .summary-grid {
+                grid-template-columns: 1fr;
+                gap: 13px;
+            }
+
+            .summary-card {
+                min-height: 110px;
+                padding: 18px;
+            }
+
+            .panel {
+                padding: 17px;
+            }
+
+            .panel-heading {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .filter-form .form-group {
+                min-width: 100%;
+            }
+
+            .filter-form button,
+            .filter-form a {
+                flex: 1;
+            }
+
+            .action-group {
+                width: 100%;
+            }
+
+            .action-group .button {
+                flex: 1;
+            }
+
+            .dt-container .dt-layout-row {
+                align-items: flex-start;
+            }
+
+            .dt-container .dt-search input {
+                width: 140px;
+            }
+
+            .surat-area {
+                padding: 22px 18px;
+            }
+
+            .surat-toolbar {
+                flex-wrap: wrap;
+            }
         }
 
         @page {
@@ -1143,7 +1313,9 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
         }
 
         @media print {
-            body { background: #fff !important; }
+            body {
+                background: #fff !important;
+            }
 
             body.mode-surat .surat-toolbar {
                 display: none !important;
@@ -1184,6 +1356,7 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
 
             body.mode-surat .surat-detail {
                 margin: 8px 0 !important;
+                font-size: 10px !important;
             }
 
             body.mode-surat .surat-detail th,
@@ -1201,10 +1374,6 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
 
             body.mode-surat .surat-kop h2 {
                 font-size: 17px !important;
-            }
-
-            body.mode-surat .surat-detail {
-                font-size: 10px !important;
             }
 
             body.mode-rekap {
@@ -1307,10 +1476,6 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
 
 <?php if ($surat_data): ?>
 
-    <!-- =====================================
-         TAMPILAN SURAT PEMANGGILAN
-    ====================================== -->
-
     <div class="surat-toolbar">
         <a
             href="rekap_pelanggaran.php?<?= e(http_build_query($parameter_filter)) ?>"
@@ -1325,9 +1490,12 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
     </div>
 
     <section class="surat-area">
-
         <div class="surat-kop">
-            <img src="../assets/logo_sekolah.png" alt="Logo SMK Muhammadiyah Tasikmalaya" class="surat-logo">
+            <img
+                src="../assets/logo_sekolah.png"
+                alt="Logo SMK Muhammadiyah Tasikmalaya"
+                class="surat-logo"
+            >
             <div class="surat-kop-text">
                 <h2>SMK MUHAMMADIYAH TASIKMALAYA</h2>
                 <p>
@@ -1342,10 +1510,7 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
         </div>
 
         <div class="surat-isi">
-
-            <p>
-                Dengan hormat,
-            </p>
+            <p>Dengan hormat,</p>
 
             <p>
                 Dalam rangka meningkatkan pembinaan dan ketertiban peserta didik
@@ -1385,7 +1550,8 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
                 <tr>
                     <td width="130">Hari / Tanggal</td>
                     <td width="12">:</td>
-                    <td><?= e(hariIndonesia($surat_data['tanggal_pemanggilan'])) ?>,
+                    <td>
+                        <?= e(hariIndonesia($surat_data['tanggal_pemanggilan'])) ?>,
                         <?= e(tanggalIndonesia($surat_data['tanggal_pemanggilan'])) ?>
                     </td>
                 </tr>
@@ -1421,16 +1587,13 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
                         '/\r\n|\r|\n/',
                         (string)$surat_data['daftar_pelanggaran']
                     );
-
                     $nomor_surat = 1;
                     ?>
 
                     <?php foreach ($daftar_surat as $item_surat): ?>
                         <?php if (trim($item_surat) !== ''): ?>
                             <tr>
-                                <td style="text-align:center;">
-                                    <?= $nomor_surat++ ?>
-                                </td>
+                                <td style="text-align:center;"><?= $nomor_surat++ ?></td>
                                 <td><?= e($item_surat) ?></td>
                             </tr>
                         <?php endif; ?>
@@ -1456,10 +1619,7 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
                 dan kerja sama Bapak/Ibu, kami mengucapkan terima kasih.
             </p>
 
-            <p>
-                Hormat kami,
-            </p>
-
+            <p>Hormat kami,</p>
         </div>
 
         <div class="surat-ttd">
@@ -1469,17 +1629,15 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
 
         <p style="margin-top:35px; font-size:11px; color:#555;">
             Kepada Yth.<br>
-            <strong>Bapak/Ibu Orang Tua/Wali dari Ananda <?= e($surat_data['nama_siswa']) ?></strong><br>
+            <strong>
+                Bapak/Ibu Orang Tua/Wali dari Ananda
+                <?= e($surat_data['nama_siswa']) ?>
+            </strong><br>
             di Tempat
         </p>
-
     </section>
 
 <?php else: ?>
-
-    <!-- =====================================
-         HALAMAN REKAP PELANGGARAN
-    ====================================== -->
 
     <aside class="sidebar">
         <div class="brand">
@@ -1495,7 +1653,6 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
             <a href="riwayat.php" class="menu-link">Riwayat</a>
             <a href="data_siswa.php" class="menu-link">Data Siswa</a>
             <a href="rekap_poin.php" class="menu-link">Rekap Poin Siswa</a>
-
             <a
                 href="rekap_pelanggaran.php"
                 class="menu-link <?= $halamanAktif === 'rekap_pelanggaran.php' ? 'active' : '' ?>"
@@ -1503,7 +1660,6 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
             >
                 Rekap Pelanggaran
             </a>
-
             <a href="cetak_rekap.php" class="menu-link">Laporan</a>
             <a href="../about.php" class="menu-link">About Me</a>
         </nav>
@@ -1514,213 +1670,198 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
     </aside>
 
     <main class="main">
+        <div class="page-container">
 
-        <div class="page-head">
-            <h3>Rekap Pelanggaran</h3>
-            <p>Ringkasan pelanggaran siswa pada kelas yang menjadi tanggung jawab Anda.</p>
+            <header class="page-head">
+                <h3>Rekap Pelanggaran</h3>
+                <p>Ringkasan pelanggaran siswa pada kelas yang menjadi tanggung jawab Anda.</p>
+                <div class="year-label">
+                    Tahun Ajaran: <?= e($nama_tahun_ajaran) ?>
+                </div>
+            </header>
 
-            <div class="year-label">
-                Tahun Ajaran: <?= e($nama_tahun_ajaran) ?>
-            </div>
-        </div>
+            <?php if ($tahun_ajaran_id <= 0): ?>
+                <div class="alert alert-warning">
+                    Tahun ajaran aktif belum tersedia. Periksa kembali data tahun ajaran.
+                </div>
+            <?php elseif (count($daftar_kelas) === 0): ?>
+                <div class="alert alert-warning">
+                    Belum ditemukan kelas yang ditugaskan kepada akun Wali Kelas ini
+                    pada tahun ajaran <?= e($nama_tahun_ajaran) ?>.
+                </div>
+            <?php endif; ?>
 
-        <?php if ($tahun_ajaran_id <= 0): ?>
-            <div class="alert alert-warning">
-                Tahun ajaran aktif belum tersedia. Periksa kembali data tahun ajaran.
-            </div>
-        <?php elseif (count($daftar_kelas) === 0): ?>
-            <div class="alert alert-warning">
-                Belum ditemukan kelas yang ditugaskan kepada akun Wali Kelas ini
-                pada tahun ajaran <?= e($nama_tahun_ajaran) ?>.
-            </div>
-        <?php endif; ?>
+            <?php if ($pesan_filter !== ''): ?>
+                <div class="alert alert-warning"><?= e($pesan_filter) ?></div>
+            <?php endif; ?>
 
-        <?php if ($pesan_filter !== ''): ?>
-            <div class="alert alert-warning"><?= e($pesan_filter) ?></div>
-        <?php endif; ?>
+            <?php if ($pesan_surat !== ''): ?>
+                <div class="alert alert-danger"><?= e($pesan_surat) ?></div>
+            <?php endif; ?>
 
-        <?php if ($pesan_surat !== ''): ?>
-            <div class="alert alert-danger"><?= e($pesan_surat) ?></div>
-        <?php endif; ?>
-
-        <section class="summary-grid">
-            <div class="summary-card">
-                <div class="summary-label">Jumlah Siswa dengan Pelanggaran</div>
-                <div class="summary-value"><?= number_format($total_siswa, 0, ',', '.') ?></div>
-            </div>
-
-            <div class="summary-card">
-                <div class="summary-label">Total Pelanggaran</div>
-                <div class="summary-value"><?= number_format($total_pelanggaran, 0, ',', '.') ?></div>
-            </div>
-
-            <div class="summary-card">
-                <div class="summary-label">Total Poin Pelanggaran</div>
-                <div class="summary-value"><?= number_format($total_poin, 0, ',', '.') ?></div>
-            </div>
-        </section>
-
-        <section class="panel filter-panel">
-            <div class="panel-heading">
-                <h4 class="panel-title">Filter Rekap</h4>
-            </div>
-
-            <form method="GET" class="filter-form">
-                <div class="form-group">
-                    <label for="kelas_id" class="form-label">Pilih Kelas</label>
-
-                    <select name="kelas_id" id="kelas_id" class="form-select">
-                        <option value="0">Semua Kelas Wali Kelas</option>
-
-                        <?php foreach ($daftar_kelas as $kelas): ?>
-                            <option
-                                value="<?= (int)$kelas['kelas_id'] ?>"
-                                <?= $filter_kelas === (int)$kelas['kelas_id'] ? 'selected' : '' ?>
-                            >
-                                <?= e($kelas['nama_kelas']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+            <section class="summary-grid">
+                <div class="summary-card">
+                    <div class="summary-label">Jumlah Siswa dengan Pelanggaran</div>
+                    <div class="summary-value"><?= number_format($total_siswa, 0, ',', '.') ?></div>
                 </div>
 
-                <div class="form-group">
-                    <label for="tanggal_mulai" class="form-label">Tanggal Mulai</label>
-                    <input
-                        type="date"
-                        name="tanggal_mulai"
-                        id="tanggal_mulai"
-                        class="form-control"
-                        value="<?= e($tanggal_mulai) ?>"
-                    >
+                <div class="summary-card">
+                    <div class="summary-label">Total Pelanggaran</div>
+                    <div class="summary-value"><?= number_format($total_pelanggaran, 0, ',', '.') ?></div>
                 </div>
 
-                <div class="form-group">
-                    <label for="tanggal_selesai" class="form-label">Tanggal Selesai</label>
-                    <input
-                        type="date"
-                        name="tanggal_selesai"
-                        id="tanggal_selesai"
-                        class="form-control"
-                        value="<?= e($tanggal_selesai) ?>"
-                    >
+                <div class="summary-card">
+                    <div class="summary-label">Total Poin Pelanggaran</div>
+                    <div class="summary-value"><?= number_format($total_poin, 0, ',', '.') ?></div>
+                </div>
+            </section>
+
+            <section class="panel filter-panel">
+                <div class="panel-heading">
+                    <h4 class="panel-title">Filter Rekap</h4>
                 </div>
 
-                <button type="submit" class="button button-primary">Tampilkan</button>
-                <a href="rekap_pelanggaran.php" class="button button-light">Reset</a>
-            </form>
-        </section>
+                <form method="GET" class="filter-form">
+                    <div class="form-group">
+                        <label for="kelas_id" class="form-label">Pilih Kelas</label>
+                        <select name="kelas_id" id="kelas_id" class="form-select">
+                            <option value="0">Semua Kelas Wali Kelas</option>
+                            <?php foreach ($daftar_kelas as $kelas): ?>
+                                <option
+                                    value="<?= (int)$kelas['kelas_id'] ?>"
+                                    <?= $filter_kelas === (int)$kelas['kelas_id'] ? 'selected' : '' ?>
+                                >
+                                    <?= e($kelas['nama_kelas']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
 
-        <section class="panel">
-            <div class="panel-heading">
-                <h4 class="panel-title">Data Rekap Siswa</h4>
+                    <div class="form-group">
+                        <label for="tanggal_mulai" class="form-label">Tanggal Mulai</label>
+                        <input
+                            type="date"
+                            name="tanggal_mulai"
+                            id="tanggal_mulai"
+                            class="form-control"
+                            value="<?= e($tanggal_mulai) ?>"
+                        >
+                    </div>
 
-                <div class="action-group">
-                    <a
-                        href="rekap_pelanggaran.php?<?= e(http_build_query(array_merge($parameter_filter, ['export' => 'excel']))) ?>"
-                        class="button button-green"
-                    >
-                        Ekspor Excel
-                    </a>
+                    <div class="form-group">
+                        <label for="tanggal_selesai" class="form-label">Tanggal Selesai</label>
+                        <input
+                            type="date"
+                            name="tanggal_selesai"
+                            id="tanggal_selesai"
+                            class="form-control"
+                            value="<?= e($tanggal_selesai) ?>"
+                        >
+                    </div>
 
-                    <button type="button" onclick="cetakRekap()" class="button button-dark">
-                        Cetak Rekap
-                    </button>
+                    <button type="submit" class="button button-primary">Tampilkan</button>
+                    <a href="rekap_pelanggaran.php" class="button button-light">Reset</a>
+                </form>
+            </section>
+
+            <section class="panel">
+                <div class="panel-heading">
+                    <h4 class="panel-title">Data Rekap Siswa</h4>
+
+                    <div class="action-group">
+                        <a
+                            href="rekap_pelanggaran.php?<?= e(http_build_query(array_merge($parameter_filter, ['export' => 'excel']))) ?>"
+                            class="button button-green"
+                        >
+                            Ekspor Excel
+                        </a>
+
+                        <button type="button" onclick="cetakRekap()" class="button button-dark">
+                            Cetak Rekap
+                        </button>
+                    </div>
                 </div>
-            </div>
 
-            <div class="table-responsive">
-                <table id="tabelRekap" class="table table-hover align-middle w-100">
-                    <thead>
-                        <tr>
-                            <th>No</th>
-                            <th>NIS</th>
-                            <th>NISN</th>
-                            <th>Nama Siswa</th>
-                            <th>Kelas</th>
-                            <th>Jumlah Pelanggaran</th>
-                            <th>Total Poin</th>
-                            <th>Keterangan Pelanggaran</th>
-                            <th>Tanggal Terakhir</th>
-                            <th class="no-print">Aksi</th>
-                        </tr>
-                    </thead>
+                <div class="table-responsive">
+                    <table id="tabelRekap" class="table table-hover align-middle w-100">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>NIS</th>
+                                <th>NISN</th>
+                                <th>Nama Siswa</th>
+                                <th>Kelas</th>
+                                <th>Jumlah Pelanggaran</th>
+                                <th>Total Poin</th>
+                                <th>Keterangan Pelanggaran</th>
+                                <th>Tanggal Terakhir</th>
+                                <th class="no-print">Aksi</th>
+                            </tr>
+                        </thead>
 
-                    <tbody>
-                        <?php if (count($data_rekap) > 0): ?>
-                            <?php foreach ($data_rekap as $i => $data): ?>
+                        <tbody>
+                            <?php if (count($data_rekap) > 0): ?>
+                                <?php foreach ($data_rekap as $i => $data): ?>
+                                    <tr>
+                                        <td><?= $i + 1 ?></td>
+                                        <td><?= e($data['nis']) ?></td>
+                                        <td><?= e($data['nisn']) ?></td>
+                                        <td>
+                                            <span class="student-name">
+                                                <?= e($data['nama_siswa']) ?>
+                                            </span>
+                                        </td>
+                                        <td><?= e($data['nama_kelas']) ?></td>
+                                        <td><?= number_format((int)$data['jumlah_pelanggaran'], 0, ',', '.') ?></td>
+                                        <td>
+                                            <span class="point-value">
+                                                <?= number_format((int)$data['total_poin'], 0, ',', '.') ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="violation-list">
+                                                <?= $data['daftar_pelanggaran']
+                                                    ? nl2br(e($data['daftar_pelanggaran']))
+                                                    : '-' ?>
+                                            </div>
+                                        </td>
+                                        <td><?= e(tanggalIndonesia($data['tanggal_terakhir'] ?? '')) ?></td>
+                                        <td class="no-print">
+                                            <button
+                                                type="button"
+                                                class="button button-primary"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modalSurat"
+                                                data-siswa="<?= (int)$data['siswa_id'] ?>"
+                                                data-kelas="<?= (int)$data['kelas_id'] ?>"
+                                                data-nama="<?= e($data['nama_siswa']) ?>"
+                                                data-kelas-nama="<?= e($data['nama_kelas']) ?>"
+                                            >
+                                                Buat Surat
+                                            </button>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
                                 <tr>
-                                    <td><?= $i + 1 ?></td>
-                                    <td><?= e($data['nis']) ?></td>
-                                    <td><?= e($data['nisn']) ?></td>
-
-                                    <td>
-                                        <span class="student-name">
-                                            <?= e($data['nama_siswa']) ?>
-                                        </span>
-                                    </td>
-
-                                    <td><?= e($data['nama_kelas']) ?></td>
-
-                                    <td>
-                                        <?= number_format((int)$data['jumlah_pelanggaran'], 0, ',', '.') ?>
-                                    </td>
-
-                                    <td>
-                                        <span class="point-value">
-                                            <?= number_format((int)$data['total_poin'], 0, ',', '.') ?>
-                                        </span>
-                                    </td>
-
-                                    <td>
-                                        <div class="violation-list">
-                                            <?= $data['daftar_pelanggaran']
-                                                ? nl2br(e($data['daftar_pelanggaran']))
-                                                : '-' ?>
-                                        </div>
-                                    </td>
-
-                                    <td>
-                                        <?= e(tanggalIndonesia($data['tanggal_terakhir'] ?? '')) ?>
-                                    </td>
-
-                                    <td class="no-print">
-                                        <button
-                                            type="button"
-                                            class="button button-primary"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#modalSurat"
-                                            data-siswa="<?= (int)$data['siswa_id'] ?>"
-                                            data-kelas="<?= (int)$data['kelas_id'] ?>"
-                                            data-nama="<?= e($data['nama_siswa']) ?>"
-                                            data-kelas-nama="<?= e($data['nama_kelas']) ?>"
-                                        >
-                                            Buat Surat
-                                        </button>
+                                    <td colspan="10" class="empty-state">
+                                        Belum ada data pelanggaran untuk kelas dan tanggal yang dipilih.
                                     </td>
                                 </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="10" class="empty-state">
-                                    Belum ada data pelanggaran untuk kelas dan tanggal yang dipilih.
-                                </td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <div class="footer">
+                Sistem Pelanggaran Sekolah · Project Rekayasa Perangkat Lunak
             </div>
-        </section>
 
-        <div class="footer">
-            Sistem Pelanggaran Sekolah · Project Rekayasa Perangkat Lunak
         </div>
-
     </main>
 
-    <!-- =====================================
-         MODAL FORM SURAT PEMANGGILAN
-    ====================================== -->
-
+    <!-- MODAL SURAT -->
     <div class="modal fade" id="modalSurat" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" style="border:0; border-radius:14px; overflow:hidden;">
@@ -1734,36 +1875,23 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
                             Lengkapi jadwal dan keperluan pemanggilan.
                         </small>
                     </div>
-
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
 
                 <form method="POST" action="rekap_pelanggaran.php?<?= e(http_build_query($parameter_filter)) ?>">
-
                     <div class="modal-body p-4">
-
                         <input type="hidden" name="aksi" value="buat_surat">
                         <input type="hidden" name="siswa_id" id="surat_siswa_id">
                         <input type="hidden" name="kelas_id" id="surat_kelas_id">
 
                         <div class="mb-3">
                             <label class="form-label">Nama Siswa</label>
-                            <input
-                                type="text"
-                                id="surat_nama_siswa"
-                                class="form-control"
-                                readonly
-                            >
+                            <input type="text" id="surat_nama_siswa" class="form-control" readonly>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Kelas</label>
-                            <input
-                                type="text"
-                                id="surat_nama_kelas"
-                                class="form-control"
-                                readonly
-                            >
+                            <input type="text" id="surat_nama_kelas" class="form-control" readonly>
                         </div>
 
                         <div class="mb-3">
@@ -1811,7 +1939,6 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
                             Surat akan ditujukan kepada Bapak/Ibu Orang Tua/Wali
                             dari siswa yang dipilih. Nama orang tua tidak perlu diisi.
                         </div>
-
                     </div>
 
                     <div class="modal-footer">
@@ -1822,12 +1949,10 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
                         >
                             Batal
                         </button>
-
                         <button type="submit" class="button button-primary">
                             Buat Surat
                         </button>
                     </div>
-
                 </form>
             </div>
         </div>
@@ -1841,17 +1966,13 @@ $halamanAktif = basename($_SERVER['PHP_SELF'] ?? '');
 <script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
-<?php if ($surat_data): ?>
-
-    // Surat sudah terbentuk. Tombol cetak dapat digunakan untuk mencetak
-    // atau memilih Save as PDF pada dialog cetak browser.
-
-<?php else: ?>
+<?php if (!$surat_data): ?>
 
 let tabelRekap = null;
 let panjangHalamanSebelumnya = 10;
+let sedangMencetak = false;
 
-$(document).ready(function () {
+$(function () {
     const jumlahData = <?= count($data_rekap) ?>;
 
     if (jumlahData > 0) {
@@ -1859,6 +1980,8 @@ $(document).ready(function () {
             pageLength: 10,
             lengthMenu: [10, 25, 50, 100],
             order: [],
+            autoWidth: false,
+            deferRender: true,
             language: {
                 search: "Cari:",
                 searchPlaceholder: "Cari nama, NIS, atau pelanggaran...",
@@ -1877,43 +2000,52 @@ $(document).ready(function () {
     }
 });
 
+/* CETAK SELURUH DATA */
 function cetakRekap() {
+    if (sedangMencetak) return;
+
+    sedangMencetak = true;
+
     if (tabelRekap) {
         panjangHalamanSebelumnya = tabelRekap.page.len();
         tabelRekap.page.len(-1).draw();
-
-        setTimeout(function () {
-            window.print();
-        }, 300);
-    } else {
-        window.print();
     }
+
+    requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+            window.print();
+        });
+    });
 }
 
 window.addEventListener('afterprint', function () {
-    if (tabelRekap) {
+    if (tabelRekap && tabelRekap.page.len() !== panjangHalamanSebelumnya) {
         tabelRekap.page.len(panjangHalamanSebelumnya).draw();
     }
+
+    sedangMencetak = false;
 });
 
-// Mengisi identitas siswa secara otomatis ke formulir surat.
+/* ISI DATA MODAL SURAT */
 const modalSurat = document.getElementById('modalSurat');
 
 if (modalSurat) {
     modalSurat.addEventListener('show.bs.modal', function (event) {
         const tombol = event.relatedTarget;
 
+        if (!tombol) return;
+
         document.getElementById('surat_siswa_id').value =
-            tombol.getAttribute('data-siswa');
+            tombol.getAttribute('data-siswa') || '';
 
         document.getElementById('surat_kelas_id').value =
-            tombol.getAttribute('data-kelas');
+            tombol.getAttribute('data-kelas') || '';
 
         document.getElementById('surat_nama_siswa').value =
-            tombol.getAttribute('data-nama');
+            tombol.getAttribute('data-nama') || '';
 
         document.getElementById('surat_nama_kelas').value =
-            tombol.getAttribute('data-kelas-nama');
+            tombol.getAttribute('data-kelas-nama') || '';
     });
 }
 

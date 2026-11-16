@@ -5,13 +5,11 @@ include __DIR__ . "/middleware/auth.php";
 $role = strtolower(trim($_SESSION['role'] ?? ''));
 $nama = $_SESSION['nama'] ?? $_SESSION['name'] ?? 'User';
 
-// Deteksi Wali Kelas dari penugasan saat login
 $isWaliKelas = (
     $role !== 'admin' &&
     !empty($_SESSION['is_wali_kelas'])
 );
 
-// Tentukan jenis dashboard
 if ($role === 'admin') {
     $jenisDashboard = 'admin';
 } elseif ($isWaliKelas) {
@@ -19,457 +17,552 @@ if ($role === 'admin') {
 } else {
     $jenisDashboard = 'guru';
 }
+
+if (!function_exists('e')) {
+    function e($value) {
+        return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
+    }
+}
 ?>
 
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Sistem Pelanggaran</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard - Sistem Pelanggaran</title>
 
-    <style>
-        :root {
-            --blue: #2878cf;
-            --blue-dark: #203e68;
-            --blue-soft: #eaf3ff;
-            --page: #f6f9fd;
-            --white: #ffffff;
-            --text: #263f63;
-            --muted: #7890ad;
-            --line: #dce9f8;
-            --shadow: 0 8px 22px rgba(32, 62, 104, .07);
-        }
+<style>
+:root {
+    --blue: #2878cf;
+    --blue-dark: #203e68;
+    --blue-soft: #eaf3ff;
+    --page: #f3f7fc;
+    --text: #263f63;
+    --muted: #7890ad;
+    --line: #dce9f8;
+    --white: #ffffff;
+    --shadow: 0 3px 12px rgba(35, 78, 120, .045);
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    --sidebar-width: 282px;
+    --font: "Segoe UI", Arial, sans-serif;
+}
 
-        body {
-            font-family: "Segoe UI", Arial, sans-serif;
-            background: var(--page);
-            color: var(--text);
-        }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
-        a {
-            text-decoration: none;
-        }
+html {
+    min-height: 100%;
+    overflow-y: scroll;
+    scroll-behavior: auto;
+}
 
-        .layout {
-            min-height: 100vh;
-        }
+body {
+    width: 100%;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background: var(--page);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
 
-        /* SIDEBAR */
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 282px;
-            height: 100vh;
-            padding: 25px 14px 16px;
-            display: flex;
-            flex-direction: column;
-            background: #fff;
-            border-right: 1px solid var(--line);
-            z-index: 1000;
-            overflow-y: auto;
-        }
+a {
+    color: inherit;
+    text-decoration: none;
+}
 
-        .brand {
-            padding: 0 14px 20px;
-            margin-bottom: 22px;
-            border-bottom: 1px solid var(--line);
-        }
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
 
-        .brand-title {
-            color: var(--blue-dark);
-            font-size: 19px;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
+/* =========================
+   SIDEBAR
+========================= */
 
-        .brand-subtitle {
-            color: var(--muted);
-            font-size: 12px;
-        }
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
 
-        .menu-title {
-            margin: 0 14px 11px;
-            color: #91a5bd;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
+    width: var(--sidebar-width);
+    height: 100vh;
+    padding: 25px 14px 16px;
 
-        .menu {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
+    display: flex;
+    flex-direction: column;
 
-        .menu-link {
-            display: flex;
-            align-items: center;
-            min-height: 42px;
-            padding: 11px 14px;
-            border-radius: 9px;
-            color: #5e7695;
-            font-size: 13px;
-            transition: .2s;
-        }
+    background: var(--white);
+    border-right: 1px solid var(--line);
 
-        .menu-link:hover {
-            background: #f2f7fd;
-            color: var(--blue);
-        }
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+}
 
-        .menu-link.active {
-            background: var(--blue-soft);
-            color: var(--blue);
-            font-weight: 600;
-            box-shadow: inset 3px 0 0 var(--blue);
-        }
+.brand {
+    flex-shrink: 0;
+    padding: 0 14px 20px;
+    margin-bottom: 22px;
+    border-bottom: 1px solid var(--line);
+}
 
-        .logout {
-            margin-top: auto;
-            padding-top: 14px;
-            border-top: 1px solid var(--line);
-        }
+.brand-title {
+    color: var(--blue-dark);
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: 5px;
+}
 
-        .logout .menu-link {
-            color: #d9534f;
-        }
+.brand-subtitle {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.5;
+}
 
-        .logout .menu-link:hover {
-            background: #fff0ef;
-        }
+.menu-title {
+    flex-shrink: 0;
+    margin: 0 14px 11px;
+    color: #91a5bd;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    line-height: 1.4;
+    text-transform: uppercase;
+}
 
-        /* MAIN */
-        .main {
-            width: calc(100% - 282px);
-            min-height: 100vh;
-            margin-left: 282px;
-            padding: 24px 28px 40px;
-        }
+.menu {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
 
-        /* TOPBAR */
-        .topbar {
-            background: linear-gradient(
-                135deg,
-                #f4f9ff 0%,
-                #edf6ff 100%
-            );
-            border: 1px solid var(--line);
-            border-radius: 18px;
-            padding: 24px 28px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 20px;
-            margin-bottom: 26px;
-            box-shadow: var(--shadow);
-        }
+.menu-link {
+    display: flex;
+    align-items: center;
 
-        .welcome h2 {
-            font-size: 25px;
-            color: var(--blue-dark);
-            margin-bottom: 6px;
-        }
+    flex-shrink: 0;
+    min-height: 42px;
+    padding: 11px 14px;
 
-        .welcome p {
-            font-size: 13px;
-            color: var(--muted);
-        }
+    border-radius: 9px;
 
-        .user-box {
-            display: flex;
-            align-items: center;
-            color: var(--blue-dark);
-            font-size: 13px;
-            font-weight: 600;
-            background: rgba(255,255,255,.65);
-            border: 1px solid var(--line);
-            border-radius: 30px;
-            padding: 8px 15px;
-        }
+    color: #5e7695;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.4;
 
-        .user-name {
-            white-space: nowrap;
-        }
+    transition: none;
+}
 
-        /* PAGE HEADER */
-        .page-head {
-            margin: 4px 6px 18px;
-        }
+.menu-link:hover {
+    background: #f2f7fd;
+    color: var(--blue);
+}
 
-        .page-head h3 {
-            font-size: 28px;
-            color: var(--blue-dark);
-            margin-bottom: 5px;
-        }
+.menu-link.active {
+    background: var(--blue-soft);
+    color: var(--blue);
+    font-weight: 600;
+    box-shadow: inset 3px 0 0 var(--blue);
+}
 
-        .page-head p {
-            color: var(--muted);
-            font-size: 13px;
-        }
+.logout {
+    flex-shrink: 0;
+    margin-top: auto;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+}
 
-        /* DASHBOARD CARD */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 22px;
-        }
+.logout .menu-link {
+    color: #d9534f;
+}
 
-        .card {
-            background: var(--white);
-            border: 1px solid var(--line);
-            border-radius: 16px;
-            min-height: 175px;
-            padding: 22px;
-            box-shadow: var(--shadow);
-            transition: .2s ease;
-            display: flex;
-            flex-direction: column;
-        }
+.logout .menu-link:hover {
+    background: #fff0ef;
+}
 
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 26px rgba(32, 62, 104, .10);
-        }
+/* =========================
+   KONTEN UTAMA
+========================= */
 
-        .card-content {
-            flex: 1;
-        }
+.main {
+    width: calc(100% - var(--sidebar-width));
+    min-width: 0;
+    min-height: 100vh;
+    margin-left: var(--sidebar-width);
+    padding: 24px 28px 40px;
+}
 
-        .card-content h4 {
-            font-size: 18px;
-            color: var(--blue-dark);
-            margin-bottom: 8px;
-        }
+.page-container {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin: 0 auto;
+}
 
-        .card-content p {
-            font-size: 12px;
-            color: var(--muted);
-            line-height: 1.6;
-        }
+/* =========================
+   CARD
+========================= */
 
-        .card-button {
-            align-self: flex-start;
-            margin-top: 18px;
-            background: var(--blue);
-            color: white;
-            font-size: 12px;
-            font-weight: 600;
-            border-radius: 9px;
-            padding: 9px 17px;
-            transition: .2s ease;
-        }
+.card {
+    width: 100%;
+    min-width: 0;
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
 
-        .card-button:hover {
-            background: #1f68b6;
-            color: white;
-        }
+.card-body {
+    min-width: 0;
+    padding: 20px;
+}
 
-        /* FOOTER */
-        .footer {
-            text-align: center;
-            margin-top: 28px;
-            color: #9aabc0;
-            font-size: 10px;
-        }
 
-        /* RESPONSIVE */
-        @media (max-width: 1100px) {
-            .dashboard-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-        }
+/* =========================
+   SPASI DAN HIERARKI DASHBOARD
+========================= */
 
-        @media (max-width: 900px) {
-            .sidebar {
-                position: static;
-                width: 100%;
-                height: auto;
-            }
+.welcome-card {
+    margin-bottom: 22px;
+}
 
-            .main {
-                width: 100%;
-                margin-left: 0;
-            }
+.welcome-card .card-body {
+    padding: 24px 26px;
+}
 
-            .topbar {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-        }
+.welcome-title {
+    color: #234e78;
+    font-size: 29px;
+    font-weight: 600;
+    line-height: 1.35;
+    margin: 0 0 7px;
+}
 
-        @media (max-width: 650px) {
-            .main {
-                padding: 18px 14px 30px;
-            }
+.welcome-description {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0;
+}
 
-            .topbar {
-                padding: 20px;
-            }
+.card > .card-body {
+    padding: 24px 26px;
+}
 
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
+.section-title {
+    color: #234e78;
+    font-size: 21px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin: 0 0 6px;
+}
 
-            .page-head h3 {
-                font-size: 24px;
-            }
-        }
-    </style>
+.section-description {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 0 0 20px;
+}
+
+.dashboard-grid {
+    margin-top: 0;
+}
+
+.menu-card {
+    min-height: 170px;
+    padding: 22px;
+}
+
+.menu-card h3 {
+    margin-bottom: 9px;
+}
+
+.menu-card p {
+    line-height: 1.65;
+    max-width: 100%;
+}
+
+.card-button {
+    margin-top: 20px;
+}
+
+/* =========================
+   GRID DASHBOARD
+========================= */
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    align-items: stretch;
+}
+
+/* =========================
+   MENU CARD
+========================= */
+
+.menu-card {
+    min-width: 0;
+    min-height: 165px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    padding: 20px;
+
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+}
+
+.menu-card h3 {
+    color: #234e78;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 8px;
+}
+
+.menu-card p {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.55;
+    margin: 0;
+}
+
+/* =========================
+   TOMBOL
+========================= */
+
+.card-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 35px;
+    margin-top: 18px;
+    padding: 8px 15px;
+
+    border: 1px solid var(--blue);
+    border-radius: 7px;
+
+    background: var(--blue);
+    color: var(--white);
+
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+
+    transition: none;
+}
+
+.card-button:hover {
+    background: #2168b4;
+    border-color: #2168b4;
+    color: var(--white);
+}
+
+/* =========================
+   FOCUS
+========================= */
+
+a:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 3px;
+}
+
+/* =========================
+   FOOTER
+========================= */
+
+.footer {
+    margin-top: 28px;
+    color: #9aabc0;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.5;
+    text-align: center;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 1100px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 900px) {
+    .sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
+        min-height: auto;
+        padding: 20px 14px;
+        overflow: visible;
+    }
+
+    .logout {
+        margin-top: 14px;
+    }
+
+    .main {
+        width: 100%;
+        margin-left: 0;
+        padding: 20px 18px 30px;
+    }
+}
+
+@media (max-width: 650px) {
+    .main {
+        padding: 16px 12px 25px;
+    }
+
+    .card-body {
+        padding: 19px;
+    }
+
+    .welcome-card .card-body {
+        padding: 20px;
+    }
+
+    .welcome-card {
+        margin-bottom: 18px;
+    }
+
+    .section-description {
+        margin-bottom: 17px;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .welcome-title,
+    .judul {
+        font-size: 25px;
+    }
+
+    .section-title {
+        font-size: 19px;
+    }
+
+    .menu-card {
+        min-height: 150px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition: none !important;
+        animation: none !important;
+    }
+}
+</style>
 </head>
 
 <body>
 
-<div class="layout">
+<!-- =========================
+     SIDEBAR
+========================= -->
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
+<aside class="sidebar">
 
-        <div class="brand">
-            <div class="brand-title">
-                Sistem Pelanggaran
-            </div>
+    <div class="brand">
+        <div class="brand-title">Sistem Pelanggaran</div>
+        <div class="brand-subtitle">SMK Muhammadiyah</div>
+    </div>
 
-            <div class="brand-subtitle">
-                SMK Muhammadiyah
-            </div>
-        </div>
+    <div class="menu-title">Menu Utama</div>
 
-        <div class="menu-title">
-            Menu Utama
-        </div>
+    <nav class="menu">
 
-        <nav class="menu">
+        <a href="dashboard.php" class="menu-link active">Dashboard</a>
 
-            <a href="dashboard.php" class="menu-link active">
-                Dashboard
-            </a>
+        <?php if ($jenisDashboard === 'admin'): ?>
 
-            <?php if ($jenisDashboard === 'admin'): ?>
+            <a href="admin/guru.php" class="menu-link">Kelola Guru</a>
+            <a href="admin/siswa.php" class="menu-link">Kelola Siswa</a>
+            <a href="admin/kelas.php" class="menu-link">Kelola Kelas</a>
+            <a href="admin/tahun_ajaran.php" class="menu-link">Tahun Ajaran</a>
+            <a href="admin/penempatan_siswa.php" class="menu-link">Penempatan Siswa</a>
+            <a href="admin/wali_kelas.php" class="menu-link">Wali Kelas</a>
+            <a href="admin/kategori_pelanggaran.php" class="menu-link">Kategori Pelanggaran</a>
+            <a href="admin/jenis_pelanggaran.php" class="menu-link">Jenis Pelanggaran</a>
+            <a href="admin/cetak_export.php" class="menu-link">Laporan</a>
 
-                <!-- MENU ADMIN -->
+        <?php elseif ($jenisDashboard === 'wali_kelas'): ?>
 
-                <a href="admin/guru.php" class="menu-link">
-                    Kelola Guru
-                </a>
+            <a href="walikelas/catat_pelanggaran.php" class="menu-link">Catat Pelanggaran</a>
+            <a href="walikelas/riwayat.php" class="menu-link">Riwayat</a>
+            <a href="walikelas/data_siswa.php" class="menu-link">Data Siswa</a>
+            <a href="walikelas/rekap_poin.php" class="menu-link">Rekap Poin Siswa</a>
+            <a href="walikelas/rekap_pelanggaran.php" class="menu-link">Rekap Pelanggaran</a>
+            <a href="walikelas/cetak_rekap.php" class="menu-link">Laporan</a>
 
-                <a href="admin/siswa.php" class="menu-link">
-                    Kelola Siswa
-                </a>
+        <?php else: ?>
 
-                <a href="admin/kelas.php" class="menu-link">
-                    Kelola Kelas
-                </a>
+            <a href="guru/catat_pelanggaran.php" class="menu-link">Catat Pelanggaran</a>
+            <a href="guru/tindakan.php" class="menu-link">Tindakan</a>
+            <a href="guru/riwayat.php" class="menu-link">Riwayat</a>
+            <a href="guru/rekap_poin.php" class="menu-link">Rekap Poin</a>
 
-                <a href="admin/tahun_ajaran.php" class="menu-link">
-                    Tahun Ajaran
-                </a>
+        <?php endif; ?>
 
-                <a href="admin/penempatan_siswa.php" class="menu-link">
-                    Penempatan Siswa
-                </a>
+        <a href="about.php" class="menu-link">About Me</a>
 
-                <a href="admin/wali_kelas.php" class="menu-link">
-                    Wali Kelas
-                </a>
+    </nav>
 
-                <a href="admin/kategori_pelanggaran.php" class="menu-link">
-                    Kategori Pelanggaran
-                </a>
+    <div class="logout">
+        <a href="logout.php" class="menu-link">Logout</a>
+    </div>
 
-                <a href="admin/jenis_pelanggaran.php" class="menu-link">
-                    Jenis Pelanggaran
-                </a>
+</aside>
 
-                <a href="admin/cetak_export.php" class="menu-link">
-                    Laporan
-                </a>
+<!-- =========================
+     KONTEN UTAMA
+========================= -->
 
-            <?php elseif ($jenisDashboard === 'wali_kelas'): ?>
+<main class="main">
 
-                <!-- MENU WALI KELAS -->
+    <div class="page-container">
 
-                <a href="walikelas/catat_pelanggaran.php" class="menu-link">
-                    Catat Pelanggaran
-                </a>
+        <!-- SAMBUTAN -->
 
-                <a href="walikelas/riwayat.php" class="menu-link">
-                    Riwayat
-                </a>
+        <section class="card welcome-card">
+            <div class="card-body">
 
-                <a href="walikelas/data_siswa.php" class="menu-link">
-                    Data Siswa
-                </a>
+                <h1 class="welcome-title">
+                    Selamat datang, <?= e($nama); ?>
+                </h1>
 
-                <a href="walikelas/rekap_poin.php" class="menu-link">
-                    Rekap Poin Siswa
-                </a>
-
-                <a href="walikelas/rekap_pelanggaran.php" class="menu-link">
-                    Rekap Pelanggaran
-                </a>
-
-                <a href="walikelas/cetak_rekap.php" class="menu-link">
-                    Laporan
-                </a>
-
-            <?php else: ?>
-
-                <!-- MENU GURU -->
-
-                <a href="guru/catat_pelanggaran.php" class="menu-link">
-                    Catat Pelanggaran
-                </a>
-
-                <a href="guru/tindakan.php" class="menu-link">
-                    Tindakan
-                </a>
-
-                <a href="guru/riwayat.php" class="menu-link">
-                    Riwayat
-                </a>
-
-                <a href="guru/rekap_poin.php" class="menu-link">
-                    Rekap Poin
-                </a>
-
-            <?php endif; ?>
-
-            <a href="about.php" class="menu-link">
-                About Me
-            </a>
-
-        </nav>
-
-        <div class="logout">
-            <a href="logout.php" class="menu-link">
-                Logout
-            </a>
-        </div>
-
-    </aside>
-
-    <!-- MAIN CONTENT -->
-    <main class="main">
-
-        <!-- TOPBAR -->
-        <section class="topbar">
-
-            <div class="welcome">
-                <h2>
-                    Selamat datang,
-                    <?= htmlspecialchars($nama, ENT_QUOTES, 'UTF-8'); ?>
-                </h2>
-
-                <p>
+                <p class="welcome-description">
                     <?php if ($jenisDashboard === 'admin'): ?>
                         Kelola data sekolah dengan mudah dan terstruktur.
                     <?php elseif ($jenisDashboard === 'wali_kelas'): ?>
@@ -478,233 +571,174 @@ if ($role === 'admin') {
                         Kelola pencatatan dan tindakan pelanggaran siswa.
                     <?php endif; ?>
                 </p>
-            </div>
 
-            <div class="user-box">
-                <span class="user-name">
-                    <?= htmlspecialchars($nama, ENT_QUOTES, 'UTF-8'); ?>
-                </span>
             </div>
-
         </section>
 
-        <!-- PAGE HEADER -->
-        <div class="page-head">
+        <!-- MENU DASHBOARD -->
 
-            <h3>Dashboard</h3>
+        <section class="card">
+            <div class="card-body">
 
-            <p>
-                <?php if ($jenisDashboard === 'admin'): ?>
-                    Akses pengelolaan seluruh data sistem pelanggaran sekolah.
-                <?php elseif ($jenisDashboard === 'wali_kelas'): ?>
-                    Informasi dan pengelolaan data siswa sesuai kelas yang ditugaskan.
-                <?php else: ?>
-                    Akses fitur pencatatan dan pengelolaan pelanggaran siswa.
-                <?php endif; ?>
-            </p>
+                <h2 class="section-title">Menu Utama</h2>
 
-        </div>
+                <p class="section-description">
+                    Pilih menu untuk membuka fitur yang tersedia.
+                </p>
 
-        <!-- DASHBOARD ADMIN -->
-        <?php if ($jenisDashboard === 'admin'): ?>
+                <div class="dashboard-grid">
 
-            <section class="dashboard-grid">
+                    <?php if ($jenisDashboard === 'admin'): ?>
 
-                <div class="card">
-                    <div class="card-content">
-                        <h4>Kelola Data</h4>
-                        <p>
-                            Kelola data guru, siswa, kelas,
-                            tahun ajaran, penempatan siswa,
-                            dan wali kelas.
-                        </p>
-                    </div>
+                        <article class="menu-card">
+                            <div>
+                                <h3>Kelola Data</h3>
+                                <p>
+                                    Kelola data guru, siswa, kelas, tahun ajaran,
+                                    penempatan siswa, dan wali kelas.
+                                </p>
+                            </div>
+                            <a href="admin/guru.php" class="card-button">Buka</a>
+                        </article>
 
-                    <a href="admin/guru.php" class="card-button">
-                        Buka
-                    </a>
+                        <article class="menu-card">
+                            <div>
+                                <h3>Data Pelanggaran</h3>
+                                <p>
+                                    Kelola kategori dan jenis pelanggaran siswa.
+                                </p>
+                            </div>
+                            <a href="admin/kategori_pelanggaran.php" class="card-button">Buka</a>
+                        </article>
+
+                        <article class="menu-card">
+                            <div>
+                                <h3>Laporan</h3>
+                                <p>
+                                    Cetak dan export data pelanggaran sekolah.
+                                </p>
+                            </div>
+                            <a href="admin/cetak_export.php" class="card-button">Buka</a>
+                        </article>
+
+                    <?php elseif ($jenisDashboard === 'wali_kelas'): ?>
+
+                        <article class="menu-card">
+                            <div>
+                                <h3>Catat Pelanggaran</h3>
+                                <p>
+                                    Catat pelanggaran siswa di kelas yang menjadi
+                                    tanggung jawab Anda.
+                                </p>
+                            </div>
+                            <a href="walikelas/catat_pelanggaran.php" class="card-button">Buka</a>
+                        </article>
+
+                        <article class="menu-card">
+                            <div>
+                                <h3>Riwayat Pelanggaran</h3>
+                                <p>
+                                    Lihat riwayat pelanggaran yang telah dicatat
+                                    oleh Wali Kelas.
+                                </p>
+                            </div>
+                            <a href="walikelas/riwayat.php" class="card-button">Buka</a>
+                        </article>
+
+                        <article class="menu-card">
+                            <div>
+                                <h3>Data Siswa</h3>
+                                <p>
+                                    Lihat daftar siswa yang berada di kelas
+                                    tanggung jawab Anda.
+                                </p>
+                            </div>
+                            <a href="walikelas/data_siswa.php" class="card-button">Buka</a>
+                        </article>
+
+                        <article class="menu-card">
+                            <div>
+                                <h3>Rekap Poin Siswa</h3>
+                                <p>
+                                    Lihat jumlah pelanggaran dan akumulasi poin
+                                    siswa di kelas.
+                                </p>
+                            </div>
+                            <a href="walikelas/rekap_poin.php" class="card-button">Buka</a>
+                        </article>
+
+                        <article class="menu-card">
+                            <div>
+                                <h3>Rekap Pelanggaran</h3>
+                                <p>
+                                    Pantau data pelanggaran dan perkembangan
+                                    ketertiban kelas.
+                                </p>
+                            </div>
+                            <a href="walikelas/rekap_pelanggaran.php" class="card-button">Buka</a>
+                        </article>
+
+                        <article class="menu-card">
+                            <div>
+                                <h3>Laporan</h3>
+                                <p>
+                                    Cetak laporan pelanggaran siswa berdasarkan kelas.
+                                </p>
+                            </div>
+                            <a href="walikelas/cetak_rekap.php" class="card-button">Buka</a>
+                        </article>
+
+                    <?php else: ?>
+
+                        <article class="menu-card">
+                            <div>
+                                <h3>Catat Pelanggaran</h3>
+                                <p>
+                                    Catat pelanggaran siswa dengan mudah
+                                    dan terstruktur.
+                                </p>
+                            </div>
+                            <a href="guru/catat_pelanggaran.php" class="card-button">Buka</a>
+                        </article>
+
+                        <article class="menu-card">
+                            <div>
+                                <h3>Tindakan</h3>
+                                <p>
+                                    Kelola tindakan yang diberikan terhadap
+                                    pelanggaran siswa.
+                                </p>
+                            </div>
+                            <a href="guru/tindakan.php" class="card-button">Buka</a>
+                        </article>
+
+                        <article class="menu-card">
+                            <div>
+                                <h3>Riwayat</h3>
+                                <p>
+                                    Lihat riwayat pencatatan pelanggaran siswa
+                                    yang telah dilakukan.
+                                </p>
+                            </div>
+                            <a href="guru/riwayat.php" class="card-button">Buka</a>
+                        </article>
+
+                    <?php endif; ?>
+
                 </div>
 
-                <div class="card">
-                    <div class="card-content">
-                        <h4>Data Pelanggaran</h4>
-                        <p>
-                            Kelola kategori dan jenis
-                            pelanggaran siswa.
-                        </p>
-                    </div>
-
-                    <a href="admin/kategori_pelanggaran.php" class="card-button">
-                        Buka
-                    </a>
-                </div>
-
-                <div class="card">
-                    <div class="card-content">
-                        <h4>Cetak / Export</h4>
-                        <p>
-                            Cetak dan export data
-                            pelanggaran sekolah.
-                        </p>
-                    </div>
-
-                    <a href="admin/cetak_export.php" class="card-button">
-                        Buka
-                    </a>
-                </div>
-
-            </section>
-
-        <!-- DASHBOARD WALI KELAS -->
-        <?php elseif ($jenisDashboard === 'wali_kelas'): ?>
-
-            <section class="dashboard-grid">
-
-                <div class="card">
-                    <div class="card-content">
-                        <h4>Catat Pelanggaran</h4>
-                        <p>
-                            Catat pelanggaran siswa di kelas
-                            yang menjadi tanggung jawab Anda.
-                        </p>
-                    </div>
-
-                    <a href="walikelas/catat_pelanggaran.php" class="card-button">
-                        Buka
-                    </a>
-                </div>
-
-                <div class="card">
-                    <div class="card-content">
-                        <h4>Riwayat Pelanggaran</h4>
-                        <p>
-                            Lihat riwayat pelanggaran yang telah
-                            dicatat oleh Wali Kelas yang sedang login.
-                        </p>
-                    </div>
-
-                    <a href="walikelas/riwayat.php" class="card-button">
-                        Buka
-                    </a>
-                </div>
-
-                <div class="card">
-                    <div class="card-content">
-                        <h4>Data Siswa</h4>
-                        <p>
-                            Lihat daftar siswa yang berada
-                            di kelas tanggung jawab Anda.
-                        </p>
-                    </div>
-
-                    <a href="walikelas/data_siswa.php" class="card-button">
-                        Buka
-                    </a>
-                </div>
-
-                <div class="card">
-                    <div class="card-content">
-                        <h4>Rekap Poin Siswa</h4>
-                        <p>
-                            Lihat jumlah pelanggaran dan akumulasi
-                            poin seluruh siswa di kelas yang Anda ampu.
-                        </p>
-                    </div>
-
-                    <a href="walikelas/rekap_poin.php" class="card-button">
-                        Buka
-                    </a>
-                </div>
-
-                <div class="card">
-                    <div class="card-content">
-                        <h4>Rekap Pelanggaran</h4>
-                        <p>
-                            Pantau data pelanggaran siswa
-                            dan perkembangan ketertiban kelas.
-                        </p>
-                    </div>
-
-                    <a href="walikelas/rekap_pelanggaran.php" class="card-button">
-                        Buka
-                    </a>
-                </div>
-
-                <div class="card">
-                    <div class="card-content">
-                        <h4>Laporan</h4>
-                        <p>
-                            Cetak laporan pelanggaran
-                            siswa berdasarkan kelas.
-                        </p>
-                    </div>
-
-                    <a href="walikelas/cetak_rekap.php" class="card-button">
-                        Buka
-                    </a>
-                </div>
-
-            </section>
-
-        <!-- DASHBOARD GURU -->
-        <?php else: ?>
-
-            <section class="dashboard-grid">
-
-                <div class="card">
-                    <div class="card-content">
-                        <h4>Catat Pelanggaran</h4>
-                        <p>
-                            Catat pelanggaran siswa
-                            dengan mudah dan terstruktur.
-                        </p>
-                    </div>
-
-                    <a href="guru/catat_pelanggaran.php" class="card-button">
-                        Buka
-                    </a>
-                </div>
-
-                <div class="card">
-                    <div class="card-content">
-                        <h4>Tindakan</h4>
-                        <p>
-                            Kelola tindakan yang diberikan
-                            terhadap pelanggaran siswa.
-                        </p>
-                    </div>
-
-                    <a href="guru/tindakan.php" class="card-button">
-                        Buka
-                    </a>
-                </div>
-
-                <div class="card">
-                    <div class="card-content">
-                        <h4>Riwayat</h4>
-                        <p>
-                            Lihat riwayat pencatatan
-                            pelanggaran siswa yang telah dilakukan.
-                        </p>
-                    </div>
-
-                    <a href="guru/riwayat.php" class="card-button">
-                        Buka
-                    </a>
-                </div>
-
-            </section>
-
-        <?php endif; ?>
+            </div>
+        </section>
 
         <!-- FOOTER -->
-        <div class="footer">
+
+        <footer class="footer">
             Sistem Pelanggaran Sekolah · Project Rekayasa Perangkat Lunak
-        </div>
+        </footer>
 
-    </main>
+    </div>
 
-</div>
+</main>
 
 </body>
 </html>
